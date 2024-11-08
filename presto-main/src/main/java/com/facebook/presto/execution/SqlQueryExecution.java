@@ -15,8 +15,10 @@ package com.facebook.presto.execution;
 
 import com.facebook.airlift.concurrent.SetThreadName;
 import com.facebook.presto.Session;
+import com.facebook.presto.common.TelemetryConfig;
 import com.facebook.presto.common.analyzer.PreparedQuery;
 import com.facebook.presto.common.resourceGroups.QueryType;
+import com.facebook.presto.common.telemetry.tracing.TracingEnum;
 import com.facebook.presto.cost.CostCalculator;
 import com.facebook.presto.cost.HistoryBasedPlanStatisticsManager;
 import com.facebook.presto.cost.StatsCalculator;
@@ -31,6 +33,7 @@ import com.facebook.presto.execution.scheduler.SqlQuerySchedulerInterface;
 import com.facebook.presto.memory.VersionedMemoryPoolId;
 import com.facebook.presto.metadata.InternalNodeManager;
 import com.facebook.presto.metadata.Metadata;
+import com.facebook.presto.opentelemetry.tracing.ScopedSpan;
 import com.facebook.presto.server.BasicQueryInfo;
 import com.facebook.presto.spi.ConnectorId;
 import com.facebook.presto.spi.PrestoException;
@@ -62,10 +65,15 @@ import com.facebook.presto.sql.planner.SplitSourceFactory;
 import com.facebook.presto.sql.planner.SubPlan;
 import com.facebook.presto.sql.planner.optimizations.PlanOptimizer;
 import com.facebook.presto.sql.planner.sanity.PlanChecker;
+import com.facebook.presto.telemetry.OpenTelemetryManager;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Context;
+import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
 
 import javax.annotation.concurrent.ThreadSafe;
@@ -95,6 +103,7 @@ import static com.facebook.presto.execution.QueryStateMachine.pruneHistogramsFro
 import static com.facebook.presto.execution.buffer.OutputBuffers.BROADCAST_PARTITION_ID;
 import static com.facebook.presto.execution.buffer.OutputBuffers.createInitialEmptyOutputBuffers;
 import static com.facebook.presto.execution.buffer.OutputBuffers.createSpoolingOutputBuffers;
+import static com.facebook.presto.opentelemetry.tracing.ScopedSpan.scopedSpan;
 import static com.facebook.presto.spi.StandardErrorCode.NOT_SUPPORTED;
 import static com.facebook.presto.sql.Optimizer.PlanStage.OPTIMIZED_AND_VALIDATED;
 import static com.facebook.presto.sql.planner.PlanNodeCanonicalInfo.getCanonicalInfo;
@@ -146,6 +155,7 @@ public class SqlQueryExecution
     private final AnalyzerContext analyzerContext;
     private final CompletableFuture<PlanRoot> planFuture;
     private final AtomicBoolean planFutureLocked = new AtomicBoolean();
+	private final Tracer tracer;
 
     private SqlQueryExecution(
             QueryAnalyzer queryAnalyzer,
@@ -172,7 +182,8 @@ public class SqlQueryExecution
             CostCalculator costCalculator,
             PlanChecker planChecker,
             PartialResultQueryManager partialResultQueryManager,
-            PlanCanonicalInfoProvider planCanonicalInfoProvider)
+            PlanCanonicalInfoProvider planCanonicalInfoProvider,
+            Tracer tracer)
     {
         try (SetThreadName ignored = new SetThreadName("Query-%s", stateMachine.getQueryId())) {
             this.queryAnalyzer = requireNonNull(queryAnalyzer, "queryAnalyzer is null");
@@ -197,18 +208,26 @@ public class SqlQueryExecution
             this.planChecker = requireNonNull(planChecker, "planChecker is null");
             this.planCanonicalInfoProvider = requireNonNull(planCanonicalInfoProvider, "planCanonicalInfoProvider is null");
             this.analyzerContext = getAnalyzerContext(queryAnalyzer, metadata.getMetadataResolver(stateMachine.getSession()), idAllocator, new VariableAllocator(), stateMachine.getSession());
+            this.tracer = tracer;
 
             // analyze query
             requireNonNull(preparedQuery, "preparedQuery is null");
 
-            stateMachine.beginSemanticAnalyzing();
+			Span querySpan = getSession().getQuerySpan();
+            Span span = (!TelemetryConfig.getTracingEnabled()) ? null : OpenTelemetryManager.getTracer().spanBuilder(TracingEnum.ANALYZER.getName())
+                    .setParent((querySpan != null) ? Context.current().with(querySpan) : Context.current())
+                    .startSpan();
 
-            try (TimeoutThread unused = new TimeoutThread(
-                    Thread.currentThread(),
-                    timeoutThreadExecutor,
-                    getQueryAnalyzerTimeout(getSession()))) {
-                this.queryAnalysis = queryAnalyzer.analyze(analyzerContext, preparedQuery);
+            try (ScopedSpan spanIgnored = scopedSpan(span)) {
+                try (TimeoutThread unused = new TimeoutThread(
+                        Thread.currentThread(),
+                        timeoutThreadExecutor,
+                        getQueryAnalyzerTimeout(getSession()))) {
+                    this.queryAnalysis = queryAnalyzer.analyze(analyzerContext, preparedQuery);
+                }
             }
+
+            stateMachine.beginSemanticAnalyzing();
 
             stateMachine.setUpdateType(queryAnalysis.getUpdateType());
             stateMachine.setExpandedQuery(queryAnalysis.getExpandedQuery());
@@ -555,54 +574,76 @@ public class SqlQueryExecution
                             LOGICAL_PLANNER_TIME_NANOS,
                             () -> queryAnalyzer.plan(this.analyzerContext, queryAnalysis));
 
-            Optimizer optimizer = new Optimizer(
-                    stateMachine.getSession(),
-                    metadata,
-                    planOptimizers,
-                    planChecker,
-                    analyzerContext.getVariableAllocator(),
-                    idAllocator,
-                    stateMachine.getWarningCollector(),
-                    statsCalculator,
-                    costCalculator,
-                    false);
-
-            Plan plan = getSession().getRuntimeStats().profileNanos(
-                    OPTIMIZER_TIME_NANOS,
-                    () -> optimizer.validateAndOptimizePlan(planNode, OPTIMIZED_AND_VALIDATED));
-
-            queryPlan.set(plan);
-            stateMachine.setPlanStatsAndCosts(plan.getStatsAndCosts());
-            stateMachine.setPlanIdNodeMap(plan.getPlanIdNodeMap());
-            List<CanonicalPlanWithInfo> canonicalPlanWithInfos = getSession().getRuntimeStats().profileNanos(
-                    GET_CANONICAL_INFO_TIME_NANOS,
-                    () -> getCanonicalInfo(getSession(), plan.getRoot(), planCanonicalInfoProvider));
-            stateMachine.setPlanCanonicalInfo(canonicalPlanWithInfos);
-
-            // extract inputs
-            List<Input> inputs = new InputExtractor(metadata, stateMachine.getSession()).extractInputs(plan.getRoot());
-            stateMachine.setInputs(inputs);
-
-            // extract output
-            Optional<Output> output = new OutputExtractor().extractOutput(plan.getRoot());
-            stateMachine.setOutput(output);
-
-            // fragment the plan
-            // the variableAllocator is finally passed to SqlQueryScheduler for runtime cost-based optimizations
-            variableAllocator.set(new VariableAllocator(plan.getTypes().allVariables()));
-            SubPlan fragmentedPlan = getSession().getRuntimeStats().profileNanos(
-                    FRAGMENT_PLAN_TIME_NANOS,
-                    () -> planFragmenter.createSubPlans(stateMachine.getSession(), plan, false, idAllocator, variableAllocator.get(), stateMachine.getWarningCollector()));
-
-            // record analysis time
-            stateMachine.endAnalysis();
-
-            boolean explainAnalyze = queryAnalysis.isExplainAnalyzeQuery();
-            return new PlanRoot(fragmentedPlan, !explainAnalyze, queryAnalysis.extractConnectors());
+            Span querySpan = getSession().getQuerySpan();
+            Span span = (!TelemetryConfig.getTracingEnabled()) ? null : OpenTelemetryManager.getTracer().spanBuilder(TracingEnum.PLANNER.getName())
+                    .setParent((querySpan != null) ? Context.current().with(querySpan) : Context.current())
+                    .startSpan();
+            try (ScopedSpan ignored = scopedSpan(span)) {
+                return OptimizePlan(planNode);
+            }
         }
         catch (StackOverflowError e) {
             throw new PrestoException(NOT_SUPPORTED, "statement is too large (stack overflow during analysis)", e);
         }
+    }
+
+    private PlanRoot optimizePlan(PlanNode planNode)
+    {
+        Optimizer optimizer = new Optimizer(
+                stateMachine.getSession(),
+                metadata,
+                planOptimizers,
+                planChecker,
+                analyzerContext.getVariableAllocator(),
+                idAllocator,
+                stateMachine.getWarningCollector(),
+                statsCalculator,
+                costCalculator,
+                false);
+
+        Plan plan;
+        try (ScopedSpan ignored = scopedSpan(OpenTelemetryManager.getTracer(), "Plan Optimizer")) {
+            plan = getSession().getRuntimeStats().profileNanos(
+                    OPTIMIZER_TIME_NANOS,
+                    () -> optimizer.validateAndOptimizePlan(planNode, OPTIMIZED_AND_VALIDATED, OpenTelemetryManager.getTracer()));
+        }
+
+        queryPlan.set(plan);
+        stateMachine.setPlanStatsAndCosts(plan.getStatsAndCosts());
+        stateMachine.setPlanIdNodeMap(plan.getPlanIdNodeMap());
+        List<CanonicalPlanWithInfo> canonicalPlanWithInfos = getSession().getRuntimeStats().profileNanos(
+                GET_CANONICAL_INFO_TIME_NANOS,
+                () -> getCanonicalInfo(getSession(), plan.getRoot(), planCanonicalInfoProvider));
+        stateMachine.setPlanCanonicalInfo(canonicalPlanWithInfos);
+
+        // extract inputs
+        try (ScopedSpan ignored = scopedSpan(OpenTelemetryManager.getTracer(), "extract-inputs")) {
+            List<Input> inputs = new InputExtractor(metadata, stateMachine.getSession()).extractInputs(plan.getRoot());
+            stateMachine.setInputs(inputs);
+        }
+
+        // extract output
+        try (ScopedSpan ignored = scopedSpan(OpenTelemetryManager.getTracer(), "extract-outputs")) {
+        Optional<Output> output = new OutputExtractor().extractOutput(plan.getRoot());
+        stateMachine.setOutput(output);
+
+        // fragment the plan
+        // the variableAllocator is finally passed to SqlQueryScheduler for runtime cost-based optimizations
+        variableAllocator.set(new VariableAllocator(plan.getTypes().allVariables()));
+        SubPlan fragmentedPlan;
+
+        try (ScopedSpan ignored = scopedSpan(OpenTelemetryManager.getTracer(), "fragment-plan")) {
+            fragmentedPlan = getSession().getRuntimeStats().profileNanos(
+                    FRAGMENT_PLAN_TIME_NANOS,
+                    () -> planFragmenter.createSubPlans(stateMachine.getSession(), plan, false,
+                            idAllocator, variableAllocator.get(), stateMachine.getWarningCollector()));
+        }
+
+        // record analysis time
+        stateMachine.endAnalysis();
+
+        boolean explainAnalyze = queryAnalysis.isExplainAnalyzeQuery();
+        return new PlanRoot(fragmentedPlan, !explainAnalyze, queryAnalysis.extractConnectors());
     }
 
     private PlanRoot runCreateLogicalPlanAsync()
@@ -675,7 +716,8 @@ public class SqlQueryExecution
                 planChecker,
                 metadata,
                 sqlParser,
-                partialResultQueryManager);
+                partialResultQueryManager,
+                OpenTelemetryManager.getTracer());
 
         queryScheduler.set(scheduler);
 
@@ -987,7 +1029,8 @@ public class SqlQueryExecution
                     costCalculator,
                     planChecker,
                     partialResultQueryManager,
-                    historyBasedPlanStatisticsManager.getPlanCanonicalInfoProvider());
+                    historyBasedPlanStatisticsManager.getPlanCanonicalInfoProvider(),
+                    OpenTelemetryManager.getTracer());
         }
     }
 }

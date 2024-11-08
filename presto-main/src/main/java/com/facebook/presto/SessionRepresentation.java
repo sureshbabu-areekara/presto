@@ -33,6 +33,7 @@ import com.facebook.presto.spi.session.ResourceEstimates;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
+import io.opentelemetry.api.trace.Span;
 
 import java.util.Locale;
 import java.util.Map;
@@ -54,7 +55,6 @@ public final class SessionRepresentation
     private final Optional<String> source;
     private final Optional<String> catalog;
     private final Optional<String> schema;
-    private final Optional<String> traceToken;
     private final TimeZoneKey timeZoneKey;
     private final Locale locale;
     private final Optional<String> remoteUserAddress;
@@ -81,7 +81,6 @@ public final class SessionRepresentation
             @JsonProperty("source") Optional<String> source,
             @JsonProperty("catalog") Optional<String> catalog,
             @JsonProperty("schema") Optional<String> schema,
-            @JsonProperty("traceToken") Optional<String> traceToken,
             @JsonProperty("timeZoneKey") TimeZoneKey timeZoneKey,
             @JsonProperty("locale") Locale locale,
             @JsonProperty("remoteUserAddress") Optional<String> remoteUserAddress,
@@ -186,13 +185,6 @@ public final class SessionRepresentation
     public Optional<String> getSchema()
     {
         return schema;
-    }
-
-    @ThriftField(9)
-    @JsonProperty
-    public Optional<String> getTraceToken()
-    {
-        return traceToken;
     }
 
     @ThriftField(10)
@@ -307,6 +299,8 @@ public final class SessionRepresentation
     {
         return new Session(
                 new QueryId(queryId),
+                Span.getInvalid(),
+                Span.getInvalid(),
                 transactionId,
                 clientTransactionSupport,
                 new Identity(
@@ -320,7 +314,6 @@ public final class SessionRepresentation
                 source,
                 catalog,
                 schema,
-                traceToken,
                 timeZoneKey,
                 locale,
                 remoteUserAddress,

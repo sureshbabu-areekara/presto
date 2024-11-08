@@ -11,28 +11,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.facebook.presto.execution;
+package com.facebook.presto.common.util;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import io.airlift.units.Duration;
-import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.context.propagation.TextMapGetter;
 
-import java.io.Closeable;
+import java.util.Collections;
 
-public interface SplitRunner
-        extends Closeable
+public class TextMapGetterImpl
+        implements TextMapGetter<Object>
 {
-    boolean isFinished();
-
-    ListenableFuture<?> processFor(Duration duration);
-
-    String getInfo();
+    @Override
+    public Iterable<String> keys(Object carrier)
+    {
+        return Collections.singletonList("traceparent");
+    }
 
     @Override
-    void close();
-
-    default Span getPipelineSpan()
+    public String get(Object carrier, String key)
     {
+        if ("traceparent".equals(key)) {
+            return (String) carrier;
+        }
         return null;
     }
 }

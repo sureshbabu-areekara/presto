@@ -29,6 +29,7 @@ import com.facebook.presto.spi.security.AuthorizedIdentity;
 import com.facebook.presto.spi.security.Identity;
 import com.facebook.presto.sql.SqlEnvironmentConfig;
 import com.facebook.presto.transaction.TransactionManager;
+import io.opentelemetry.api.trace.Span;
 
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
@@ -74,7 +75,7 @@ public class QuerySessionSupplier
     }
 
     @Override
-    public Session createSession(QueryId queryId, SessionContext context, WarningCollectorFactory warningCollectorFactory)
+    public Session createSession(QueryId queryId, Span querySpan, Span rootSpan, SessionContext context, WarningCollectorFactory warningCollectorFactory)
     {
         Session session = createSessionBuilder(queryId, context, warningCollectorFactory).build();
         if (context.getTransactionId().isPresent()) {
@@ -88,6 +89,8 @@ public class QuerySessionSupplier
     {
         SessionBuilder sessionBuilder = Session.builder(sessionPropertyManager)
                 .setQueryId(queryId)
+                .setQuerySpan(querySpan)
+                .setRootSpan(rootSpan)
                 .setIdentity(authenticateIdentity(queryId, context))
                 .setSource(context.getSource())
                 .setCatalog(context.getCatalog())
@@ -96,9 +99,7 @@ public class QuerySessionSupplier
                 .setUserAgent(context.getUserAgent())
                 .setClientInfo(context.getClientInfo())
                 .setClientTags(context.getClientTags())
-                .setTraceToken(context.getTraceToken())
                 .setResourceEstimates(context.getResourceEstimates())
-                .setTracer(context.getTracer())
                 .setRuntimeStats(context.getRuntimeStats());
 
         if (forcedSessionTimeZone.isPresent()) {

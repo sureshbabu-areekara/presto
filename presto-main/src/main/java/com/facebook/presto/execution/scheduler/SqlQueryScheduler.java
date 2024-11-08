@@ -55,8 +55,10 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.sun.management.ThreadMXBean;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
 
-import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -149,6 +151,7 @@ public class SqlQueryScheduler
     private final AtomicBoolean scheduling = new AtomicBoolean();
 
     private final PartialResultQueryTaskTracker partialResultQueryTaskTracker;
+    private Span schedulerSpan;
 
     public static SqlQueryScheduler createSqlQueryScheduler(
             LocationFactory locationFactory,
@@ -171,7 +174,8 @@ public class SqlQueryScheduler
             PlanChecker planChecker,
             Metadata metadata,
             SqlParser sqlParser,
-            PartialResultQueryManager partialResultQueryManager)
+            PartialResultQueryManager partialResultQueriesHandler,
+            Tracer tracer)
     {
         SqlQueryScheduler sqlQueryScheduler = new SqlQueryScheduler(
                 locationFactory,
@@ -260,6 +264,8 @@ public class SqlQueryScheduler
 
         this.maxConcurrentMaterializations = getMaxConcurrentMaterializations(session);
         this.partialResultQueryTaskTracker = new PartialResultQueryTaskTracker(partialResultQueryManager, getPartialResultsCompletionRatioThreshold(session), getPartialResultsMaxExecutionTimeMultiplier(session), warningCollector);
+
+        this.schedulerSpan = null;  //this scheduler is not used. SchedulerSpan created in LegacySqlQueryScheduler
     }
 
     // this is a separate method to ensure that the `this` reference is not leaked during construction

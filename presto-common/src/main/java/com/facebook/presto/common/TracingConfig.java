@@ -11,28 +11,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.facebook.presto.execution;
+package com.facebook.presto.common;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import io.airlift.units.Duration;
-import io.opentelemetry.api.trace.Span;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.io.Closeable;
+import javax.annotation.concurrent.Immutable;
 
-public interface SplitRunner
-        extends Closeable
+@Immutable
+public class TracingConfig
 {
-    boolean isFinished();
+    private boolean tracingEnabled;
 
-    ListenableFuture<?> processFor(Duration duration);
-
-    String getInfo();
-
-    @Override
-    void close();
-
-    default Span getPipelineSpan()
+    @JsonCreator
+    public TracingConfig(
+            @JsonProperty("tracingEnabled") boolean tracingEnabled)
     {
-        return null;
+        this.tracingEnabled = tracingEnabled;
+    }
+
+    @JsonProperty
+    public boolean isTracingEnabled()
+    {
+        return tracingEnabled;
     }
 }
