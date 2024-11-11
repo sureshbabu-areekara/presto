@@ -268,8 +268,8 @@ public class QueryStateMachine
             TransactionId transactionId = transactionManager.beginTransaction(true);
             session = session.beginTransactionId(transactionId, transactionManager, accessControl);
         }
-		
-		Span querySpan = session.getQuerySpan();
+
+        Span querySpan = session.getQuerySpan();
         Span rootSpan = session.getRootSpan();
 
         if (TelemetryConfig.getTracingEnabled() && Objects.nonNull(querySpan)) {

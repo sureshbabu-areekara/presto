@@ -541,6 +541,7 @@ public final class SqlStageExecution
                 nodeTaskMap.createTaskStatsTracker(node, taskId),
                 summarizeTaskInfo,
                 tableWriteInfo,
+                stateMachine,
                 stateMachine.getStageSpan());
 
         completeSources.forEach(task::noMoreSplits);

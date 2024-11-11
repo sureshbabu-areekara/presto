@@ -229,7 +229,6 @@ public class AccessControlManager
             requireNonNull(identity, "identity is null");
             requireNonNull(catalogName, "catalog is null");
 
-
             authenticationCheck(() -> systemAccessControl.get().checkCanAccessCatalog(identity, context, catalogName));
         }
     }

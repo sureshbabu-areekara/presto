@@ -52,7 +52,7 @@ public class TrackingRemoteTaskFactory
             boolean summarizeTaskInfo,
             TableWriteInfo tableWriteInfo,
             SchedulerStatsTracker schedulerStatsTracker,
-			Span stageSpan)
+            Span stageSpan)
     {
         RemoteTask task = remoteTaskFactory.createRemoteTask(session,
                 taskId,
@@ -64,7 +64,7 @@ public class TrackingRemoteTaskFactory
                 summarizeTaskInfo,
                 tableWriteInfo,
                 schedulerStatsTracker,
-				stageSpan);
+                stageSpan);
 
         task.addStateChangeListener(new UpdateQueryStats(stateMachine));
         return task;

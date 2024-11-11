@@ -59,6 +59,7 @@ import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 
+import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -174,7 +175,7 @@ public class SqlQueryScheduler
             PlanChecker planChecker,
             Metadata metadata,
             SqlParser sqlParser,
-            PartialResultQueryManager partialResultQueriesHandler,
+            PartialResultQueryManager partialResultQueryManager,
             Tracer tracer)
     {
         SqlQueryScheduler sqlQueryScheduler = new SqlQueryScheduler(
@@ -369,7 +370,9 @@ public class SqlQueryScheduler
                         summarizeTaskInfo,
                         remoteTaskFactory,
                         splitSourceFactory,
-                        0).getSectionStages();
+                        0,
+                        OpenTelemetry.noop().getTracer("no-op"),
+                        schedulerSpan).getSectionStages();
         stages.addAll(sectionStages);
 
         return stages.build();
@@ -684,7 +687,9 @@ public class SqlQueryScheduler
                 summarizeTaskInfo,
                 remoteTaskFactory,
                 splitSourceFactory,
-                0);
+                0,
+                OpenTelemetry.noop().getTracer("no-op"),
+                schedulerSpan);
         addStateChangeListeners(sectionExecution);
         Map<StageId, StageExecutionAndScheduler> updatedStageExecutions = sectionExecution.getSectionStages().stream()
                 .collect(toImmutableMap(execution -> execution.getStageExecution().getStageExecutionId().getStageId(), identity()));

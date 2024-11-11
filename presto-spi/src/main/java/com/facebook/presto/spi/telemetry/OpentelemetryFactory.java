@@ -11,14 +11,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.facebook.presto.opentelemetry;
+package com.facebook.presto.spi.telemetry;
 
-public class OpenTelemetryHeaders
+public interface OpentelemetryFactory<T>
 {
-    public static final String PRESTO_W3C_PROPAGATION = "traceparent";
-    public static final String PRESTO_B3_SINGLE_HEADER_PROPAGATION = "b3";
-    public static final String PRESTO_TRACE_TOKEN = "X-Presto-Trace-Token";
-    public static final String PRESTO_BAGGAGE_HEADER = "baggage";
+    String getName();
 
-    private OpenTelemetryHeaders() {}
+    T create();
 }

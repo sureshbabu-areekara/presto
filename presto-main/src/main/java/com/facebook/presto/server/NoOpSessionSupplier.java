@@ -16,9 +16,9 @@ package com.facebook.presto.server;
 import com.facebook.presto.Session;
 import com.facebook.presto.execution.warnings.WarningCollectorFactory;
 import com.facebook.presto.spi.QueryId;
+import io.opentelemetry.api.trace.Span;
 
 import static com.facebook.presto.Session.SessionBuilder;
-import io.opentelemetry.api.trace.Span;
 
 /**
  * Used on workers.
@@ -33,7 +33,7 @@ public class NoOpSessionSupplier
     }
 
     @Override
-    public SessionBuilder createSessionBuilder(QueryId queryId, SessionContext context, WarningCollectorFactory warningCollectorFactory)
+    public SessionBuilder createSessionBuilder(QueryId queryId, Span querySpan, Span rootSpan, SessionContext context, WarningCollectorFactory warningCollectorFactory)
     {
         throw new UnsupportedOperationException();
     }

@@ -37,5 +37,5 @@ public interface RemoteTaskFactory
             boolean summarizeTaskInfo,
             TableWriteInfo tableWriteInfo,
             SchedulerStatsTracker schedulerStatsTracker,
-			Span stagespan);
+            Span stagespan);
 }

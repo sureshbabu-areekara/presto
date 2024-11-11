@@ -3044,6 +3044,8 @@ public abstract class AbstractTestQueries
     {
         Session session = new Session(
                 getSession().getQueryId(),
+                null,
+                null,
                 Optional.empty(),
                 getSession().isClientTransactionSupport(),
                 getSession().getIdentity(),
@@ -3071,7 +3073,6 @@ public abstract class AbstractTestQueries
                 getQueryRunner().getMetadata().getSessionPropertyManager(),
                 getSession().getPreparedStatements(),
                 ImmutableMap.of(),
-                getSession().getTracer(),
                 getSession().getWarningCollector(),
                 getSession().getRuntimeStats(),
                 getSession().getQueryType());

@@ -117,7 +117,6 @@ public final class HttpRequestSessionContext
     private final Map<SqlFunctionId, SqlInvokedFunction> sessionFunctions;
 
     private final Optional<SessionPropertyManager> sessionPropertyManager;
-    private final Optional<Tracer> tracer;
     private final RuntimeStats runtimeStats = new RuntimeStats();
 
     public HttpRequestSessionContext(HttpServletRequest servletRequest, SqlParserOptions sqlParserOptions)

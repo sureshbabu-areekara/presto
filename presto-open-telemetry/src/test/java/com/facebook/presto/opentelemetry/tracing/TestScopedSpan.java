@@ -11,18 +11,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.facebook.presto.opentelemetry;
+package com.facebook.presto.opentelemetry.tracing;
 
-import com.facebook.presto.spi.Plugin;
-import com.facebook.presto.spi.tracing.TracerProvider;
-import com.google.common.collect.ImmutableList;
+import com.facebook.presto.common.TelemetryConfig;
+import io.opentelemetry.api.OpenTelemetry;
+import org.testng.annotations.Test;
 
-public class OpenTelemetryPlugin
-        implements Plugin
+import static org.testng.Assert.assertNotNull;
+
+public class TestScopedSpan
 {
-    @Override
-    public Iterable<TracerProvider> getTracerProviders()
+    @Test
+    public void testScopedSpan()
     {
-        return ImmutableList.of(new OpenTelemetryTracerProvider());
+        assertNotNull(ScopedSpan.scopedSpan(OpenTelemetry.noop().getTracer("no-op"), "no-op"));
+
+        TelemetryConfig.getTelemetryConfig().setTracingEnabled(true);
+        assertNotNull(ScopedSpan.scopedSpan(OpenTelemetry.noop().getTracer("no-op"), "no-op"));
     }
 }

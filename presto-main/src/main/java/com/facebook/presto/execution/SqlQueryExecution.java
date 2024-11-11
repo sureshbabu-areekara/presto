@@ -73,7 +73,6 @@ import io.airlift.units.Duration;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
-import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
 
 import javax.annotation.concurrent.ThreadSafe;
@@ -155,7 +154,7 @@ public class SqlQueryExecution
     private final AnalyzerContext analyzerContext;
     private final CompletableFuture<PlanRoot> planFuture;
     private final AtomicBoolean planFutureLocked = new AtomicBoolean();
-	private final Tracer tracer;
+    private final Tracer tracer;
 
     private SqlQueryExecution(
             QueryAnalyzer queryAnalyzer,
@@ -213,7 +212,7 @@ public class SqlQueryExecution
             // analyze query
             requireNonNull(preparedQuery, "preparedQuery is null");
 
-			Span querySpan = getSession().getQuerySpan();
+            Span querySpan = getSession().getQuerySpan();
             Span span = (!TelemetryConfig.getTracingEnabled()) ? null : OpenTelemetryManager.getTracer().spanBuilder(TracingEnum.ANALYZER.getName())
                     .setParent((querySpan != null) ? Context.current().with(querySpan) : Context.current())
                     .startSpan();
@@ -579,7 +578,7 @@ public class SqlQueryExecution
                     .setParent((querySpan != null) ? Context.current().with(querySpan) : Context.current())
                     .startSpan();
             try (ScopedSpan ignored = scopedSpan(span)) {
-                return OptimizePlan(planNode);
+                return optimizePlan(planNode);
             }
         }
         catch (StackOverflowError e) {
@@ -624,26 +623,27 @@ public class SqlQueryExecution
 
         // extract output
         try (ScopedSpan ignored = scopedSpan(OpenTelemetryManager.getTracer(), "extract-outputs")) {
-        Optional<Output> output = new OutputExtractor().extractOutput(plan.getRoot());
-        stateMachine.setOutput(output);
+            Optional<Output> output = new OutputExtractor().extractOutput(plan.getRoot());
+            stateMachine.setOutput(output);
 
-        // fragment the plan
-        // the variableAllocator is finally passed to SqlQueryScheduler for runtime cost-based optimizations
-        variableAllocator.set(new VariableAllocator(plan.getTypes().allVariables()));
-        SubPlan fragmentedPlan;
+            // fragment the plan
+            // the variableAllocator is finally passed to SqlQueryScheduler for runtime cost-based optimizations
+            variableAllocator.set(new VariableAllocator(plan.getTypes().allVariables()));
+            SubPlan fragmentedPlan;
 
-        try (ScopedSpan ignored = scopedSpan(OpenTelemetryManager.getTracer(), "fragment-plan")) {
-            fragmentedPlan = getSession().getRuntimeStats().profileNanos(
-                    FRAGMENT_PLAN_TIME_NANOS,
-                    () -> planFragmenter.createSubPlans(stateMachine.getSession(), plan, false,
-                            idAllocator, variableAllocator.get(), stateMachine.getWarningCollector()));
+            try (ScopedSpan spanIgnored = scopedSpan(OpenTelemetryManager.getTracer(), "fragment-plan")) {
+                fragmentedPlan = getSession().getRuntimeStats().profileNanos(
+                        FRAGMENT_PLAN_TIME_NANOS,
+                        () -> planFragmenter.createSubPlans(stateMachine.getSession(), plan, false,
+                                idAllocator, variableAllocator.get(), stateMachine.getWarningCollector()));
+            }
+
+            // record analysis time
+            stateMachine.endAnalysis();
+
+            boolean explainAnalyze = queryAnalysis.isExplainAnalyzeQuery();
+            return new PlanRoot(fragmentedPlan, !explainAnalyze, queryAnalysis.extractConnectors());
         }
-
-        // record analysis time
-        stateMachine.endAnalysis();
-
-        boolean explainAnalyze = queryAnalysis.isExplainAnalyzeQuery();
-        return new PlanRoot(fragmentedPlan, !explainAnalyze, queryAnalysis.extractConnectors());
     }
 
     private PlanRoot runCreateLogicalPlanAsync()

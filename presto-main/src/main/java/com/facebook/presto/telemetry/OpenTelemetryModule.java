@@ -11,39 +11,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.facebook.presto.spi.tracing;
+package com.facebook.presto.telemetry;
 
-public class NoopTracer
-        implements Tracer
+import com.google.inject.Binder;
+import com.google.inject.Module;
+import com.google.inject.Scopes;
+
+import static org.weakref.jmx.guice.ExportBinder.newExporter;
+
+public class OpenTelemetryModule
+        implements Module
 {
     @Override
-    public void addPoint(String annotation)
+    public void configure(Binder binder)
     {
-    }
-
-    @Override
-    public void startBlock(String blockName, String annotation)
-    {
-    }
-
-    @Override
-    public void addPointToBlock(String blockName, String annotation)
-    {
-    }
-
-    @Override
-    public void endBlock(String blockName, String annotation)
-    {
-    }
-
-    @Override
-    public void endTrace(String annotation)
-    {
-    }
-
-    @Override
-    public String getTracerId()
-    {
-        return "noop_dummy_id";
+        binder.bind(OpenTelemetryManager.class).in(Scopes.SINGLETON);
+        newExporter(binder).export(OpenTelemetryManager.class).withGeneratedName();
     }
 }

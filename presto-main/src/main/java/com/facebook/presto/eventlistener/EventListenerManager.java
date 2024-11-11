@@ -131,7 +131,6 @@ public class EventListenerManager
 
     public void splitCompleted(SplitCompletedEvent splitCompletedEvent, Context context, Tracer tracer)
     {
-
         Span splitSpan = (!TelemetryConfig.getTracingEnabled() || TelemetryConfig.getSpanSampling()) ? null : tracer.spanBuilder(TracingEnum.SPLIT.getName())
                 .setParent(context)
                 .setAttribute("QUERY_ID", splitCompletedEvent.getQueryId())

@@ -280,7 +280,7 @@ public final class HttpRemoteTask
             HandleResolver handleResolver,
             ConnectorTypeSerdeManager connectorTypeSerdeManager,
             SchedulerStatsTracker schedulerStatsTracker,
-			OpenTelemetryManager openTelemetryManager,
+            OpenTelemetryManager openTelemetryManager,
             Span stageSpan)
     {
         requireNonNull(session, "session is null");

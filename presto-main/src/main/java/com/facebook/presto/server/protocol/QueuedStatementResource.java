@@ -151,7 +151,6 @@ public class QueuedStatementResource
 
         this.responseExecutor = requireNonNull(executor, "responseExecutor is null").getExecutor();
         this.timeoutExecutor = requireNonNull(executor, "timeoutExecutor is null").getScheduledExecutor();
-        this.tracerProviderManager = requireNonNull(tracerProviderManager, "tracerProviderManager is null");
         this.sessionPropertyManager = sessionPropertyManager;
 
         this.queryRateLimiter = requireNonNull(queryRateLimiter, "queryRateLimiter is null");
@@ -218,7 +217,6 @@ public class QueuedStatementResource
         SessionContext sessionContext = new HttpRequestSessionContext(
                 servletRequest,
                 sqlParserOptions,
-                tracerProviderManager.getTracerProvider(),
                 Optional.of(sessionPropertyManager));
         Query query = new Query(statement, sessionContext, dispatchManager, executingQueryResponseProvider, 0);
         queries.put(query.getQueryId(), query);

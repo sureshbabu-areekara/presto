@@ -121,6 +121,7 @@ public class PrestoServer
                 new SmileModule(),
                 new JaxrsModule(true),
                 new MBeanModule(),
+                new OpenTelemetryModule(),
                 new JmxModule(),
                 new JmxHttpModule(),
                 new LogJmxModule(),

@@ -188,12 +188,12 @@ public final class Session
     {
         return querySpan;
     }
-	
+
     public Span getRootSpan()
     {
         return rootSpan;
     }
-	
+
     public String getUser()
     {
         return identity.getUser();
@@ -248,7 +248,6 @@ public final class Session
     {
         return clientTags;
     }
-
 
     public ResourceEstimates getResourceEstimates()
     {
@@ -538,7 +537,6 @@ public final class Session
                 .add("source", source.orElse(null))
                 .add("catalog", catalog.orElse(null))
                 .add("schema", schema.orElse(null))
-                .add("traceToken", traceToken.orElse(null))
                 .add("timeZoneKey", timeZoneKey)
                 .add("locale", locale)
                 .add("remoteUserAddress", remoteUserAddress.orElse(null))
@@ -549,6 +547,16 @@ public final class Session
                 .add("startTime", startTime)
                 .omitNullValues()
                 .toString();
+    }
+
+    private Optional<String> querySpanString()
+    {
+        return Optional.ofNullable(querySpan)
+                .filter(span -> span.getSpanContext().isValid())
+                .map(span -> toStringHelper("Span")
+                        .add("spanId", span.getSpanContext().getSpanId())
+                        .add("traceId", span.getSpanContext().getTraceId())
+                        .toString());
     }
 
     public static SessionBuilder builder(SessionPropertyManager sessionPropertyManager)
@@ -633,12 +641,6 @@ public final class Session
         {
             checkArgument(catalogSessionProperties.isEmpty(), "Catalog session properties cannot be set if there is an open transaction");
             this.transactionId = transactionId;
-            return this;
-        }
-
-        public SessionBuilder setTracer(Optional<Tracer> tracer)
-        {
-            this.tracer = requireNonNull(tracer, "tracer is null");
             return this;
         }
 

@@ -404,8 +404,8 @@ public class TaskResource
     {
         requireNonNull(taskId, "taskId is null");
         requireNonNull(bufferId, "bufferId is null");
-		
-		TextMapPropagator propagator = openTelemetryManager.getOpenTelemetry().getPropagators().getTextMapPropagator();
+
+        TextMapPropagator propagator = openTelemetryManager.getOpenTelemetry().getPropagators().getTextMapPropagator();
         io.opentelemetry.context.Context context = propagator.extract(io.opentelemetry.context.Context.current(), traceParent, new TextMapGetterImpl());
         Tracer tracer = openTelemetryManager.getTracer();
 
@@ -436,7 +436,7 @@ public class TaskResource
     public Response taskResultsHeaders(
             @PathParam("taskId") TaskId taskId,
             @PathParam("bufferId") OutputBufferId bufferId,
-            @PathParam("token") final long unused,
+            @PathParam("token") final long token,
             @HeaderParam("traceparent") String traceParent)
     {
         TextMapPropagator propagator = openTelemetryManager.getOpenTelemetry().getPropagators().getTextMapPropagator();
@@ -450,7 +450,7 @@ public class TaskResource
         }
 
         taskManager.acknowledgeTaskResults(taskId, bufferId, token);
-        return taskResultsHeaders(taskId, bufferId);
+        return taskResultsHeaders(taskId, bufferId, traceParent);
     }
 
     @DELETE

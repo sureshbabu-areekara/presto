@@ -98,7 +98,7 @@ public class StageExecutionStateMachine
     private final AtomicLong currentTotalMemory = new AtomicLong();
 
     private final RuntimeStats runtimeStats = new RuntimeStats();
-	private Span stageSpan;
+    private Span stageSpan;
     private Tracer tracer;
 
     public StageExecutionStateMachine(
@@ -120,7 +120,7 @@ public class StageExecutionStateMachine
 
         stageSpan = (!TelemetryConfig.getTracingEnabled()) ? null : tracer.spanBuilder(TracingEnum.STAGE.getName())
                 .setParent((schedulerspan != null) ? Context.current().with(schedulerspan) : Context.current())
-                .setAttribute("QUERY_ID", stageExecutionId.stageId.getQueryId().toString())
+                .setAttribute("QUERY_ID", stageExecutionId.getStageId().getQueryId().toString())
                 .setAttribute("STAGE_ID", stageExecutionId.getStageId().toString())
                 .startSpan();
 
