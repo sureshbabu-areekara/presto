@@ -615,7 +615,7 @@ public class PrestoSparkQueryExecutionFactory
                 credentialsProviders,
                 authenticatorProviders);
 
-        SessionBuilder sessionBuilder = sessionSupplier.createSessionBuilder(queryId, sessionContext, warningCollectorFactory);
+        SessionBuilder sessionBuilder = sessionSupplier.createSessionBuilder(queryId, Span.getInvalid(), Span.getInvalid(), sessionContext, warningCollectorFactory);
         sessionPropertyDefaults.applyDefaultProperties(sessionBuilder, Optional.empty(), Optional.empty());
 
         if (!executionStrategies.isEmpty()) {

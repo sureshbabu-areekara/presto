@@ -34,17 +34,17 @@ import com.facebook.presto.server.testing.TestingPrestoServer;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.PrestoWarning;
 import com.facebook.presto.spi.QueryId;
-import com.facebook.presto.testing.TestingOpenTelemetryManager;
 import com.facebook.presto.spi.WarningCode;
 import com.facebook.presto.spi.eventlistener.QueryCompletedEvent;
 import com.facebook.presto.spi.memory.MemoryPoolId;
+import com.facebook.presto.testing.TestingOpenTelemetryManager;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import io.opentelemetry.sdk.trace.data.SpanData;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
+import io.opentelemetry.sdk.trace.data.SpanData;
 import org.intellij.lang.annotations.Language;
 import org.joda.time.DateTime;
 import org.testng.annotations.AfterClass;
@@ -123,8 +123,8 @@ public class TestQueryManager
         QueryId queryId = dispatchManager.createQueryId();
         dispatchManager.createQuery(
                         queryId,
-						null,
-						null,
+                        null,
+                        null,
                         "slug",
                         0,
                         new TestingSessionContext(TEST_SESSION),
@@ -228,8 +228,8 @@ public class TestQueryManager
         }
         dispatchManager.createQuery(
                         queryId,
-						null,
-						null,
+                        null,
+                        null,
                         "slug",
                         0,
                         new TestingSessionContext(TEST_SESSION),
@@ -267,8 +267,8 @@ public class TestQueryManager
         for (int i = 0; i < queryCount; i++) {
             dispatchManager.createQuery(
                             dispatchManager.createQueryId(),
-							null,
-							null,
+                            null,
+                            null,
                             "slug",
                             0,
                             new TestingSessionContext(TEST_SESSION),

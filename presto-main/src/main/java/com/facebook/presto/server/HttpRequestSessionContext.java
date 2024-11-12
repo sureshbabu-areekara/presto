@@ -98,7 +98,6 @@ public final class HttpRequestSessionContext
     private final List<X509Certificate> certificates;
 
     private final String source;
-    private final Optional<String> traceToken;
     private final String userAgent;
     private final String remoteUserAddress;
     private final String timeZoneId;

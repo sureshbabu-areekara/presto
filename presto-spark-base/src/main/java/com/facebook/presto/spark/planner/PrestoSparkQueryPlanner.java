@@ -95,7 +95,8 @@ public class PrestoSparkQueryPlanner
             CostCalculator costCalculator,
             AccessControl accessControl,
             PlanChecker planChecker,
-            HistoryBasedPlanStatisticsManager historyBasedPlanStatisticsManager)
+            HistoryBasedPlanStatisticsManager historyBasedPlanStatisticsManager,
+            Tracer tracer)
     {
         this.sqlParser = requireNonNull(sqlParser, "sqlParser is null");
         this.optimizers = requireNonNull(optimizers, "optimizers is null");
