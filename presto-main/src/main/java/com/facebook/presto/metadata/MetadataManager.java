@@ -1682,17 +1682,23 @@ public class MetadataManager
     @Override
     public void dropConstraint(Session session, TableHandle tableHandle, Optional<String> constraintName, Optional<String> columnName)
     {
-        ConnectorId connectorId = tableHandle.getConnectorId();
-        ConnectorMetadata metadata = getMetadataForWrite(session, connectorId);
-        metadata.dropConstraint(session.toConnectorSession(connectorId), tableHandle.getConnectorHandle(), constraintName, columnName);
+        Span span = startSpan(TracingEnum.DROP_CONSTRAINT.getName(), tableHandle);
+        try (ScopedSpan ignored = scopedSpan(span, skipSpan)) {
+            ConnectorId connectorId = tableHandle.getConnectorId();
+            ConnectorMetadata metadata = getMetadataForWrite(session, connectorId);
+            metadata.dropConstraint(session.toConnectorSession(connectorId), tableHandle.getConnectorHandle(), constraintName, columnName);
+        }
     }
 
     @Override
     public void addConstraint(Session session, TableHandle tableHandle, TableConstraint<String> tableConstraint)
     {
-        ConnectorId connectorId = tableHandle.getConnectorId();
-        ConnectorMetadata metadata = getMetadataForWrite(session, connectorId);
-        metadata.addConstraint(session.toConnectorSession(connectorId), tableHandle.getConnectorHandle(), tableConstraint);
+        Span span = startSpan(TracingEnum.ADD_CONSTRAINT.getName(), tableHandle);
+        try (ScopedSpan ignored = scopedSpan(span, skipSpan)) {
+            ConnectorId connectorId = tableHandle.getConnectorId();
+            ConnectorMetadata metadata = getMetadataForWrite(session, connectorId);
+            metadata.addConstraint(session.toConnectorSession(connectorId), tableHandle.getConnectorHandle(), tableConstraint);
+        }
     }
 
     private ViewDefinition deserializeView(String data)

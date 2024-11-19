@@ -847,32 +847,36 @@ public class AccessControlManager
     @Override
     public void checkCanDropConstraint(TransactionId transactionId, Identity identity, AccessControlContext context, QualifiedObjectName tableName)
     {
-        requireNonNull(identity, "identity is null");
-        requireNonNull(tableName, "tableName is null");
+        try (ScopedSpan ignored = scopedSpan(OpenTelemetryManager.getTracer(), "AccessControl." + TracingEnum.CHECK_CAN_DROP_CONSTRAINT.getName(), skipSpan)) {
+            requireNonNull(identity, "identity is null");
+            requireNonNull(tableName, "tableName is null");
 
-        authenticationCheck(() -> checkCanAccessCatalog(identity, context, tableName.getCatalogName()));
+            authenticationCheck(() -> checkCanAccessCatalog(identity, context, tableName.getCatalogName()));
 
-        authorizationCheck(() -> systemAccessControl.get().checkCanDropConstraint(identity, context, toCatalogSchemaTableName(tableName)));
+            authorizationCheck(() -> systemAccessControl.get().checkCanDropConstraint(identity, context, toCatalogSchemaTableName(tableName)));
 
-        CatalogAccessControlEntry entry = getConnectorAccessControl(transactionId, tableName.getCatalogName());
-        if (entry != null) {
-            authorizationCheck(() -> entry.getAccessControl().checkCanDropConstraint(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(tableName.getCatalogName()), context, toSchemaTableName(tableName)));
+            CatalogAccessControlEntry entry = getConnectorAccessControl(transactionId, tableName.getCatalogName());
+            if (entry != null) {
+                authorizationCheck(() -> entry.getAccessControl().checkCanDropConstraint(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(tableName.getCatalogName()), context, toSchemaTableName(tableName)));
+            }
         }
     }
 
     @Override
     public void checkCanAddConstraints(TransactionId transactionId, Identity identity, AccessControlContext context, QualifiedObjectName tableName)
     {
-        requireNonNull(identity, "identity is null");
-        requireNonNull(tableName, "tableName is null");
+        try (ScopedSpan ignored = scopedSpan(OpenTelemetryManager.getTracer(), "AccessControl." + TracingEnum.CHECK_CAN_ADD_CONSTRAINTS.getName(), skipSpan)) {
+            requireNonNull(identity, "identity is null");
+            requireNonNull(tableName, "tableName is null");
 
-        authenticationCheck(() -> checkCanAccessCatalog(identity, context, tableName.getCatalogName()));
+            authenticationCheck(() -> checkCanAccessCatalog(identity, context, tableName.getCatalogName()));
 
-        authorizationCheck(() -> systemAccessControl.get().checkCanAddConstraint(identity, context, toCatalogSchemaTableName(tableName)));
+            authorizationCheck(() -> systemAccessControl.get().checkCanAddConstraint(identity, context, toCatalogSchemaTableName(tableName)));
 
-        CatalogAccessControlEntry entry = getConnectorAccessControl(transactionId, tableName.getCatalogName());
-        if (entry != null) {
-            authorizationCheck(() -> entry.getAccessControl().checkCanAddConstraint(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(tableName.getCatalogName()), context, toSchemaTableName(tableName)));
+            CatalogAccessControlEntry entry = getConnectorAccessControl(transactionId, tableName.getCatalogName());
+            if (entry != null) {
+                authorizationCheck(() -> entry.getAccessControl().checkCanAddConstraint(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(tableName.getCatalogName()), context, toSchemaTableName(tableName)));
+            }
         }
     }
 

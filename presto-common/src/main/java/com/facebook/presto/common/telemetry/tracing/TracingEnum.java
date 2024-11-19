@@ -119,6 +119,8 @@ public enum TracingEnum
     GET_MATERIALIZED_VIEW("getMaterializedView", ""),
     GET_CONNECTOR_CAPABILITIES("getConnectorCapabilities", ""),
     GET_TABLE_LAYOUT_FILTER_COVERAGE("getTableLayoutFilterCoverage", ""),
+    DROP_CONSTRAINT("dropConstraint", ""),
+    ADD_CONSTRAINT("addConstraint", ""),
     DESERIALIZE_VIEW("deserializeView", ""),
     GET_CATALOG_METADATA("getCatalogMetadata", ""),
     GET_CATALOG_METADATA_FOR_WRITE("getCatalogMetadataForWrite", ""),
@@ -178,6 +180,8 @@ public enum TracingEnum
     CHECK_CAN_SHOW_ROLE_GRANTS("checkCanShowRoleGrants", ""),
     GET_ROW_FILTERS("getRowFilters", ""),
     GET_COLUMN_MASKS("getColumnMasks", ""),
+    CHECK_CAN_DROP_CONSTRAINT("checkCanDropConstraint", ""),
+    CHECK_CAN_ADD_CONSTRAINTS("checkCanAddConstraints", ""),
     GET_CONNECTOR_ACCESS_CONTROL("getConnectorAccessControl", "");
 
     private final String name;

@@ -17,6 +17,8 @@ import com.facebook.airlift.concurrent.SetThreadName;
 import com.facebook.airlift.log.Logger;
 import com.facebook.airlift.stats.TimeStat;
 import com.facebook.presto.Session;
+import com.facebook.presto.common.TelemetryConfig;
+import com.facebook.presto.common.telemetry.tracing.TracingEnum;
 import com.facebook.presto.cost.StatsAndCosts;
 import com.facebook.presto.execution.BasicStageExecutionStats;
 import com.facebook.presto.execution.LocationFactory;
@@ -55,9 +57,9 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.sun.management.ThreadMXBean;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
-import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Context;
 
 import java.lang.management.ManagementFactory;
 import java.net.URI;
@@ -68,6 +70,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -153,6 +156,7 @@ public class SqlQueryScheduler
 
     private final PartialResultQueryTaskTracker partialResultQueryTaskTracker;
     private Span schedulerSpan;
+    private final Tracer tracer;
 
     public static SqlQueryScheduler createSqlQueryScheduler(
             LocationFactory locationFactory,
@@ -199,7 +203,8 @@ public class SqlQueryScheduler
                 planChecker,
                 metadata,
                 sqlParser,
-                partialResultQueryManager);
+                partialResultQueryManager,
+                tracer);
         sqlQueryScheduler.initialize();
         return sqlQueryScheduler;
     }
@@ -225,7 +230,8 @@ public class SqlQueryScheduler
             PlanChecker planChecker,
             Metadata metadata,
             SqlParser sqlParser,
-            PartialResultQueryManager partialResultQueryManager)
+            PartialResultQueryManager partialResultQueryManager,
+            Tracer tracer)
     {
         this.locationFactory = requireNonNull(locationFactory, "locationFactory is null");
         this.executionPolicy = requireNonNull(executionPolicy, "schedulerPolicyFactory is null");
@@ -246,6 +252,13 @@ public class SqlQueryScheduler
         this.splitSourceFactory = requireNonNull(splitSourceFactory, "splitSourceFactory is null");
         this.sectionedPlan = extractStreamingSections(plan);
         this.summarizeTaskInfo = summarizeTaskInfo;
+        this.tracer = tracer;
+
+        Span querySpan = queryStateMachine.getSession().getQuerySpan();
+        this.schedulerSpan = (!TelemetryConfig.getTracingEnabled()) ? null : tracer.spanBuilder(TracingEnum.SCHEDULER.getName())
+                .setParent((querySpan != null) ? Context.current().with(querySpan) : Context.current())
+                .setAttribute("QUERY_ID", queryStateMachine.getQueryId().toString())
+                .startSpan();
 
         OutputBufferId rootBufferId = getOnlyElement(rootOutputBuffers.getBuffers().keySet());
         List<StageExecutionAndScheduler> stageExecutions = createStageExecutions(
@@ -265,8 +278,6 @@ public class SqlQueryScheduler
 
         this.maxConcurrentMaterializations = getMaxConcurrentMaterializations(session);
         this.partialResultQueryTaskTracker = new PartialResultQueryTaskTracker(partialResultQueryManager, getPartialResultsCompletionRatioThreshold(session), getPartialResultsMaxExecutionTimeMultiplier(session), warningCollector);
-
-        this.schedulerSpan = null;  //this scheduler is not used. SchedulerSpan created in LegacySqlQueryScheduler
     }
 
     // this is a separate method to ensure that the `this` reference is not leaked during construction
@@ -281,6 +292,9 @@ public class SqlQueryScheduler
                 // output stage was canceled
                 queryStateMachine.transitionToCanceled();
             }
+            if (!Objects.isNull(schedulerSpan)) {
+                schedulerSpan.end();
+            }
         });
 
         for (StageExecutionAndScheduler stageExecutionInfo : stageExecutions.values()) {
@@ -291,10 +305,16 @@ public class SqlQueryScheduler
                 }
                 if (state == FAILED) {
                     queryStateMachine.transitionToFailed(stageExecution.getStageExecutionInfo().getFailureCause().get().toException());
+                    if (!Objects.isNull(schedulerSpan)) {
+                        schedulerSpan.end();
+                    }
                 }
                 else if (state == ABORTED) {
                     // this should never happen, since abort can only be triggered in query clean up after the query is finished
                     queryStateMachine.transitionToFailed(new PrestoException(GENERIC_INTERNAL_ERROR, "Query stage was aborted"));
+                    if (!Objects.isNull(schedulerSpan)) {
+                        schedulerSpan.end();
+                    }
                 }
                 else if (state == FINISHED) {
                     // checks if there's any new sections available for execution and starts the scheduling if any
@@ -371,7 +391,7 @@ public class SqlQueryScheduler
                         remoteTaskFactory,
                         splitSourceFactory,
                         0,
-                        OpenTelemetry.noop().getTracer("no-op"),
+                        tracer,
                         schedulerSpan).getSectionStages();
         stages.addAll(sectionStages);
 
@@ -548,6 +568,9 @@ public class SqlQueryScheduler
         catch (Throwable t) {
             scheduling.set(false);
             queryStateMachine.transitionToFailed(t);
+            if (!Objects.isNull(schedulerSpan)) {
+                schedulerSpan.end();
+            }
             throw t;
         }
         finally {
@@ -558,6 +581,9 @@ public class SqlQueryScheduler
                 }
                 catch (Throwable t) {
                     queryStateMachine.transitionToFailed(t);
+                    if (!Objects.isNull(schedulerSpan)) {
+                        schedulerSpan.end();
+                    }
                     // Self-suppression not permitted
                     if (closeError != t) {
                         closeError.addSuppressed(t);
@@ -688,7 +714,7 @@ public class SqlQueryScheduler
                 remoteTaskFactory,
                 splitSourceFactory,
                 0,
-                OpenTelemetry.noop().getTracer("no-op"),
+                tracer,
                 schedulerSpan);
         addStateChangeListeners(sectionExecution);
         Map<StageId, StageExecutionAndScheduler> updatedStageExecutions = sectionExecution.getSectionStages().stream()
@@ -731,6 +757,9 @@ public class SqlQueryScheduler
                         // output stage was canceled
                         queryStateMachine.transitionToCanceled();
                     }
+                    if (!Objects.isNull(schedulerSpan)) {
+                        schedulerSpan.end();
+                    }
                 });
             }
             stageExecution.addStateChangeListener(state -> {
@@ -739,10 +768,16 @@ public class SqlQueryScheduler
                 }
                 if (state == FAILED) {
                     queryStateMachine.transitionToFailed(stageExecution.getStageExecutionInfo().getFailureCause().get().toException());
+                    if (!Objects.isNull(schedulerSpan)) {
+                        schedulerSpan.end();
+                    }
                 }
                 else if (state == ABORTED) {
                     // this should never happen, since abort can only be triggered in query clean up after the query is finished
                     queryStateMachine.transitionToFailed(new PrestoException(GENERIC_INTERNAL_ERROR, "Query stage was aborted"));
+                    if (!Objects.isNull(schedulerSpan)) {
+                        schedulerSpan.end();
+                    }
                 }
                 else if (state == FINISHED) {
                     // checks if there's any new sections available for execution and starts the scheduling if any

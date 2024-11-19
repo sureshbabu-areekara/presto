@@ -284,8 +284,9 @@ public class DispatchManager
             }
 
             // decode session
-            session = sessionSupplier.createSession(queryId, querySpan, rootSpan, sessionContext, warningCollectorFactory);
+            sessionBuilder = sessionSupplier.createSessionBuilder(queryId, querySpan, rootSpan, sessionContext, warningCollectorFactory);
             session = sessionBuilder.build();
+
             // prepare query
             AnalyzerOptions analyzerOptions = createAnalyzerOptions(session, sessionBuilder.getWarningCollector());
             QueryPreparerProvider queryPreparerProvider = queryPreparerProviderManager.getQueryPreparerProvider(getAnalyzerType(session));

@@ -16,15 +16,15 @@
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>com.google.inject</groupId>
-            <artifactId>guice</artifactId>
-            <scope>test</scope>
-        </dependency>
-
     	<dependency>
             <groupId>com.facebook.airlift</groupId>
             <artifactId>log</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <scope>test</scope>
         </dependency>
 	
         <dependency>
@@ -34,17 +34,14 @@
             <scope>runtime</scope>
         </dependency>
 
-
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-api</artifactId>
-	    <version>1.38.0</version>
         </dependency>
 
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-context</artifactId>
-	    <version>1.38.0</version>
         </dependency>
 
         <dependency>
@@ -81,20 +78,44 @@
         </dependency>
 
         <dependency>
+            <groupId>com.facebook.drift</groupId>
+            <artifactId>drift-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>slice</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>units</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
             <scope>provided</scope>
         </dependency>
 
         <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
-            <scope>test</scope>
+            <groupId>org.openjdk.jol</groupId>
+            <artifactId>jol-core</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>com.google.errorprone</groupId>
             <artifactId>error_prone_annotations</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <scope>test</scope>
         </dependency>
 
     </dependencies>
