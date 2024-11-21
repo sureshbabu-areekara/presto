@@ -13,7 +13,7 @@
  */
 package com.facebook.presto.spi.telemetry;
 
-public interface OpentelemetryFactory<T>
+public interface TelemetryFactory<T>
 {
     String getName();
 

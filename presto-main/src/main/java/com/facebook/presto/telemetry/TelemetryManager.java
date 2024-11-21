@@ -16,7 +16,7 @@ package com.facebook.presto.telemetry;
 import com.facebook.airlift.log.Logger;
 import com.facebook.presto.common.TelemetryConfig;
 import com.facebook.presto.opentelemetry.OpenTelemetryImpl;
-import com.facebook.presto.spi.telemetry.OpentelemetryFactory;
+import com.facebook.presto.spi.telemetry.TelemetryFactory;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;
 
@@ -35,17 +35,17 @@ import static java.util.Objects.requireNonNull;
 /**
  * OpenTelemetryManager class creates and manages OpenTelemetry and Tracer instances.
  */
-public class OpenTelemetryManager
+public class TelemetryManager
 {
-    private static final Logger log = Logger.get(OpenTelemetryManager.class);
-    private static final File OPENTELEMETRY_CONFIGURATION = new File("etc/telemetry.properties");
-    private static final String OPENTELEMETRY_FACTORY_NAME = "otel-factory.name";
+    private static final Logger log = Logger.get(TelemetryManager.class);
+    private static final File OPENTELEMETRY_CONFIGURATION = new File("etc/telemetry-tracing.properties");
+    private static final String TRACING_FACTORY_NAME = "tracing-factory.name";
 
-    private final Map<String, OpentelemetryFactory> openTelemetryFactories = new ConcurrentHashMap<>();
+    private final Map<String, TelemetryFactory> openTelemetryFactories = new ConcurrentHashMap<>();
     private OpenTelemetry configuredOpenTelemetry;
     private static Tracer tracer = OpenTelemetry.noop().getTracer("no-op");   //default tracer
 
-    public OpenTelemetryManager()
+    public TelemetryManager()
     {
         addOpenTelemetryFactory(new OpenTelemetryImpl());
     }
@@ -54,7 +54,7 @@ public class OpenTelemetryManager
      * adds and registers all the OpenTelemetryFactory implementations to support different configurations
      * @param openTelemetryFactory
      */
-    public void addOpenTelemetryFactory(OpentelemetryFactory openTelemetryFactory)
+    public void addOpenTelemetryFactory(TelemetryFactory openTelemetryFactory)
     {
         requireNonNull(openTelemetryFactory, "openTelemetryFactory is null");
         log.debug("Adding telemetry factory");
@@ -78,21 +78,21 @@ public class OpenTelemetryManager
         if (OPENTELEMETRY_CONFIGURATION.exists()) {
             Map<String, String> properties = loadProperties(OPENTELEMETRY_CONFIGURATION);
             checkArgument(
-                    !isNullOrEmpty(properties.get(OPENTELEMETRY_FACTORY_NAME)),
+                    !isNullOrEmpty(properties.get(TRACING_FACTORY_NAME)),
                     "Opentelemetry configuration %s does not contain %s",
                     OPENTELEMETRY_CONFIGURATION.getAbsoluteFile(),
-                    OPENTELEMETRY_FACTORY_NAME);
+                    TRACING_FACTORY_NAME);
 
             if (properties.isEmpty()) {
                 log.debug("telemetry properties not loaded");
             }
 
             properties = new HashMap<>(properties);
-            String openTelemetryFactoryName = properties.remove(OPENTELEMETRY_FACTORY_NAME);
+            String openTelemetryFactoryName = properties.remove(TRACING_FACTORY_NAME);
 
             checkArgument(!isNullOrEmpty(openTelemetryFactoryName), "otel-factory.name property must be present");
 
-            OpentelemetryFactory<OpenTelemetry> openTelemetryFactory = openTelemetryFactories.get(openTelemetryFactoryName);
+            TelemetryFactory<OpenTelemetry> openTelemetryFactory = openTelemetryFactories.get(openTelemetryFactoryName);
             checkState(openTelemetryFactory != null, "Opentelemetry factory %s is not registered", openTelemetryFactoryName);
 
             log.debug("setting telemetry properties");
@@ -123,7 +123,7 @@ public class OpenTelemetryManager
 
     public static void setTracer(Tracer tracer)
     {
-        OpenTelemetryManager.tracer = tracer;
+        TelemetryManager.tracer = tracer;
     }
 
     public OpenTelemetry getOpenTelemetry()

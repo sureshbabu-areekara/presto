@@ -64,7 +64,7 @@ import com.facebook.presto.spi.SplitWeight;
 import com.facebook.presto.spi.plan.PlanNode;
 import com.facebook.presto.spi.plan.PlanNodeId;
 import com.facebook.presto.sql.planner.PlanFragment;
-import com.facebook.presto.telemetry.OpenTelemetryManager;
+import com.facebook.presto.telemetry.TelemetryManager;
 import com.google.common.base.Ticker;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
@@ -157,7 +157,7 @@ public final class HttpRemoteTask
 
     private final TaskId taskId;
     private final Span stageSpan;
-    private final OpenTelemetryManager openTelemetryManager;
+    private final TelemetryManager openTelemetryManager;
     private final Span span;
     private final URI taskLocation;
     private final URI remoteTaskLocation;
@@ -280,7 +280,7 @@ public final class HttpRemoteTask
             HandleResolver handleResolver,
             ConnectorTypeSerdeManager connectorTypeSerdeManager,
             SchedulerStatsTracker schedulerStatsTracker,
-            OpenTelemetryManager openTelemetryManager,
+            TelemetryManager openTelemetryManager,
             Span stageSpan)
     {
         requireNonNull(session, "session is null");

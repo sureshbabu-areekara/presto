@@ -36,7 +36,7 @@ import com.facebook.presto.spiller.SpillSpaceTracker;
 import com.facebook.presto.sql.analyzer.FeaturesConfig;
 import com.facebook.presto.sql.gen.OrderingCompiler;
 import com.facebook.presto.sql.planner.LocalExecutionPlanner;
-import com.facebook.presto.telemetry.OpenTelemetryManager;
+import com.facebook.presto.telemetry.TelemetryManager;
 import com.facebook.presto.testing.TestingOpenTelemetryManager;
 import com.google.common.base.Functions;
 import com.google.common.base.Ticker;
@@ -166,7 +166,7 @@ public class TestSqlTask
                         .withNoMoreBufferIds(),
                 Optional.of(new TableWriteInfo(Optional.empty(), Optional.empty(), Optional.empty())),
                 Context.current(),
-                OpenTelemetryManager.getTracer());
+                TelemetryManager.getTracer());
 
         Thread.sleep(5000);
         List<SpanData> spans = testingOpenTelemetryManager.getFinishedSpanItems();
@@ -191,7 +191,7 @@ public class TestSqlTask
                         .withNoMoreBufferIds(),
                 Optional.of(new TableWriteInfo(Optional.empty(), Optional.empty(), Optional.empty())),
                 Context.current(),
-                OpenTelemetryManager.getTracer());
+                TelemetryManager.getTracer());
 
         Thread.sleep(5000);
         List<SpanData> spans = testingOpenTelemetryManager.getFinishedSpanItems();

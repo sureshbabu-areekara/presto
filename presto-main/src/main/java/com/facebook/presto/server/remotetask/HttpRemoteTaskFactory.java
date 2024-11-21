@@ -48,7 +48,7 @@ import com.facebook.presto.server.InternalCommunicationConfig;
 import com.facebook.presto.server.TaskUpdateRequest;
 import com.facebook.presto.spi.plan.PlanNodeId;
 import com.facebook.presto.sql.planner.PlanFragment;
-import com.facebook.presto.telemetry.OpenTelemetryManager;
+import com.facebook.presto.telemetry.TelemetryManager;
 import com.google.common.collect.Multimap;
 import io.airlift.units.Duration;
 import io.opentelemetry.api.trace.Span;
@@ -103,7 +103,7 @@ public class HttpRemoteTaskFactory
     private final MetadataManager metadataManager;
     private final QueryManager queryManager;
     private final DecayCounter taskUpdateRequestSize;
-    private final OpenTelemetryManager openTelemetryManager;
+    private final TelemetryManager openTelemetryManager;
 
     @Inject
     public HttpRemoteTaskFactory(
@@ -129,7 +129,7 @@ public class HttpRemoteTaskFactory
             QueryManager queryManager,
             HandleResolver handleResolver,
             ConnectorTypeSerdeManager connectorTypeSerdeManager,
-            OpenTelemetryManager openTelemetryManager)
+            TelemetryManager openTelemetryManager)
     {
         this.httpClient = httpClient;
         this.locationFactory = locationFactory;

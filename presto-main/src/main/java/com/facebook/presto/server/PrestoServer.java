@@ -51,8 +51,8 @@ import com.facebook.presto.sql.parser.SqlParserOptions;
 import com.facebook.presto.sql.planner.sanity.PlanCheckerProviderManager;
 import com.facebook.presto.storage.TempStorageManager;
 import com.facebook.presto.storage.TempStorageModule;
-import com.facebook.presto.telemetry.OpenTelemetryManager;
-import com.facebook.presto.telemetry.OpenTelemetryModule;
+import com.facebook.presto.telemetry.TelemetryManager;
+import com.facebook.presto.telemetry.TelemetryModule;
 import com.facebook.presto.ttl.clusterttlprovidermanagers.ClusterTtlProviderManager;
 import com.facebook.presto.ttl.clusterttlprovidermanagers.ClusterTtlProviderManagerModule;
 import com.facebook.presto.ttl.nodettlfetchermanagers.NodeTtlFetcherManager;
@@ -121,7 +121,7 @@ public class PrestoServer
                 new SmileModule(),
                 new JaxrsModule(true),
                 new MBeanModule(),
-                new OpenTelemetryModule(),
+                new TelemetryModule(),
                 new JmxModule(),
                 new JmxHttpModule(),
                 new LogJmxModule(),
@@ -166,7 +166,7 @@ public class PrestoServer
                     injector.getInstance(Announcer.class),
                     injector.getInstance(DriftServer.class));
 
-            injector.getInstance(OpenTelemetryManager.class).loadConfiguredOpenTelemetry();
+            injector.getInstance(TelemetryManager.class).loadConfiguredOpenTelemetry();
             log.info("telemetry configs loaded");
             injector.getInstance(StaticFunctionNamespaceStore.class).loadFunctionNamespaceManagers();
             injector.getInstance(SessionPropertyDefaults.class).loadConfigurationManager();

@@ -15,7 +15,7 @@ package com.facebook.presto.testing;
 
 import com.facebook.presto.common.TelemetryConfig;
 import com.facebook.presto.opentelemetry.OpenTelemetryImpl;
-import com.facebook.presto.telemetry.OpenTelemetryManager;
+import com.facebook.presto.telemetry.TelemetryManager;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.baggage.propagation.W3CBaggagePropagator;
 import io.opentelemetry.api.common.AttributeKey;
@@ -44,11 +44,11 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.FileAssert.fail;
 
 public class TestingOpenTelemetryManager
-        extends OpenTelemetryManager
+        extends TelemetryManager
 {
     private OpenTelemetry openTelemetry = OpenTelemetry.noop();
     private Tracer tracer = openTelemetry.getTracer("no-op");
-    private OpenTelemetryManager openTelemetryManager;
+    private TelemetryManager openTelemetryManager;
     private OpenTelemetryImpl openTelemetryFactory;
     Map<String, String> properties = new HashMap<>();
 
@@ -73,7 +73,7 @@ public class TestingOpenTelemetryManager
         tracer = openTelemetry.getTracer("sdk in mem tracer");
 
         if (TelemetryConfig.getTracingEnabled()) {
-            OpenTelemetryManager.setTracer(tracer);
+            TelemetryManager.setTracer(tracer);
         }
     }
 
@@ -108,7 +108,7 @@ public class TestingOpenTelemetryManager
         properties.put("trace-sampling-ratio", "1.0");
         properties.put("span-sampling", "true");
 
-        openTelemetryManager = new OpenTelemetryManager();
+        openTelemetryManager = new TelemetryManager();
 
         openTelemetryFactory = new OpenTelemetryImpl();
         openTelemetryManager.clearFactories();

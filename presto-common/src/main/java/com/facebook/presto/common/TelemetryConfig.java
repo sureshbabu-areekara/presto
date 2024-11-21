@@ -25,9 +25,7 @@ public class TelemetryConfig
 {
     private static TelemetryConfig telemetryConfig;
 
-    private String spanExporter;
-    private String spanProcessor;
-    private String exporterEndpoint;
+    private String tracingBackendUrl;
     private Integer maxExporterBatchSize;
     private Integer maxQueueSize;
     private Integer exporterTimeout;
@@ -41,10 +39,8 @@ public class TelemetryConfig
      */
     public static class TelemetryConfigConstants
     {
-        private static final String SPAN_EXPORTER = "span-exporter.name";
-        private static final String SPAN_PROCESSOR = "span-processor.name";
         private static final String TRACING_ENABLED = "tracing-enabled";
-        private static final String EXPORTER_ENDPOINT = "exporter-endpoint";
+        private static final String TRACING_BACKEND_URL = "tracing-backend-url";
         private static final String MAX_EXPORTER_BATCH_SIZE = "max-exporter-batch-size";
         private static final String MAX_QUEUE_SIZE = "max-queue-size";
         private static final String SCHEDULE_DELAY = "schedule-delay";
@@ -75,9 +71,7 @@ public class TelemetryConfig
      */
     public void setTelemetryProperties(Map<String, String> telemetryProperties)
     {
-        spanExporter = requireNonNull(telemetryProperties.get(TelemetryConfigConstants.SPAN_EXPORTER), "span exporter cant be null");
-        spanProcessor = requireNonNull(telemetryProperties.get(TelemetryConfigConstants.SPAN_PROCESSOR), "span processor cant be null");
-        exporterEndpoint = requireNonNull(telemetryProperties.get(TelemetryConfigConstants.EXPORTER_ENDPOINT), "exporter endpoint cant be null");
+        tracingBackendUrl = requireNonNull(telemetryProperties.get(TelemetryConfigConstants.TRACING_BACKEND_URL), "exporter endpoint cant be null");
         maxQueueSize = Integer.valueOf(requireNonNull(telemetryProperties.get(TelemetryConfigConstants.MAX_QUEUE_SIZE), "max queue size cant be null"));
         maxExporterBatchSize = Integer.valueOf(requireNonNull(telemetryProperties.get(TelemetryConfigConstants.MAX_EXPORTER_BATCH_SIZE), "max exporter batch size cant be null"));
         exporterTimeout = Integer.valueOf(requireNonNull(telemetryProperties.get(TelemetryConfigConstants.EXPORTER_TIMEOUT), "exporter timeout cant be null"));
@@ -108,33 +102,13 @@ public class TelemetryConfig
     }
 
     /**
-     * Gets span exporter.
-     *
-     * @return the span exporter
-     */
-    public String getSpanExporter()
-    {
-        return this.spanExporter;
-    }
-
-    /**
-     * Gets span processor.
-     *
-     * @return the span processor
-     */
-    public String getSpanProcessor()
-    {
-        return this.spanProcessor;
-    }
-
-    /**
      * Gets exporter endpoint.
      *
      * @return the exporter endpoint
      */
-    public String getExporterEndpoint()
+    public String getTracingBackendUrl()
     {
-        return this.exporterEndpoint;
+        return this.tracingBackendUrl;
     }
 
     /**

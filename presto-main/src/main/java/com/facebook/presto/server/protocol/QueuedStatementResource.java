@@ -31,7 +31,7 @@ import com.facebook.presto.server.SessionContext;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.QueryId;
 import com.facebook.presto.sql.parser.SqlParserOptions;
-import com.facebook.presto.telemetry.OpenTelemetryManager;
+import com.facebook.presto.telemetry.TelemetryManager;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Ordering;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -534,8 +534,8 @@ public class QueuedStatementResource
             synchronized (this) {
                 if (querySubmissionFuture == null) {
                     //start tracing with root span for POST /v1/statement endpoint
-                    Span rootSpan = (!TelemetryConfig.getTracingEnabled()) ? null : OpenTelemetryManager.getTracer().spanBuilder(TracingEnum.ROOT.getName()).setSpanKind(SpanKind.SERVER).startSpan();
-                    Span querySpan = (!TelemetryConfig.getTracingEnabled()) ? null : OpenTelemetryManager.getTracer().spanBuilder(TracingEnum.QUERY.getName())
+                    Span rootSpan = (!TelemetryConfig.getTracingEnabled()) ? null : TelemetryManager.getTracer().spanBuilder(TracingEnum.ROOT.getName()).setSpanKind(SpanKind.SERVER).startSpan();
+                    Span querySpan = (!TelemetryConfig.getTracingEnabled()) ? null : TelemetryManager.getTracer().spanBuilder(TracingEnum.QUERY.getName())
                             .setAttribute("QUERY_ID", queryId.toString())
                             .setParent(io.opentelemetry.context.Context.current().with(rootSpan))
                             .startSpan();

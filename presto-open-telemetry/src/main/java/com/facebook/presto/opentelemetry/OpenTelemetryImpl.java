@@ -15,7 +15,7 @@ package com.facebook.presto.opentelemetry;
 
 import com.facebook.airlift.log.Logger;
 import com.facebook.presto.common.TelemetryConfig;
-import com.facebook.presto.spi.telemetry.OpentelemetryFactory;
+import com.facebook.presto.spi.telemetry.TelemetryFactory;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.baggage.propagation.W3CBaggagePropagator;
 import io.opentelemetry.api.common.AttributeKey;
@@ -35,7 +35,7 @@ import io.opentelemetry.sdk.trace.samplers.Sampler;
 import java.util.concurrent.TimeUnit;
 
 public class OpenTelemetryImpl
-        implements OpentelemetryFactory<OpenTelemetry>
+        implements TelemetryFactory<OpenTelemetry>
 {
     private static final Logger log = Logger.get(OpenTelemetryImpl.class);
     private static final String OTLPGRPC = "otlpgrpc";
@@ -67,33 +67,19 @@ public class OpenTelemetryImpl
             log.debug("telemetry tracing is enabled");
             Resource resource = Resource.create(Attributes.of(AttributeKey.stringKey("service.name"), "Presto"));
 
-            SpanExporter spanExporter = null;
-            //currently supports only otlpgrpc span exporter
-            if (OTLPGRPC.equalsIgnoreCase(telemetryConfig.getSpanExporter())) {
-                log.debug("telemetry span exporter configured");
-                spanExporter = OtlpGrpcSpanExporter.builder()
-                        .setEndpoint(telemetryConfig.getExporterEndpoint())
-                        .setTimeout(10, TimeUnit.SECONDS)
-                        .build();
-            }
-            else {
-                log.debug("telemetry span exporter not set");
-            }
+            SpanExporter spanExporter = OtlpGrpcSpanExporter.builder()
+                    .setEndpoint(telemetryConfig.getTracingBackendUrl())
+                    .setTimeout(10, TimeUnit.SECONDS)
+                    .build();
+            log.debug("telemetry span exporter configured");
 
-            SpanProcessor spanProcessor = null;
-            //currently supports only batch processing
-            if (BATCH.equalsIgnoreCase(telemetryConfig.getSpanProcessor()) && spanExporter != null) {
-                log.debug("telemetry span processor configured");
-                spanProcessor = BatchSpanProcessor.builder(spanExporter)
-                        .setMaxExportBatchSize(telemetryConfig.getMaxExporterBatchSize())
-                        .setMaxQueueSize(telemetryConfig.getMaxQueueSize())
-                        .setScheduleDelay(telemetryConfig.getScheduleDelay(), TimeUnit.MILLISECONDS)
-                        .setExporterTimeout(telemetryConfig.getExporterTimeout(), TimeUnit.MILLISECONDS)
-                        .build();
-            }
-            else {
-                log.debug("telemetry span processor not set");
-            }
+            SpanProcessor spanProcessor = BatchSpanProcessor.builder(spanExporter)
+                    .setMaxExportBatchSize(telemetryConfig.getMaxExporterBatchSize())
+                    .setMaxQueueSize(telemetryConfig.getMaxQueueSize())
+                    .setScheduleDelay(telemetryConfig.getScheduleDelay(), TimeUnit.MILLISECONDS)
+                    .setExporterTimeout(telemetryConfig.getExporterTimeout(), TimeUnit.MILLISECONDS)
+                    .build();
+            log.debug("telemetry span processor configured");
 
             SdkTracerProvider tracerProvider = SdkTracerProvider.builder()
                     .setSampler(Sampler.traceIdRatioBased(telemetryConfig.getSamplingRatio()))

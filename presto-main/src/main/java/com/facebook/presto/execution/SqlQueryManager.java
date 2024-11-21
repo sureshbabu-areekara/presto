@@ -37,7 +37,7 @@ import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.QueryId;
 import com.facebook.presto.spi.resourceGroups.ResourceGroupQueryLimits;
 import com.facebook.presto.sql.planner.Plan;
-import com.facebook.presto.telemetry.OpenTelemetryManager;
+import com.facebook.presto.telemetry.TelemetryManager;
 import com.facebook.presto.version.EmbedVersion;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Ordering;
@@ -326,7 +326,7 @@ public class SqlQueryManager
 
         Span querySpan = queryExecution.getSession().getQuerySpan();
         try (SetThreadName ignored = new SetThreadName("Query-%s", queryExecution.getQueryId())) {
-            try (ScopedSpan ignoredStartScope = (!TelemetryConfig.getTracingEnabled()) ? null : scopedSpan(OpenTelemetryManager.getTracer().spanBuilder(TracingEnum.QUERY_START.getName())
+            try (ScopedSpan ignoredStartScope = (!TelemetryConfig.getTracingEnabled()) ? null : scopedSpan(TelemetryManager.getTracer().spanBuilder(TracingEnum.QUERY_START.getName())
                     .setParent((querySpan != null) ? Context.current().with(querySpan) : null)
                     .startSpan())) {
                 embedVersion.embedVersion(queryExecution::start).run();

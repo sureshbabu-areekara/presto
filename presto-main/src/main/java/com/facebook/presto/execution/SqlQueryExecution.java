@@ -65,7 +65,7 @@ import com.facebook.presto.sql.planner.SplitSourceFactory;
 import com.facebook.presto.sql.planner.SubPlan;
 import com.facebook.presto.sql.planner.optimizations.PlanOptimizer;
 import com.facebook.presto.sql.planner.sanity.PlanChecker;
-import com.facebook.presto.telemetry.OpenTelemetryManager;
+import com.facebook.presto.telemetry.TelemetryManager;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.units.DataSize;
@@ -213,7 +213,7 @@ public class SqlQueryExecution
             requireNonNull(preparedQuery, "preparedQuery is null");
 
             Span querySpan = getSession().getQuerySpan();
-            Span span = (!TelemetryConfig.getTracingEnabled()) ? null : OpenTelemetryManager.getTracer().spanBuilder(TracingEnum.ANALYZER.getName())
+            Span span = (!TelemetryConfig.getTracingEnabled()) ? null : TelemetryManager.getTracer().spanBuilder(TracingEnum.ANALYZER.getName())
                     .setParent((querySpan != null) ? Context.current().with(querySpan) : Context.current())
                     .startSpan();
 
@@ -574,7 +574,7 @@ public class SqlQueryExecution
                             () -> queryAnalyzer.plan(this.analyzerContext, queryAnalysis));
 
             Span querySpan = getSession().getQuerySpan();
-            Span span = (!TelemetryConfig.getTracingEnabled()) ? null : OpenTelemetryManager.getTracer().spanBuilder(TracingEnum.PLANNER.getName())
+            Span span = (!TelemetryConfig.getTracingEnabled()) ? null : TelemetryManager.getTracer().spanBuilder(TracingEnum.PLANNER.getName())
                     .setParent((querySpan != null) ? Context.current().with(querySpan) : Context.current())
                     .startSpan();
             try (ScopedSpan ignored = scopedSpan(span)) {
@@ -601,10 +601,10 @@ public class SqlQueryExecution
                 false);
 
         Plan plan;
-        try (ScopedSpan ignored = scopedSpan(OpenTelemetryManager.getTracer(), "Plan Optimizer")) {
+        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getTracer(), "Plan Optimizer")) {
             plan = getSession().getRuntimeStats().profileNanos(
                     OPTIMIZER_TIME_NANOS,
-                    () -> optimizer.validateAndOptimizePlan(planNode, OPTIMIZED_AND_VALIDATED, OpenTelemetryManager.getTracer()));
+                    () -> optimizer.validateAndOptimizePlan(planNode, OPTIMIZED_AND_VALIDATED, TelemetryManager.getTracer()));
         }
 
         queryPlan.set(plan);
@@ -616,13 +616,13 @@ public class SqlQueryExecution
         stateMachine.setPlanCanonicalInfo(canonicalPlanWithInfos);
 
         // extract inputs
-        try (ScopedSpan ignored = scopedSpan(OpenTelemetryManager.getTracer(), "extract-inputs")) {
+        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getTracer(), "extract-inputs")) {
             List<Input> inputs = new InputExtractor(metadata, stateMachine.getSession()).extractInputs(plan.getRoot());
             stateMachine.setInputs(inputs);
         }
 
         // extract output
-        try (ScopedSpan ignored = scopedSpan(OpenTelemetryManager.getTracer(), "extract-outputs")) {
+        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getTracer(), "extract-outputs")) {
             Optional<Output> output = new OutputExtractor().extractOutput(plan.getRoot());
             stateMachine.setOutput(output);
 
@@ -631,7 +631,7 @@ public class SqlQueryExecution
             variableAllocator.set(new VariableAllocator(plan.getTypes().allVariables()));
             SubPlan fragmentedPlan;
 
-            try (ScopedSpan spanIgnored = scopedSpan(OpenTelemetryManager.getTracer(), "fragment-plan")) {
+            try (ScopedSpan spanIgnored = scopedSpan(TelemetryManager.getTracer(), "fragment-plan")) {
                 fragmentedPlan = getSession().getRuntimeStats().profileNanos(
                         FRAGMENT_PLAN_TIME_NANOS,
                         () -> planFragmenter.createSubPlans(stateMachine.getSession(), plan, false,
@@ -717,7 +717,7 @@ public class SqlQueryExecution
                 metadata,
                 sqlParser,
                 partialResultQueryManager,
-                OpenTelemetryManager.getTracer());
+                TelemetryManager.getTracer());
 
         queryScheduler.set(scheduler);
 
@@ -1030,7 +1030,7 @@ public class SqlQueryExecution
                     planChecker,
                     partialResultQueryManager,
                     historyBasedPlanStatisticsManager.getPlanCanonicalInfoProvider(),
-                    OpenTelemetryManager.getTracer());
+                    TelemetryManager.getTracer());
         }
     }
 }

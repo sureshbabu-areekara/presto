@@ -41,7 +41,7 @@
             <artifactId>presto-spi</artifactId>
         </dependency>
 	
-	<dependency>
+	    <dependency>
             <groupId>com.facebook.presto</groupId>
             <artifactId>presto-open-telemetry</artifactId>
         </dependency>

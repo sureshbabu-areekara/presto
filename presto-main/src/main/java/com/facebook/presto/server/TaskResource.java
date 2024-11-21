@@ -33,7 +33,7 @@ import com.facebook.presto.metadata.SessionPropertyManager;
 import com.facebook.presto.opentelemetry.tracing.ScopedSpan;
 import com.facebook.presto.operator.TaskStats;
 import com.facebook.presto.sql.planner.PlanFragment;
-import com.facebook.presto.telemetry.OpenTelemetryManager;
+import com.facebook.presto.telemetry.TelemetryManager;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -106,7 +106,7 @@ public class TaskResource
     private final HandleResolver handleResolver;
     private final ConnectorTypeSerdeManager connectorTypeSerdeManager;
 
-    private final OpenTelemetryManager openTelemetryManager;
+    private final TelemetryManager openTelemetryManager;
 
     @Inject
     public TaskResource(
@@ -117,7 +117,7 @@ public class TaskResource
             JsonCodec<PlanFragment> planFragmentJsonCodec,
             HandleResolver handleResolver,
             ConnectorTypeSerdeManager connectorTypeSerdeManager,
-            OpenTelemetryManager openTelemetryManager)
+            TelemetryManager openTelemetryManager)
     {
         this.taskManager = requireNonNull(taskManager, "taskManager is null");
         this.sessionPropertyManager = requireNonNull(sessionPropertyManager, "sessionPropertyManager is null");

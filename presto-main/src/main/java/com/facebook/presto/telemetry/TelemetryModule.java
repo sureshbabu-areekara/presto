@@ -19,13 +19,13 @@ import com.google.inject.Scopes;
 
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
-public class OpenTelemetryModule
+public class TelemetryModule
         implements Module
 {
     @Override
     public void configure(Binder binder)
     {
-        binder.bind(OpenTelemetryManager.class).in(Scopes.SINGLETON);
-        newExporter(binder).export(OpenTelemetryManager.class).withGeneratedName();
+        binder.bind(TelemetryManager.class).in(Scopes.SINGLETON);
+        newExporter(binder).export(TelemetryManager.class).withGeneratedName();
     }
 }

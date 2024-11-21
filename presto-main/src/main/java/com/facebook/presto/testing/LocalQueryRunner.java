@@ -217,7 +217,7 @@ import com.facebook.presto.sql.tree.SetSession;
 import com.facebook.presto.sql.tree.StartTransaction;
 import com.facebook.presto.sql.tree.Statement;
 import com.facebook.presto.sql.tree.TruncateTable;
-import com.facebook.presto.telemetry.OpenTelemetryManager;
+import com.facebook.presto.telemetry.TelemetryManager;
 import com.facebook.presto.testing.PageConsumerOperator.PageConsumerOutputFactory;
 import com.facebook.presto.transaction.InMemoryTransactionManager;
 import com.facebook.presto.transaction.TransactionManager;
@@ -1165,7 +1165,7 @@ public class LocalQueryRunner
 
         return session.getRuntimeStats().profileNanos(
                 OPTIMIZER_TIME_NANOS,
-                () -> optimizer.validateAndOptimizePlan(planNode, stage, OpenTelemetryManager.getTracer()));
+                () -> optimizer.validateAndOptimizePlan(planNode, stage, TelemetryManager.getTracer()));
     }
 
     private static List<Split> getNextBatch(SplitSource splitSource)

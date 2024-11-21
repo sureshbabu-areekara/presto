@@ -46,7 +46,7 @@ import com.facebook.presto.sql.planner.PlanFragmenterUtils;
 import com.facebook.presto.sql.planner.SplitSourceFactory;
 import com.facebook.presto.sql.planner.optimizations.PlanNodeSearcher;
 import com.facebook.presto.sql.planner.plan.RemoteSourceNode;
-import com.facebook.presto.telemetry.OpenTelemetryManager;
+import com.facebook.presto.telemetry.TelemetryManager;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -110,7 +110,7 @@ public class SectionExecutionFactory
     private final int splitBatchSize;
     private final boolean isEnableWorkerIsolation;
     private Tracer tracer;
-    private final OpenTelemetryManager openTelemetryManager;
+    private final TelemetryManager openTelemetryManager;
 
     @Inject
     public SectionExecutionFactory(
@@ -123,7 +123,7 @@ public class SectionExecutionFactory
             SplitSchedulerStats schedulerStats,
             NodeScheduler nodeScheduler,
             QueryManagerConfig queryManagerConfig,
-            OpenTelemetryManager openTelemetryManager)
+            TelemetryManager openTelemetryManager)
     {
         this(
                 metadata,
@@ -150,7 +150,7 @@ public class SectionExecutionFactory
             NodeScheduler nodeScheduler,
             int splitBatchSize,
             boolean isEnableWorkerIsolation,
-            OpenTelemetryManager openTelemetryManager)
+            TelemetryManager openTelemetryManager)
     {
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.nodePartitioningManager = requireNonNull(nodePartitioningManager, "nodePartitioningManager is null");

@@ -40,10 +40,8 @@ public class TestTelemetryConfig
 
         TelemetryConfig.getTelemetryConfig().setTelemetryProperties(properties);
         TelemetryConfig telemetryConfig = TelemetryConfig.getTelemetryConfig();
-        assertEquals(telemetryConfig.getSpanExporter(), "otltest");
-        assertEquals(telemetryConfig.getSpanProcessor(), "testbatch");
         assertEquals(TelemetryConfig.getTracingEnabled(), false);
-        assertEquals(telemetryConfig.getExporterEndpoint(), "http://0.0.0.0:123");
+        assertEquals(telemetryConfig.getTracingBackendUrl(), "http://0.0.0.0:123");
         assertEquals(telemetryConfig.getMaxExporterBatchSize(), 123);
         assertEquals(telemetryConfig.getMaxQueueSize(), 1234);
         assertEquals(telemetryConfig.getScheduleDelay(), 4567);

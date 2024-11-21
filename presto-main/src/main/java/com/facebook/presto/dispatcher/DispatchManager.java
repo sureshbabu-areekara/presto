@@ -41,7 +41,7 @@ import com.facebook.presto.spi.resourceGroups.SelectionContext;
 import com.facebook.presto.spi.resourceGroups.SelectionCriteria;
 import com.facebook.presto.spi.security.AccessControl;
 import com.facebook.presto.sql.analyzer.QueryPreparerProviderManager;
-import com.facebook.presto.telemetry.OpenTelemetryManager;
+import com.facebook.presto.telemetry.TelemetryManager;
 import com.facebook.presto.transaction.TransactionManager;
 import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -253,7 +253,7 @@ public class DispatchManager
         DispatchQueryCreationFuture queryCreationFuture = new DispatchQueryCreationFuture();
 
         boundedQueryExecutor.execute(Context.current().wrap(() -> {
-            Span span = (!TelemetryConfig.getTracingEnabled()) ? null : OpenTelemetryManager.getTracer().spanBuilder(TracingEnum.DISPATCH.getName())
+            Span span = (!TelemetryConfig.getTracingEnabled()) ? null : TelemetryManager.getTracer().spanBuilder(TracingEnum.DISPATCH.getName())
                     .addLink(Span.current().getSpanContext())
                     .setParent((querySpan != null) ? Context.current().with(querySpan) : Context.current())
                     .startSpan();
