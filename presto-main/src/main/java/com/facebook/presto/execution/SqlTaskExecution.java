@@ -14,14 +14,14 @@
 package com.facebook.presto.execution;
 
 import com.facebook.airlift.concurrent.SetThreadName;
-import com.facebook.presto.common.TelemetryConfig;
-import com.facebook.presto.common.telemetry.tracing.TracingEnum;
 import com.facebook.presto.event.SplitMonitor;
 import com.facebook.presto.execution.StateMachine.StateChangeListener;
 import com.facebook.presto.execution.buffer.BufferState;
 import com.facebook.presto.execution.buffer.OutputBuffer;
 import com.facebook.presto.execution.executor.TaskExecutor;
 import com.facebook.presto.execution.executor.TaskHandle;
+import com.facebook.presto.opentelemetry.tracing.OtelTracerWrapper;
+import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.operator.Driver;
 import com.facebook.presto.operator.DriverContext;
 import com.facebook.presto.operator.DriverFactory;
@@ -33,6 +33,7 @@ import com.facebook.presto.spi.SplitWeight;
 import com.facebook.presto.spi.plan.PlanNodeId;
 import com.facebook.presto.spi.plan.StageExecutionDescriptor;
 import com.facebook.presto.sql.planner.LocalExecutionPlanner.LocalExecutionPlan;
+import com.facebook.presto.telemetry.TelemetryManager;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -42,9 +43,6 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.units.Duration;
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.context.Context;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
@@ -59,7 +57,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
@@ -133,12 +130,12 @@ public class SqlTaskExecution
     private final List<DriverSplitRunnerFactory> driverRunnerFactoriesWithDriverGroupLifeCycle;
     private final List<DriverSplitRunnerFactory> driverRunnerFactoriesWithTaskLifeCycle;
 
-    private final Tracer tracer;
+    private final OtelTracerWrapper tracer;
 
     // guarded for update only
     @GuardedBy("this")
     private final ConcurrentMap<PlanNodeId, TaskSource> remoteSources = new ConcurrentHashMap<>();
-    private static Span taskSpan;
+    private static TracingSpan taskSpan;
 
     @GuardedBy("this")
     private long maxAcknowledgedSplit = Long.MIN_VALUE;
@@ -160,8 +157,8 @@ public class SqlTaskExecution
             TaskExecutor taskExecutor,
             Executor notificationExecutor,
             SplitMonitor queryMonitor,
-            Span taskSpan,
-            Tracer tracer)
+            TracingSpan taskSpan,
+            OtelTracerWrapper tracer)
     {
         SqlTaskExecution task = new SqlTaskExecution(
                 taskStateMachine,
@@ -193,8 +190,8 @@ public class SqlTaskExecution
             TaskExecutor taskExecutor,
             SplitMonitor splitMonitor,
             Executor notificationExecutor,
-            Span taskSpan,
-            Tracer tracer)
+            TracingSpan taskSpan,
+            OtelTracerWrapper tracer)
     {
         this.taskStateMachine = requireNonNull(taskStateMachine, "taskStateMachine is null");
         this.taskId = taskStateMachine.getTaskId();
@@ -578,7 +575,7 @@ public class SqlTaskExecution
 
             // record new driver
             status.incrementRemainingDriver(splitRunner.getLifespan());
-            Span pipelineSpan = splitRunner.getPipelineSpan();
+            TracingSpan pipelineSpan = splitRunner.getPipelineSpan();
 
             Futures.addCallback(finishedFuture, new FutureCallback<Object>()
             {
@@ -941,22 +938,15 @@ public class SqlTaskExecution
         private final DriverFactory driverFactory;
         private final PipelineContext pipelineContext;
         private boolean closed;
-        private final Span pipelineSpan;
+        private final TracingSpan pipelineSpan;
         private final int pipelineId;
 
-        private DriverSplitRunnerFactory(DriverFactory driverFactory, boolean partitioned, Tracer tracer)
+        private DriverSplitRunnerFactory(DriverFactory driverFactory, boolean partitioned, OtelTracerWrapper tracer)
         {
             this.driverFactory = driverFactory;
             this.pipelineContext = taskContext.addPipelineContext(driverFactory.getPipelineId(), driverFactory.isInputDriver(), driverFactory.isOutputDriver(), partitioned);
             this.pipelineId = pipelineContext.getPipelineId();
-
-            this.pipelineSpan = (!TelemetryConfig.getTracingEnabled()) ? null : tracer.spanBuilder(TracingEnum.PIPELINE.getName())
-                    .setParent((taskSpan != null) ? Context.current().with(taskSpan) : Context.current())
-                    .setAttribute("QUERY_ID", taskId.getQueryId().toString())
-                    .setAttribute("STAGE_ID", taskId.getStageId().toString())
-                    .setAttribute("TASK_ID", taskId.toString())
-                    .setAttribute("PIPELINE_ID", taskId.getStageId() + "-" + pipelineContext.getPipelineId())
-                    .startSpan();
+            this.pipelineSpan = TelemetryManager.startSpan(tracer, taskSpan, taskId.getQueryId().toString(), taskId.getStageId().toString(), taskId.toString(), taskId.getStageId() + "-" + pipelineContext.getPipelineId());
         }
 
         // TODO: split this method into two: createPartitionedDriverRunner and createUnpartitionedDriverRunner.
@@ -1025,9 +1015,7 @@ public class SqlTaskExecution
                 return;
             }
             driverFactory.noMoreDrivers();
-            if (TelemetryConfig.getTracingEnabled() && Objects.nonNull(pipelineSpan)) {
-                pipelineSpan.addEvent("driver-factory-closed");
-            }
+            TracingSpan.addEvent(pipelineSpan, "driver-factory-closed");
             closed = true;
         }
 
@@ -1085,7 +1073,7 @@ public class SqlTaskExecution
         }
 
         @Override
-        public Span getPipelineSpan()
+        public TracingSpan getPipelineSpan()
         {
             return driverSplitRunnerFactory.pipelineSpan;
         }

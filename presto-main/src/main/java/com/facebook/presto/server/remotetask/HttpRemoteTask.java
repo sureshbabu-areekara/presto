@@ -53,6 +53,7 @@ import com.facebook.presto.metadata.HandleResolver;
 import com.facebook.presto.metadata.MetadataManager;
 import com.facebook.presto.metadata.MetadataUpdates;
 import com.facebook.presto.metadata.Split;
+import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.operator.TaskStats;
 import com.facebook.presto.server.RequestErrorTracker;
 import com.facebook.presto.server.SimpleHttpResponseCallback;
@@ -79,10 +80,7 @@ import com.google.common.util.concurrent.SettableFuture;
 import com.sun.management.ThreadMXBean;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.SpanBuilder;
-import io.opentelemetry.context.Context;
-import io.opentelemetry.context.propagation.TextMapPropagator;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.joda.time.DateTime;
 
 import javax.annotation.Nullable;
@@ -156,9 +154,9 @@ public final class HttpRemoteTask
     private static final ThreadMXBean THREAD_MX_BEAN = (ThreadMXBean) ManagementFactory.getThreadMXBean();
 
     private final TaskId taskId;
-    private final Span stageSpan;
+    private final TracingSpan stageSpan;
     private final TelemetryManager openTelemetryManager;
-    private final Span span;
+    private final TracingSpan span;
     private final URI taskLocation;
     private final URI remoteTaskLocation;
 
@@ -281,7 +279,7 @@ public final class HttpRemoteTask
             ConnectorTypeSerdeManager connectorTypeSerdeManager,
             SchedulerStatsTracker schedulerStatsTracker,
             TelemetryManager openTelemetryManager,
-            Span stageSpan)
+            TracingSpan stageSpan)
     {
         requireNonNull(session, "session is null");
         requireNonNull(taskId, "taskId is null");
@@ -313,7 +311,7 @@ public final class HttpRemoteTask
             this.taskId = taskId;
             this.stageSpan = stageSpan;
             this.openTelemetryManager = openTelemetryManager;
-            this.span = (!TelemetryConfig.getTracingEnabled()) ? null : createSpanBuilder("remote-task", stageSpan).startSpan();
+            this.span = (!TelemetryConfig.getTracingEnabled()) ? null : TelemetryManager.createSpan(stageSpan, "remote-task", taskId.getQueryId().toString(), taskId.getStageId().toString(), taskId.toString());
             this.taskLocation = location;
             this.remoteTaskLocation = remoteLocation;
             this.session = session;
@@ -388,8 +386,7 @@ public final class HttpRemoteTask
                     binaryTransportEnabled,
                     thriftTransportEnabled,
                     thriftProtocol,
-                    span,
-                    openTelemetryManager.getOpenTelemetry());
+                    span);
 
             this.taskInfoFetcher = new TaskInfoFetcher(
                     this::failTask,
@@ -413,8 +410,7 @@ public final class HttpRemoteTask
                     handleResolver,
                     connectorTypeSerdeManager,
                     thriftProtocol,
-                    span,
-                    openTelemetryManager.getOpenTelemetry());
+                    span);
 
             taskStatusFetcher.addStateChangeListener(newStatus -> {
                 TaskState state = newStatus.getState();
@@ -444,16 +440,6 @@ public final class HttpRemoteTask
     public TaskId getTaskId()
     {
         return taskId;
-    }
-
-    //to create remote-task span with these attributes
-    private SpanBuilder createSpanBuilder(String name, Span parent)
-    {
-        return openTelemetryManager.getTracer().spanBuilder(name)
-                .setParent((parent != null) ? Context.current().with(parent) : Context.current())
-                .setAttribute("QUERY_ID", taskId.getQueryId().toString())
-                .setAttribute("STAGE_ID", taskId.getStageId().toString())
-                .setAttribute("TASK_ID", taskId.toString());
     }
 
     @Override
@@ -929,11 +915,7 @@ public final class HttpRemoteTask
         }
 
         //extract current context and pass it to worker nodes by injecting in http header for some of the TaskResource endpoints
-        Context currentContext = (TelemetryConfig.getTracingEnabled() && (stageSpan != null)) ? (Context.current().with(stageSpan)) : null;
-        TextMapPropagator propagator = openTelemetryManager.getOpenTelemetry().getPropagators().getTextMapPropagator();
-        Map<String, String> headersMap = new HashMap<>();
-
-        propagator.inject(currentContext, headersMap, Map::put);
+        Map<String, String> headersMap = TelemetryManager.getHeadersMap(stageSpan);
 
         HttpUriBuilder uriBuilder = getHttpUriBuilder(taskStatus);
 
@@ -1012,10 +994,7 @@ public final class HttpRemoteTask
             }
 
             //extract remote-write span context and pass it to worker nodes on GET /v1/task/{taskId}/status endpoint
-            Context currentContext = (TelemetryConfig.getTracingEnabled() && (span != null)) ? Context.current().with(span) : null;
-            TextMapPropagator propagator = openTelemetryManager.getOpenTelemetry().getPropagators().getTextMapPropagator();
-            Map<String, String> headersMap = new HashMap<>();
-            propagator.inject(currentContext, headersMap, Map::put);
+            Map<String, String> headersMap = TelemetryManager.getHeadersMap(span);
 
             // send cancel to task and ignore response
             HttpUriBuilder uriBuilder = getHttpUriBuilder(taskStatus).addParameter("abort", "false");

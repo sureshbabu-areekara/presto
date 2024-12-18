@@ -18,7 +18,6 @@ import com.facebook.airlift.log.Logger;
 import com.facebook.airlift.stats.CounterStat;
 import com.facebook.presto.Session;
 import com.facebook.presto.common.TelemetryConfig;
-import com.facebook.presto.common.telemetry.tracing.TracingEnum;
 import com.facebook.presto.execution.StateMachine.StateChangeListener;
 import com.facebook.presto.execution.buffer.BufferResult;
 import com.facebook.presto.execution.buffer.LazyOutputBuffer;
@@ -30,6 +29,8 @@ import com.facebook.presto.execution.buffer.SpoolingOutputBufferFactory;
 import com.facebook.presto.execution.scheduler.TableWriteInfo;
 import com.facebook.presto.memory.QueryContext;
 import com.facebook.presto.metadata.MetadataUpdates;
+import com.facebook.presto.opentelemetry.tracing.OtelTracerWrapper;
+import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.operator.ExchangeClientSupplier;
 import com.facebook.presto.operator.PipelineContext;
 import com.facebook.presto.operator.PipelineStatus;
@@ -41,15 +42,13 @@ import com.facebook.presto.spi.ConnectorMetadataUpdateHandle;
 import com.facebook.presto.spi.connector.ConnectorMetadataUpdater;
 import com.facebook.presto.spi.plan.PlanNodeId;
 import com.facebook.presto.sql.planner.PlanFragment;
+import com.facebook.presto.telemetry.TelemetryManager;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.units.DataSize;
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.context.Context;
 import org.joda.time.DateTime;
 
 import javax.annotation.Nullable;
@@ -95,7 +94,7 @@ public class SqlTask
     private final AtomicReference<TaskHolder> taskHolderReference = new AtomicReference<>(new TaskHolder());
     private final AtomicBoolean needsPlan = new AtomicBoolean(true);
     private final long creationTimeInMillis = System.currentTimeMillis();
-    private Span taskSpan = Span.getInvalid();
+    private TracingSpan taskSpan = TracingSpan.getInvalid();
 
     public static SqlTask createSqlTask(
             TaskId taskId,
@@ -166,7 +165,7 @@ public class SqlTask
         requireNonNull(failedTasks, "failedTasks is null");
 
         taskStateMachine.addStateChangeListener(newState -> {
-            taskSpan.addEvent("task-state " + newState.name());
+            TracingSpan.addEvent(taskSpan, "task-state " + newState.name());
             if (!newState.isDone()) {
                 return;
             }
@@ -442,8 +441,8 @@ public class SqlTask
             List<TaskSource> sources,
             OutputBuffers outputBuffers,
             Optional<TableWriteInfo> tableWriteInfo,
-            Context context,
-            Tracer tracer)
+            TracingSpan span,
+            OtelTracerWrapper tracer)
     {
         try {
             // The LazyOutput buffer does not support write methods, so the actual
@@ -465,14 +464,7 @@ public class SqlTask
                     checkState(tableWriteInfo.isPresent(), "tableWriteInfo must be present");
 
                     if (TelemetryConfig.getTracingEnabled() && Objects.nonNull(taskSpan)) {
-                        taskSpan = tracer.spanBuilder(TracingEnum.TASK.getName())
-                                .setParent(context)
-                                .setAttribute("node id", nodeId)
-                                .setAttribute("QUERY_ID", taskId.getQueryId().toString())
-                                .setAttribute("STAGE_ID", taskId.getStageId().toString())
-                                .setAttribute("TASK_ID", taskId.toString())
-                                .setAttribute("task instance id", getTaskInstanceId())
-                                .startSpan();
+                        taskSpan = TelemetryManager.getTaskSpan(span, taskSpan, nodeId, taskId.getQueryId().toString(), taskId.getStageId().toString(), taskId.toString(), getTaskInstanceId());
                     }
 
                     taskExecution = sqlTaskExecutionFactory.create(

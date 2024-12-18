@@ -21,6 +21,8 @@ import com.facebook.presto.execution.buffer.OutputBuffer;
 import com.facebook.presto.execution.executor.TaskExecutor;
 import com.facebook.presto.execution.scheduler.TableWriteInfo;
 import com.facebook.presto.memory.QueryContext;
+import com.facebook.presto.opentelemetry.tracing.OtelTracerWrapper;
+import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.operator.TaskContext;
 import com.facebook.presto.operator.TaskExchangeClientManager;
 import com.facebook.presto.sql.gen.OrderingCompiler;
@@ -28,8 +30,6 @@ import com.facebook.presto.sql.planner.HttpRemoteSourceFactory;
 import com.facebook.presto.sql.planner.LocalExecutionPlanner;
 import com.facebook.presto.sql.planner.LocalExecutionPlanner.LocalExecutionPlan;
 import com.facebook.presto.sql.planner.PlanFragment;
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.Tracer;
 
 import java.util.List;
 import java.util.Optional;
@@ -88,8 +88,8 @@ public class SqlTaskExecutionFactory
             PlanFragment fragment,
             List<TaskSource> sources,
             TableWriteInfo tableWriteInfo,
-            Span taskSpan,
-            Tracer tracer)
+            TracingSpan taskSpan,
+            OtelTracerWrapper tracer)
     {
         TaskContext taskContext = queryContext.addTaskContext(
                 taskStateMachine,

@@ -37,6 +37,8 @@ import com.facebook.presto.memory.MemoryPoolAssignmentsRequest;
 import com.facebook.presto.memory.NodeMemoryConfig;
 import com.facebook.presto.memory.QueryContext;
 import com.facebook.presto.metadata.MetadataUpdates;
+import com.facebook.presto.opentelemetry.tracing.OtelTracerWrapper;
+import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.operator.ExchangeClientSupplier;
 import com.facebook.presto.operator.FragmentResultCacheManager;
 import com.facebook.presto.operator.TaskMemoryReservationSummary;
@@ -56,8 +58,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.context.Context;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import org.joda.time.DateTime;
 import org.weakref.jmx.Flatten;
@@ -402,8 +402,8 @@ public class SqlTaskManager
             List<TaskSource> sources,
             OutputBuffers outputBuffers,
             Optional<TableWriteInfo> tableWriteInfo,
-            Context context,
-            Tracer tracer)
+            TracingSpan span,
+            OtelTracerWrapper tracer)
     {
         requireNonNull(session, "session is null");
         requireNonNull(taskId, "taskId is null");
@@ -435,7 +435,7 @@ public class SqlTaskManager
         queryContext.setHeapDumpFilePath(heapDumpFilePath);
 
         sqlTask.recordHeartbeat();
-        return sqlTask.updateTask(session, fragment, sources, outputBuffers, tableWriteInfo, context, tracer);
+        return sqlTask.updateTask(session, fragment, sources, outputBuffers, tableWriteInfo, span, tracer);
     }
 
     @Override

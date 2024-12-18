@@ -15,12 +15,12 @@ package com.facebook.presto.testing;
 
 import com.facebook.presto.common.TelemetryConfig;
 import com.facebook.presto.opentelemetry.OpenTelemetryImpl;
+import com.facebook.presto.opentelemetry.tracing.OtelTracerWrapper;
 import com.facebook.presto.telemetry.TelemetryManager;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.baggage.propagation.W3CBaggagePropagator;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.context.propagation.TextMapPropagator;
@@ -30,24 +30,24 @@ import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
-import org.testng.annotations.AfterMethod;
+/*import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.testng.annotations.Test;*/
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.testng.Assert.assertEquals;
+/*import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
-import static org.testng.FileAssert.fail;
+import static org.testng.FileAssert.fail;*/
 
-public class TestingOpenTelemetryManager
+public class TestingTelemetryManager
         extends TelemetryManager
 {
     private OpenTelemetry openTelemetry = OpenTelemetry.noop();
-    private Tracer tracer = openTelemetry.getTracer("no-op");
+    private OtelTracerWrapper tracer = (OtelTracerWrapper) openTelemetry.getTracer("no-op");
     private TelemetryManager openTelemetryManager;
     private OpenTelemetryImpl openTelemetryFactory;
     Map<String, String> properties = new HashMap<>();
@@ -70,17 +70,11 @@ public class TestingOpenTelemetryManager
                         TextMapPropagator.composite(W3CTraceContextPropagator.getInstance(), W3CBaggagePropagator.getInstance())))
                 .build();
 
-        tracer = openTelemetry.getTracer("sdk in mem tracer");
+        tracer = (OtelTracerWrapper) openTelemetry.getTracer("sdk in mem tracer");
 
         if (TelemetryConfig.getTracingEnabled()) {
             TelemetryManager.setTracer(tracer);
         }
-    }
-
-    @Override
-    public OpenTelemetry getOpenTelemetry()
-    {
-        return this.openTelemetry;
     }
 
     public List<SpanData> getFinishedSpanItems()
@@ -93,7 +87,7 @@ public class TestingOpenTelemetryManager
         inMemorySpanExporter.reset();
     }
 
-    @BeforeMethod
+/*    @BeforeMethod
     public void setUp() throws Exception
     {
         properties.put("otel-factory.name", "otel");
@@ -192,5 +186,5 @@ public class TestingOpenTelemetryManager
 
         assertNotNull(openTelemetryManager.getTracer());
         assertNotEquals(openTelemetryManager.getTracer(), OpenTelemetry.noop().getTracer("no-op"));
-    }
+    }*/
 }

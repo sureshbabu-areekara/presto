@@ -21,6 +21,7 @@ import com.facebook.presto.cost.StatsCalculator;
 import com.facebook.presto.execution.Input;
 import com.facebook.presto.execution.Output;
 import com.facebook.presto.metadata.Metadata;
+import com.facebook.presto.opentelemetry.tracing.OtelTracerWrapper;
 import com.facebook.presto.spark.PrestoSparkPhysicalResourceCalculator;
 import com.facebook.presto.spark.PrestoSparkSourceStatsCollector;
 import com.facebook.presto.spi.VariableAllocator;
@@ -47,7 +48,6 @@ import com.facebook.presto.sql.planner.PlanOptimizers;
 import com.facebook.presto.sql.planner.sanity.PlanChecker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import io.opentelemetry.api.trace.Tracer;
 import org.apache.spark.SparkContext;
 
 import javax.inject.Inject;
@@ -83,7 +83,7 @@ public class PrestoSparkQueryPlanner
     private final AccessControl accessControl;
     private final PlanChecker planChecker;
     private final PlanCanonicalInfoProvider planCanonicalInfoProvider;
-    private final Tracer tracer;
+    private final OtelTracerWrapper tracer;
 
     @Inject
     public PrestoSparkQueryPlanner(
@@ -96,7 +96,7 @@ public class PrestoSparkQueryPlanner
             AccessControl accessControl,
             PlanChecker planChecker,
             HistoryBasedPlanStatisticsManager historyBasedPlanStatisticsManager,
-            Tracer tracer)
+            OtelTracerWrapper tracer)
     {
         this.sqlParser = requireNonNull(sqlParser, "sqlParser is null");
         this.optimizers = requireNonNull(optimizers, "optimizers is null");
