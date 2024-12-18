@@ -21,7 +21,6 @@ import com.facebook.presto.common.telemetry.tracing.TracingEnum;
 import com.facebook.presto.execution.StateMachine.StateChangeListener;
 import com.facebook.presto.execution.scheduler.ScheduleResult;
 import com.facebook.presto.execution.scheduler.SplitSchedulerStats;
-import com.facebook.presto.opentelemetry.tracing.OtelTracerWrapper;
 import com.facebook.presto.opentelemetry.tracing.ScopedSpan;
 import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.operator.BlockedReason;
@@ -100,7 +99,6 @@ public class StageExecutionStateMachine
 
     private final RuntimeStats runtimeStats = new RuntimeStats();
     private TracingSpan stageSpan;
-    private OtelTracerWrapper tracer;
 
     public StageExecutionStateMachine(
             StageExecutionId stageExecutionId,
@@ -118,7 +116,7 @@ public class StageExecutionStateMachine
 
         finalInfo = new StateMachine<>("final stage execution " + stageExecutionId, executor, Optional.empty());
 
-        stageSpan = TelemetryManager.getTracingSpan(schedulerSpan, TracingEnum.STAGE.getName(), stageExecutionId.getStageId().getQueryId().toString(), stageExecutionId.getStageId().toString());
+        stageSpan = TelemetryManager.getSpan(schedulerSpan, TracingEnum.STAGE.getName(), stageExecutionId.getStageId().getQueryId().toString(), stageExecutionId.getStageId().toString());
 
         try (ScopedSpan spanIgnored = (TelemetryConfig.getTracingEnabled() && (stageSpan != null)) ? ScopedSpan.scopedSpan(stageSpan) : null) { //Recheck if working
             state.addStateChangeListener(state -> {

@@ -207,7 +207,7 @@ public class SqlQueryExecution
             requireNonNull(preparedQuery, "preparedQuery is null");
 
             TracingSpan querySpan = getSession().getQuerySpan();
-            try (ScopedSpan spanIgnored = scopedSpan(TelemetryManager.startSpan(querySpan, TracingEnum.ANALYZER.getName()))) {
+            try (ScopedSpan spanIgnored = scopedSpan(TelemetryManager.getSpan(querySpan, TracingEnum.ANALYZER.getName()))) {
                 try (TimeoutThread unused = new TimeoutThread(
                         Thread.currentThread(),
                         timeoutThreadExecutor,
@@ -564,7 +564,7 @@ public class SqlQueryExecution
                             () -> queryAnalyzer.plan(this.analyzerContext, queryAnalysis));
 
             TracingSpan querySpan = getSession().getQuerySpan();
-            try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan(querySpan, TracingEnum.PLANNER.getName()))) {
+            try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(querySpan, TracingEnum.PLANNER.getName()))) {
                 return optimizePlan(planNode);
             }
         }

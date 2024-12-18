@@ -248,7 +248,7 @@ public class DispatchManager
         DispatchQueryCreationFuture queryCreationFuture = new DispatchQueryCreationFuture();
 
         boundedQueryExecutor.execute(TelemetryManager.getCurrentContextWrap(() -> {
-            try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan(querySpan))) {
+            try (ScopedSpan ignored = scopedSpan(TelemetryManager.getDispatchSpan(querySpan))) {
                 createQueryInternal(queryId, querySpan, rootSpan, slug, retryCount, sessionContext, query, resourceGroupManager);
             }
             finally {

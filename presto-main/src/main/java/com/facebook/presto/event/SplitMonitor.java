@@ -16,7 +16,6 @@ package com.facebook.presto.event;
 import com.facebook.airlift.log.Logger;
 import com.facebook.presto.eventlistener.EventListenerManager;
 import com.facebook.presto.execution.TaskId;
-import com.facebook.presto.opentelemetry.tracing.OtelTracerWrapper;
 import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.operator.DriverStats;
 import com.facebook.presto.spi.eventlistener.SplitCompletedEvent;
@@ -41,7 +40,6 @@ public class SplitMonitor
 
     private final ObjectMapper objectMapper;
     private final EventListenerManager eventListenerManager;
-    private OtelTracerWrapper tracer;
 
     @Inject
     public SplitMonitor(EventListenerManager eventListenerManager, ObjectMapper objectMapper)
@@ -50,15 +48,13 @@ public class SplitMonitor
         this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
     }
 
-    public void splitCompletedEvent(TaskId taskId, DriverStats driverStats, TracingSpan pipelineSpan, OtelTracerWrapper tracer)
+    public void splitCompletedEvent(TaskId taskId, DriverStats driverStats, TracingSpan pipelineSpan)
     {
-        this.tracer = tracer;
         splitCompletedEvent(taskId, driverStats, null, null, pipelineSpan);
     }
 
-    public void splitFailedEvent(TaskId taskId, DriverStats driverStats, Throwable cause, TracingSpan pipelineSpan, OtelTracerWrapper tracer)
+    public void splitFailedEvent(TaskId taskId, DriverStats driverStats, Throwable cause, TracingSpan pipelineSpan)
     {
-        this.tracer = tracer;
         splitCompletedEvent(taskId, driverStats, cause.getClass().getName(), cause.getMessage(), pipelineSpan);
     }
 
@@ -100,8 +96,7 @@ public class SplitMonitor
                                     timeToEnd),
                             splitFailureMetadata,
                             objectMapper.writeValueAsString(driverStats)),
-                    pipelineSpan,
-                    tracer);
+                    pipelineSpan);
         }
         catch (JsonProcessingException e) {
             log.error(e, "Error processing split completion event for task %s", taskId);

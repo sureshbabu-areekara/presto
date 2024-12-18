@@ -109,7 +109,7 @@ public class Optimizer
         if (!TelemetryManager.isRecording()) {
             return null;
         }
-        TracingSpan span = TelemetryManager.getTracingSpan(optimizer.getClass().getSimpleName()); //Recheck if working
+        TracingSpan span = TelemetryManager.getSpan(optimizer.getClass().getSimpleName()); //Recheck if working
 
         if (optimizer instanceof IterativeOptimizer) {
             List<String> ruleNames = ((IterativeOptimizer) optimizer).getRules().stream()
@@ -139,7 +139,7 @@ public class Optimizer
 
                     PlanOptimizerResult optimizerResult;
 
-                    try (ScopedSpan opSpanIgnored = (!TelemetryConfig.getTracingEnabled()) ? null : optimizerSpan(optimizer)) {
+                    try (ScopedSpan opSpanIgnored = !TelemetryConfig.getTracingEnabled() ? null : optimizerSpan(optimizer)) {
                         optimizerResult = optimizer.optimize(root, session, TypeProvider.viewOf(variableAllocator.getVariables()), variableAllocator, idAllocator, warningCollector);
                         requireNonNull(optimizerResult, format("%s returned a null plan", optimizer.getClass().getName()));
                     }

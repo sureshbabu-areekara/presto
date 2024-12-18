@@ -21,7 +21,6 @@ import com.facebook.presto.cost.StatsCalculator;
 import com.facebook.presto.execution.Input;
 import com.facebook.presto.execution.Output;
 import com.facebook.presto.metadata.Metadata;
-import com.facebook.presto.opentelemetry.tracing.OtelTracerWrapper;
 import com.facebook.presto.spark.PrestoSparkPhysicalResourceCalculator;
 import com.facebook.presto.spark.PrestoSparkSourceStatsCollector;
 import com.facebook.presto.spi.VariableAllocator;
@@ -83,7 +82,6 @@ public class PrestoSparkQueryPlanner
     private final AccessControl accessControl;
     private final PlanChecker planChecker;
     private final PlanCanonicalInfoProvider planCanonicalInfoProvider;
-    private final OtelTracerWrapper tracer;
 
     @Inject
     public PrestoSparkQueryPlanner(
@@ -95,8 +93,7 @@ public class PrestoSparkQueryPlanner
             CostCalculator costCalculator,
             AccessControl accessControl,
             PlanChecker planChecker,
-            HistoryBasedPlanStatisticsManager historyBasedPlanStatisticsManager,
-            OtelTracerWrapper tracer)
+            HistoryBasedPlanStatisticsManager historyBasedPlanStatisticsManager)
     {
         this.sqlParser = requireNonNull(sqlParser, "sqlParser is null");
         this.optimizers = requireNonNull(optimizers, "optimizers is null");
@@ -107,7 +104,6 @@ public class PrestoSparkQueryPlanner
         this.accessControl = requireNonNull(accessControl, "accessControl is null");
         this.planChecker = requireNonNull(planChecker, "planChecker is null");
         this.planCanonicalInfoProvider = requireNonNull(historyBasedPlanStatisticsManager, "historyBasedPlanStatisticsManager is null").getPlanCanonicalInfoProvider();
-        this.tracer = tracer;
     }
 
     public PlanAndMore createQueryPlan(Session session, BuiltInPreparedQuery preparedQuery, WarningCollector warningCollector, VariableAllocator variableAllocator, PlanNodeIdAllocator idAllocator, SparkContext sparkContext)
@@ -149,7 +145,7 @@ public class PrestoSparkQueryPlanner
 
         Plan plan = session.getRuntimeStats().profileNanos(
                 OPTIMIZER_TIME_NANOS,
-                () -> optimizer.validateAndOptimizePlan(planNode, OPTIMIZED_AND_VALIDATED, tracer));
+                () -> optimizer.validateAndOptimizePlan(planNode, OPTIMIZED_AND_VALIDATED));
 
         List<Input> inputs = new InputExtractor(metadata, session).extractInputs(plan.getRoot());
         Optional<Output> output = new OutputExtractor().extractOutput(plan.getRoot());

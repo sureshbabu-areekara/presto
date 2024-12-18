@@ -247,7 +247,7 @@ public class SqlQueryScheduler
         this.summarizeTaskInfo = summarizeTaskInfo;
 
         TracingSpan querySpan = queryStateMachine.getSession().getQuerySpan();
-        this.schedulerSpan = TelemetryManager.creatSchedulerSpan(querySpan, queryStateMachine.getQueryId().toString());
+        this.schedulerSpan = TelemetryManager.createSchedulerSpan(querySpan, queryStateMachine.getQueryId().toString());
 
         OutputBufferId rootBufferId = getOnlyElement(rootOutputBuffers.getBuffers().keySet());
         List<StageExecutionAndScheduler> stageExecutions = createStageExecutions(

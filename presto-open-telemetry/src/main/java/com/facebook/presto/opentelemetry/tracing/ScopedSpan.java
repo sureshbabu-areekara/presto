@@ -61,7 +61,7 @@ public final class ScopedSpan
         if (!TelemetryConfig.getTracingEnabled() || (skipSpan.length > 0 && TelemetryConfig.getSpanSampling())) {
             return null;
         }
-        return scopedSpan(new TracingSpan(TelemetryManager.getTracer().getTracer().spanBuilder(name).startSpan()));
+        return scopedSpan(new TracingSpan(TelemetryManager.getTracer().spanBuilder(name).startSpan()));
     }
 
     /**

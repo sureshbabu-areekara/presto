@@ -311,7 +311,7 @@ public final class HttpRemoteTask
             this.taskId = taskId;
             this.stageSpan = stageSpan;
             this.openTelemetryManager = openTelemetryManager;
-            this.span = (!TelemetryConfig.getTracingEnabled()) ? null : TelemetryManager.createSpan(stageSpan, "remote-task", taskId.getQueryId().toString(), taskId.getStageId().toString(), taskId.toString());
+            this.span = (!TelemetryConfig.getTracingEnabled()) ? null : TelemetryManager.getSpan(stageSpan, "remote-task", taskId.getQueryId().toString(), taskId.getStageId().toString(), taskId.toString());
             this.taskLocation = location;
             this.remoteTaskLocation = remoteLocation;
             this.session = session;

@@ -21,7 +21,6 @@ import com.facebook.presto.execution.buffer.OutputBuffer;
 import com.facebook.presto.execution.executor.TaskExecutor;
 import com.facebook.presto.execution.scheduler.TableWriteInfo;
 import com.facebook.presto.memory.QueryContext;
-import com.facebook.presto.opentelemetry.tracing.OtelTracerWrapper;
 import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.operator.TaskContext;
 import com.facebook.presto.operator.TaskExchangeClientManager;
@@ -88,8 +87,7 @@ public class SqlTaskExecutionFactory
             PlanFragment fragment,
             List<TaskSource> sources,
             TableWriteInfo tableWriteInfo,
-            TracingSpan taskSpan,
-            OtelTracerWrapper tracer)
+            TracingSpan taskSpan)
     {
         TaskContext taskContext = queryContext.addTaskContext(
                 taskStateMachine,
@@ -128,7 +126,6 @@ public class SqlTaskExecutionFactory
                 taskExecutor,
                 taskNotificationExecutor,
                 splitMonitor,
-                taskSpan,
-                tracer);
+                taskSpan);
     }
 }

@@ -19,16 +19,15 @@ import com.facebook.presto.common.TelemetryConfig;
 import com.facebook.presto.common.telemetry.tracing.TracingEnum;
 import com.facebook.presto.common.util.TextMapGetterImpl;
 import com.facebook.presto.opentelemetry.OpenTelemetryImpl;
-import com.facebook.presto.opentelemetry.tracing.OtelTracerWrapper;
 import com.facebook.presto.opentelemetry.tracing.ScopedSpan;
 import com.facebook.presto.opentelemetry.tracing.TracingSpan;
-import com.facebook.presto.spi.eventlistener.SplitCompletedEvent;
 import com.facebook.presto.spi.telemetry.TelemetryFactory;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.StatusCode;
+import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 
@@ -64,7 +63,7 @@ public class TelemetryManager
 
     private final Map<String, TelemetryFactory> openTelemetryFactories = new ConcurrentHashMap<>();
     private static OpenTelemetry configuredOpenTelemetry;
-    private static OtelTracerWrapper tracer = new OtelTracerWrapper(OpenTelemetry.noop().getTracer("no-op"));
+    private static Tracer tracer = OpenTelemetry.noop().getTracer("no-op");
                //default tracer
 
     public TelemetryManager()
@@ -134,16 +133,16 @@ public class TelemetryManager
     public void createTracer()
     {
         if (TelemetryConfig.getTracingEnabled()) {
-            tracer = new OtelTracerWrapper(configuredOpenTelemetry.getTracer("Presto"));
+            tracer = configuredOpenTelemetry.getTracer("Presto");
         }
     }
 
-    public static OtelTracerWrapper getTracer()
+    public static Tracer getTracer()
     {
         return tracer;
     }
 
-    public static void setTracer(OtelTracerWrapper tracer)
+    public static void setTracer(Tracer tracer)
     {
         TelemetryManager.tracer = tracer;
     }
@@ -168,9 +167,36 @@ public class TelemetryManager
         return Context.current();
     }
 
-    public static Context currentContextWith(TracingSpan tracingSpan)
+    public static Context getCurrentContextWith(TracingSpan tracingSpan)
     {
         return Context.current().with(tracingSpan.getSpan());
+    }
+
+    public static Context getContext(TracingSpan span)
+    {
+        return span != null ? getCurrentContextWith(span) : getCurrentContext();
+    }
+
+    private static Context getContext(String traceParent)
+    {
+        TextMapPropagator propagator = configuredOpenTelemetry.getPropagators().getTextMapPropagator();
+        Context context = propagator.extract(Context.current(), traceParent, new TextMapGetterImpl());
+        return context;
+    }
+
+    public static boolean isRecording()
+    {
+        return TracingSpan.fromContext(getCurrentContext()).isRecording();
+    }
+
+    public static Map<String, String> getHeadersMap(TracingSpan span)
+    {
+        TextMapPropagator propagator = configuredOpenTelemetry.getPropagators().getTextMapPropagator();
+        Map<String, String> headersMap = new HashMap<>();
+        Context context = (span != null) ? Context.current().with(span.getSpan()) : Context.current();
+        Context currentContext = (TelemetryConfig.getTracingEnabled()) ? context : null;
+        propagator.inject(currentContext, headersMap, Map::put);
+        return headersMap;
     }
 
     public static void endSpanOnError(TracingSpan querySpan, Throwable throwable)
@@ -182,48 +208,17 @@ public class TelemetryManager
         }
     }
 
-    public static TracingSpan startSpan(TracingSpan querySpan)
-    {
-        return !TelemetryConfig.getTracingEnabled() ? null : new TracingSpan(getTracer().getTracer().spanBuilder(TracingEnum.DISPATCH.getName())
-                .addLink(TracingSpan.current().getSpan().getSpanContext())
-                .setParent((querySpan != null) ? TelemetryManager.currentContextWith(querySpan) : Context.current())
-                .startSpan());
-    }
-
-    public static Context getContext(TracingSpan span)
-    {
-        return (span != null) ? (TelemetryManager.currentContextWith(span)) : Context.current();
-    }
-
-    public static TracingSpan startSpan(SplitCompletedEvent splitCompletedEvent, TracingSpan pipelineSpan, OtelTracerWrapper tracer)
-    {
-        return !TelemetryConfig.getTracingEnabled() || TelemetryConfig.getSpanSampling() ? null : new TracingSpan(tracer.getTracer().spanBuilder(TracingEnum.SPLIT.getName())
-                .setParent(TelemetryManager.getContext(pipelineSpan))
-                .setAttribute("QUERY_ID", splitCompletedEvent.getQueryId())
-                .setAttribute("STAGE_ID", splitCompletedEvent.getStageId())
-                .setAttribute("TASK_ID", splitCompletedEvent.getTaskId())
-                .setAttribute("START_TIME", splitCompletedEvent.getStartTime().map(String::valueOf).orElse(""))
-                .setAttribute("END_TIME", splitCompletedEvent.getEndTime().map(String::valueOf).orElse(""))
-                .setAttribute("PAYLOAD", splitCompletedEvent.getPayload())
-                .setAttribute("FAILURE_INFO", splitCompletedEvent.getFailureInfo().map(String::valueOf).orElse(""))
-                .startSpan());
-    }
-
-    public static TracingSpan startSpan(OtelTracerWrapper tracer, TracingSpan taskSpan, String queryId, String stageId, String taskId, String pipelineId)
-    {
-        return (!TelemetryConfig.getTracingEnabled()) ? null : new TracingSpan(tracer.getTracer().spanBuilder(TracingEnum.PIPELINE.getName())
-                .setParent((taskSpan != null) ? Context.current().with(taskSpan.getSpan()) : Context.current())
-                .setAttribute("QUERY_ID", queryId)
-                .setAttribute("STAGE_ID", stageId)
-                .setAttribute("TASK_ID", taskId)
-                .setAttribute("PIPELINE_ID", pipelineId)
-                .startSpan());
-    }
-
-    public static void addEvent(String newState, TracingSpan querySpan)
+    public static void addEvent(String eventState, TracingSpan querySpan)
     {
         if (TelemetryConfig.getTracingEnabled() && Objects.nonNull(querySpan)) {
-            querySpan.getSpan().addEvent("query_state", Attributes.of(AttributeKey.stringKey("EVENT_STATE"), newState));
+            querySpan.getSpan().addEvent("query_state", Attributes.of(AttributeKey.stringKey("EVENT_STATE"), eventState));
+        }
+    }
+
+    public static void setAttributeQueryType(TracingSpan querySpan, String queryType)
+    {
+        if (TelemetryConfig.getTracingEnabled() && Objects.nonNull(querySpan)) {
+            querySpan.getSpan().setAttribute("QUERY_TYPE", queryType);
         }
     }
 
@@ -245,17 +240,38 @@ public class TelemetryManager
         }
     }
 
-    public static TracingSpan startSpan(TracingSpan span, String spanName)
+    //GetSpans
+    public static TracingSpan getRootSpan()
     {
-        return !TelemetryConfig.getTracingEnabled() ? null : new TracingSpan(tracer.getTracer().spanBuilder(spanName)
-                .setParent((span != null) ? Context.current().with(span.getSpan()) : Context.current())
+        return !TelemetryConfig.getTracingEnabled() ? null : new TracingSpan(tracer.spanBuilder(TracingEnum.ROOT.getName()).setSpanKind(SpanKind.SERVER)
                 .startSpan());
     }
 
-    public static ScopedSpan startQueryStartSpan(TracingSpan span)
+    public static TracingSpan getSpan(String spanName)
     {
-        return !TelemetryConfig.getTracingEnabled() ? null : scopedSpan(new TracingSpan(tracer.getTracer().spanBuilder(TracingEnum.QUERY_START.getName())
-                .setParent((span != null) ? Context.current().with(span.getSpan()) : null)
+        return !TelemetryConfig.getTracingEnabled() ? null : new TracingSpan(tracer.spanBuilder(spanName)
+                .startSpan());
+    }
+
+    public static TracingSpan getSpan(TracingSpan parentSpan, String spanName)
+    {
+        return !TelemetryConfig.getTracingEnabled() ? null : new TracingSpan(tracer.spanBuilder(spanName)
+                .setParent((parentSpan != null) ? Context.current().with(parentSpan.getSpan()) : Context.current())
+                .startSpan());
+    }
+
+    public static TracingSpan getDispatchSpan(TracingSpan parentSpan)
+    {
+        return !TelemetryConfig.getTracingEnabled() ? null : new TracingSpan(tracer.spanBuilder(TracingEnum.DISPATCH.getName())
+                .addLink(TracingSpan.current().getSpan().getSpanContext())
+                .setParent((parentSpan != null) ? TelemetryManager.getCurrentContextWith(parentSpan) : Context.current())
+                .startSpan());
+    }
+
+    public static ScopedSpan startQueryStartSpan(TracingSpan parentSpan)
+    {
+        return !TelemetryConfig.getTracingEnabled() ? null : scopedSpan(new TracingSpan(tracer.spanBuilder(TracingEnum.QUERY_START.getName())
+                .setParent((parentSpan != null) ? Context.current().with(parentSpan.getSpan()) : null)
                 .startSpan()));
     }
 
@@ -263,87 +279,114 @@ public class TelemetryManager
     {
         Context context = getContext(traceParent);
 
-        TracingSpan span = !TelemetryConfig.getTracingEnabled() && traceParent != null ? null : new TracingSpan(tracer.getTracer().spanBuilder(spanName)
+        TracingSpan span = !TelemetryConfig.getTracingEnabled() && traceParent != null ? null : new TracingSpan(tracer.spanBuilder(spanName)
                 .setParent(context)
                 .startSpan());
         //context.makeCurrent();
         return span;
     }
 
-    private static Context getContext(String traceParent)
+    public static TracingSpan startSpan_2(String methodName, String catalogName)
     {
-        TextMapPropagator propagator = configuredOpenTelemetry.getPropagators().getTextMapPropagator();
-        Context context = propagator.extract(Context.current(), traceParent, new TextMapGetterImpl());
-        return context;
-    }
-
-    public static TracingSpan getRootSpan()
-    {
-        return !TelemetryConfig.getTracingEnabled() ? null : new TracingSpan(tracer.getTracer().spanBuilder(TracingEnum.ROOT.getName()).setSpanKind(SpanKind.SERVER).startSpan());
+        return (!TelemetryConfig.getTracingEnabled()) ? null : getSpan("Metadata." + methodName)
+                .setAttribute("CATALOG", catalogName);
     }
 
     public static TracingSpan getQuerySpan(TracingSpan rootSpan, String queryId)
     {
-        return !TelemetryConfig.getTracingEnabled() ? null : new TracingSpan(TelemetryManager.getTracer().getTracer().spanBuilder(TracingEnum.QUERY.getName())
+        return !TelemetryConfig.getTracingEnabled() ? null : new TracingSpan(tracer.spanBuilder(TracingEnum.QUERY.getName())
                 .setAttribute("QUERY_ID", queryId)
-                .setParent(TelemetryManager.currentContextWith(rootSpan))
+                .setParent(getCurrentContextWith(rootSpan))
                 .startSpan());
-    }
-
-    public static Map<String, String> getHeadersMap(TracingSpan span)
-    {
-        TextMapPropagator propagator = configuredOpenTelemetry.getPropagators().getTextMapPropagator();
-        Map<String, String> headersMap = new HashMap<>();
-        Context context = (span != null) ? Context.current().with(span.getSpan()) : Context.current();
-        Context currentContext = (TelemetryConfig.getTracingEnabled()) ? context : null;
-        propagator.inject(currentContext, headersMap, Map::put);
-        return headersMap;
     }
 
     public static TracingSpan startSpan(String spanName, String handle)
     {
-        TracingSpan span = (!TelemetryConfig.getTracingEnabled()) ? null : startSpan(spanName);
+        TracingSpan span = (!TelemetryConfig.getTracingEnabled()) ? null : getSpan("Metadata." + spanName);
         if (Objects.nonNull(span) && span.isRecording()) {
             span.setAttribute("HANDLE", handle);
         }
         return span;
     }
 
-    private static TracingSpan startSpan(String methodName)
+    public static TracingSpan createSchedulerSpan(TracingSpan parentSpan, String queryId)
     {
-        return (!TelemetryConfig.getTracingEnabled()) ? null : new TracingSpan(tracer.getTracer().spanBuilder("Metadata." + methodName)
+        return !TelemetryConfig.getTracingEnabled() ? null : new TracingSpan(tracer.spanBuilder(TracingEnum.SCHEDULER.getName())
+                .setParent((parentSpan != null) ? TelemetryManager.getCurrentContextWith(parentSpan) : Context.current())
+                .setAttribute("QUERY_ID", queryId)
                 .startSpan());
     }
 
-    public static TracingSpan startSpan(String methodName, String catalogName, String schema, String table)
+    public static TracingSpan getSpan(String methodName, String catalog, String schema)
     {
-        return (!TelemetryConfig.getTracingEnabled()) ? null : startSpan(methodName)
+        return (!TelemetryConfig.getTracingEnabled()) ? null : getSpan("Metadata." + methodName)
+                .setAttribute("CATALOG", catalog)
+                .setAttribute("SCHEMA", schema);
+    }
+
+    public static TracingSpan getSpan(TracingSpan span, String spanName, String queryId, String stageId)
+    {
+        return !TelemetryConfig.getTracingEnabled() ? null : new TracingSpan(tracer.spanBuilder(spanName)
+                .setParent((span != null) ? TelemetryManager.getCurrentContextWith(span) : getCurrentContext())
+                .setAttribute("QUERY_ID", queryId)
+                .setAttribute("STAGE_ID", stageId)
+                .startSpan());
+    }
+
+    public static TracingSpan getSpan(String methodName, String catalogName, String schema, String table)
+    {
+        return (!TelemetryConfig.getTracingEnabled()) ? null : getSpan("Metadata." + methodName)
                 .setAttribute("CATALOG", catalogName)
                 .setAttribute("SCHEMA", schema)
                 .setAttribute("TABLE", table);
     }
 
-    public static TracingSpan startSpan(String methodName, String catalog, String schema)
+    //to create remote-task span with these attributes
+    public static TracingSpan getSpan(TracingSpan parent, String spanName, String queryId, String stageId, String taskId)
     {
-        return (!TelemetryConfig.getTracingEnabled()) ? null : startSpan(methodName)
-                .setAttribute("CATALOG", catalog)
-                .setAttribute("SCHEMA", schema);
+        return new TracingSpan(tracer.spanBuilder(spanName)
+                .setParent((parent != null) ? TelemetryManager.getCurrentContextWith(parent) : getCurrentContext())
+                .setAttribute("QUERY_ID", queryId)
+                .setAttribute("STAGE_ID", stageId)
+                .setAttribute("TASK_ID", taskId)
+                .startSpan());
     }
 
-    public static TracingSpan startSpan_2(String methodName, String catalogName)
+    public static TracingSpan getSpan(TracingSpan taskSpan, String spanName, String queryId, String stageId, String taskId, String pipelineId)
     {
-        return (!TelemetryConfig.getTracingEnabled()) ? null : startSpan(methodName)
-                .setAttribute("CATALOG", catalogName);
+        return (!TelemetryConfig.getTracingEnabled()) ? null : new TracingSpan(tracer.spanBuilder(spanName)
+                .setParent((taskSpan != null) ? Context.current().with(taskSpan.getSpan()) : Context.current())
+                .setAttribute("QUERY_ID", queryId)
+                .setAttribute("STAGE_ID", stageId)
+                .setAttribute("TASK_ID", taskId)
+                .setAttribute("PIPELINE_ID", pipelineId)
+                .startSpan());
     }
 
-    public static TracingSpan getTracingSpan(String spanName)
+    public static TracingSpan getSpan(TracingSpan parentSpan, TracingSpan childSpan, String spanName, String nodeId, String queryId, String stageId, String taskId, String instanceId)
     {
-        return new TracingSpan(tracer.getTracer().spanBuilder(spanName).startSpan());
+        return TelemetryConfig.getTracingEnabled() && Objects.nonNull(childSpan) ? new TracingSpan(tracer.spanBuilder(spanName)
+                .setParent(TelemetryManager.getCurrentContextWith(parentSpan))
+                .setAttribute("node id", nodeId)
+                .setAttribute("QUERY_ID", queryId)
+                .setAttribute("STAGE_ID", stageId)
+                .setAttribute("TASK_ID", taskId)
+                .setAttribute("task instance id", instanceId)
+                .startSpan()) : null;
     }
 
-    public static boolean isRecording()
+    public static TracingSpan getSpan(TracingSpan parentSpan, String queryId, String stageId, String taskId, String startTime, String endTime, String payload, String failureInfo)
     {
-        return TracingSpan.fromContext(getCurrentContext()).isRecording();
+        return !TelemetryConfig.getTracingEnabled() || TelemetryConfig.getSpanSampling() ? null : new TracingSpan(tracer.spanBuilder(TracingEnum.SPLIT.getName())
+                .setParent(TelemetryManager.getContext(parentSpan))
+                .setAttribute("QUERY_ID", queryId)
+                .setAttribute("STAGE_ID", stageId)
+                .setAttribute("TASK_ID", taskId)
+                .setAttribute("START_TIME", startTime)
+                .setAttribute("END_TIME", endTime)
+                .setAttribute("PAYLOAD", payload)
+                .setAttribute("FAILURE_INFO", failureInfo)
+                .startSpan());
     }
 
     public static Optional<String> spanString(TracingSpan span)
@@ -354,52 +397,5 @@ public class TelemetryManager
                         .add("spanId", span.getSpan().getSpanContext().getSpanId())
                         .add("traceId", span.getSpan().getSpanContext().getTraceId())
                         .toString());
-    }
-
-    public static void setAttributeQueryType(TracingSpan querySpan, String queryType)
-    {
-        if (TelemetryConfig.getTracingEnabled() && Objects.nonNull(querySpan)) {
-            querySpan.getSpan().setAttribute("QUERY_TYPE", queryType);
-        }
-    }
-
-    public static TracingSpan getTracingSpan(TracingSpan span, String spanName, String queryId, String stageId)
-    {
-        return !TelemetryConfig.getTracingEnabled() ? null : new TracingSpan(tracer.getTracer().spanBuilder(spanName)
-                .setParent((span != null) ? TelemetryManager.currentContextWith(span) : getCurrentContext())
-                .setAttribute("QUERY_ID", queryId)
-                .setAttribute("STAGE_ID", stageId)
-                .startSpan());
-    }
-
-    public static TracingSpan getTaskSpan(TracingSpan parentSpan, TracingSpan childSpan, String nodeId, String queryId, String stageId, String taskId, String instanceId)
-    {
-        return TelemetryConfig.getTracingEnabled() && Objects.nonNull(childSpan) ? new TracingSpan(tracer.getTracer().spanBuilder(TracingEnum.TASK.getName())
-                    .setParent(TelemetryManager.currentContextWith(parentSpan))
-                    .setAttribute("node id", nodeId)
-                    .setAttribute("QUERY_ID", queryId)
-                    .setAttribute("STAGE_ID", stageId)
-                    .setAttribute("TASK_ID", taskId)
-                    .setAttribute("task instance id", instanceId)
-                    .startSpan()) : null;
-    }
-
-    public static TracingSpan creatSchedulerSpan(TracingSpan parentSpan, String queryId)
-    {
-        return !TelemetryConfig.getTracingEnabled() ? null : new TracingSpan(tracer.getTracer().spanBuilder(TracingEnum.SCHEDULER.getName())
-                .setParent((parentSpan != null) ? TelemetryManager.currentContextWith(parentSpan) : getCurrentContext())
-                .setAttribute("QUERY_ID", queryId)
-                .startSpan());
-    }
-
-    //to create remote-task span with these attributes
-    public static TracingSpan createSpan(TracingSpan parent, String spanName, String queryId, String stageId, String taskId)
-    {
-        return new TracingSpan(tracer.getTracer().spanBuilder(spanName)
-                .setParent((parent != null) ? TelemetryManager.currentContextWith(parent) : getCurrentContext())
-                .setAttribute("QUERY_ID", queryId)
-                .setAttribute("STAGE_ID", stageId)
-                .setAttribute("TASK_ID", taskId)
-                .startSpan());
     }
 }

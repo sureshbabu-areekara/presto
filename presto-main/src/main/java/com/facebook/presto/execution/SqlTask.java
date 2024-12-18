@@ -18,6 +18,7 @@ import com.facebook.airlift.log.Logger;
 import com.facebook.airlift.stats.CounterStat;
 import com.facebook.presto.Session;
 import com.facebook.presto.common.TelemetryConfig;
+import com.facebook.presto.common.telemetry.tracing.TracingEnum;
 import com.facebook.presto.execution.StateMachine.StateChangeListener;
 import com.facebook.presto.execution.buffer.BufferResult;
 import com.facebook.presto.execution.buffer.LazyOutputBuffer;
@@ -29,7 +30,6 @@ import com.facebook.presto.execution.buffer.SpoolingOutputBufferFactory;
 import com.facebook.presto.execution.scheduler.TableWriteInfo;
 import com.facebook.presto.memory.QueryContext;
 import com.facebook.presto.metadata.MetadataUpdates;
-import com.facebook.presto.opentelemetry.tracing.OtelTracerWrapper;
 import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.operator.ExchangeClientSupplier;
 import com.facebook.presto.operator.PipelineContext;
@@ -441,8 +441,7 @@ public class SqlTask
             List<TaskSource> sources,
             OutputBuffers outputBuffers,
             Optional<TableWriteInfo> tableWriteInfo,
-            TracingSpan span,
-            OtelTracerWrapper tracer)
+            TracingSpan span)
     {
         try {
             // The LazyOutput buffer does not support write methods, so the actual
@@ -464,7 +463,7 @@ public class SqlTask
                     checkState(tableWriteInfo.isPresent(), "tableWriteInfo must be present");
 
                     if (TelemetryConfig.getTracingEnabled() && Objects.nonNull(taskSpan)) {
-                        taskSpan = TelemetryManager.getTaskSpan(span, taskSpan, nodeId, taskId.getQueryId().toString(), taskId.getStageId().toString(), taskId.toString(), getTaskInstanceId());
+                        taskSpan = TelemetryManager.getSpan(span, taskSpan, TracingEnum.TASK.getName(), nodeId, taskId.getQueryId().toString(), taskId.getStageId().toString(), taskId.toString(), getTaskInstanceId());
                     }
 
                     taskExecution = sqlTaskExecutionFactory.create(
@@ -476,8 +475,7 @@ public class SqlTask
                             fragment.get(),
                             sources,
                             tableWriteInfo.get(),
-                            taskSpan,
-                            tracer);
+                            taskSpan);
                     taskHolderReference.compareAndSet(taskHolder, new TaskHolder(taskExecution));
                     needsPlan.set(false);
                 }

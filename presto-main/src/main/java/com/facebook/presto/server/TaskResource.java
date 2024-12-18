@@ -156,7 +156,7 @@ public class TaskResource
                     taskUpdateRequest.getSources(),
                     taskUpdateRequest.getOutputIds(),
                     taskUpdateRequest.getTableWriteInfo(),
-                    span, telemetryManager.getTracer());
+                    span);
 
             if (shouldSummarize(uriInfo)) {
                 taskInfo = taskInfo.summarize();

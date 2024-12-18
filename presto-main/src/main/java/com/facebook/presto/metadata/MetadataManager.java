@@ -578,7 +578,7 @@ public class MetadataManager
     @Override
     public List<QualifiedObjectName> listTables(Session session, QualifiedTablePrefix prefix)
     {
-        try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan(TracingEnum.LIST_TABLES.getName(), prefix.getCatalogName(), prefix.getSchemaName().orElse(null), prefix.getTableName().orElse(null)), skipSpan)) {
+        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(TracingEnum.LIST_TABLES.getName(), prefix.getCatalogName(), prefix.getSchemaName().orElse(null), prefix.getTableName().orElse(null)), skipSpan)) {
             requireNonNull(prefix, "prefix is null");
 
             Optional<CatalogMetadata> catalog = getOptionalCatalogMetadata(session, transactionManager, prefix.getCatalogName());
@@ -602,7 +602,7 @@ public class MetadataManager
     @Override
     public Map<QualifiedObjectName, List<ColumnMetadata>> listTableColumns(Session session, QualifiedTablePrefix prefix)
     {
-        try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan(TracingEnum.LIST_TABLE_COLUMNS.getName(), prefix.getCatalogName(), prefix.getSchemaName().orElse(null), prefix.getTableName().orElse(null)), skipSpan)) {
+        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(TracingEnum.LIST_TABLE_COLUMNS.getName(), prefix.getCatalogName(), prefix.getSchemaName().orElse(null), prefix.getTableName().orElse(null)), skipSpan)) {
             requireNonNull(prefix, "prefix is null");
 
             Optional<CatalogMetadata> catalog = getOptionalCatalogMetadata(session, transactionManager, prefix.getCatalogName());
@@ -657,7 +657,7 @@ public class MetadataManager
     @Override
     public void dropSchema(Session session, CatalogSchemaName schema)
     {
-        try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan(TracingEnum.DROP_SCHEMA.getName(), schema.getCatalogName(), schema.getSchemaName()), skipSpan)) {
+        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(TracingEnum.DROP_SCHEMA.getName(), schema.getCatalogName(), schema.getSchemaName()), skipSpan)) {
             CatalogMetadata catalogMetadata = getCatalogMetadataForWrite(session, schema.getCatalogName());
             ConnectorId connectorId = catalogMetadata.getConnectorId();
             ConnectorMetadata metadata = catalogMetadata.getMetadata();
@@ -668,7 +668,7 @@ public class MetadataManager
     @Override
     public void renameSchema(Session session, CatalogSchemaName source, String target)
     {
-        try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan(TracingEnum.RENAME_SCHEMA.getName(), source.getCatalogName(), source.getSchemaName()), skipSpan)) {
+        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(TracingEnum.RENAME_SCHEMA.getName(), source.getCatalogName(), source.getSchemaName()), skipSpan)) {
             CatalogMetadata catalogMetadata = getCatalogMetadataForWrite(session, source.getCatalogName());
             ConnectorId connectorId = catalogMetadata.getConnectorId();
             ConnectorMetadata metadata = catalogMetadata.getMetadata();
@@ -679,7 +679,7 @@ public class MetadataManager
     @Override
     public void createTable(Session session, String catalogName, ConnectorTableMetadata tableMetadata, boolean ignoreExisting)
     {
-        try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan(TracingEnum.CREATE_TABLE.getName(), catalogName, tableMetadata.getTable().getSchemaName(), tableMetadata.getTable().getTableName()), skipSpan)) {
+        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(TracingEnum.CREATE_TABLE.getName(), catalogName, tableMetadata.getTable().getSchemaName(), tableMetadata.getTable().getTableName()), skipSpan)) {
             CatalogMetadata catalogMetadata = getCatalogMetadataForWrite(session, catalogName);
             ConnectorId connectorId = catalogMetadata.getConnectorId();
             ConnectorMetadata metadata = catalogMetadata.getMetadata();
@@ -717,7 +717,7 @@ public class MetadataManager
     @Override
     public void renameTable(Session session, TableHandle tableHandle, QualifiedObjectName newTableName)
     {
-        try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan(TracingEnum.RENAME_TABLE.getName(), newTableName.getCatalogName(), newTableName.getSchemaName(), newTableName.getObjectName()), skipSpan)) {
+        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(TracingEnum.RENAME_TABLE.getName(), newTableName.getCatalogName(), newTableName.getSchemaName(), newTableName.getObjectName()), skipSpan)) {
             String catalogName = newTableName.getCatalogName();
             CatalogMetadata catalogMetadata = getCatalogMetadataForWrite(session, catalogName);
             ConnectorId connectorId = catalogMetadata.getConnectorId();
@@ -804,7 +804,7 @@ public class MetadataManager
     @Override
     public TableStatisticsMetadata getStatisticsCollectionMetadataForWrite(Session session, String catalogName, ConnectorTableMetadata tableMetadata)
     {
-        try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan(TracingEnum.GET_STATISTICS_COLLECTION_METADATA_FOR_WRITE.getName(), catalogName, tableMetadata.getTable().getSchemaName(), tableMetadata.getTable().getTableName()), skipSpan)) {
+        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(TracingEnum.GET_STATISTICS_COLLECTION_METADATA_FOR_WRITE.getName(), catalogName, tableMetadata.getTable().getSchemaName(), tableMetadata.getTable().getTableName()), skipSpan)) {
             CatalogMetadata catalogMetadata = getCatalogMetadataForWrite(session, catalogName);
             ConnectorMetadata metadata = catalogMetadata.getMetadata();
             ConnectorId connectorId = catalogMetadata.getConnectorId();
@@ -815,7 +815,7 @@ public class MetadataManager
     @Override
     public TableStatisticsMetadata getStatisticsCollectionMetadata(Session session, String catalogName, ConnectorTableMetadata tableMetadata)
     {
-        try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan(TracingEnum.GET_STATISTICS_COLLECTION_METADATA.getName(), catalogName, tableMetadata.getTable().getSchemaName(), tableMetadata.getTable().getTableName()), skipSpan)) {
+        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(TracingEnum.GET_STATISTICS_COLLECTION_METADATA.getName(), catalogName, tableMetadata.getTable().getSchemaName(), tableMetadata.getTable().getTableName()), skipSpan)) {
             CatalogMetadata catalogMetadata = getCatalogMetadataForWrite(session, catalogName);
             ConnectorMetadata metadata = catalogMetadata.getMetadata();
             ConnectorId connectorId = catalogMetadata.getConnectorId();
@@ -850,7 +850,7 @@ public class MetadataManager
     @Override
     public Optional<NewTableLayout> getNewTableLayout(Session session, String catalogName, ConnectorTableMetadata tableMetadata)
     {
-        try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan(TracingEnum.GET_STATISTICS_COLLECTION_METADATA.getName(), catalogName, tableMetadata.getTable().getSchemaName(), tableMetadata.getTable().getTableName()), skipSpan)) {
+        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(TracingEnum.GET_STATISTICS_COLLECTION_METADATA.getName(), catalogName, tableMetadata.getTable().getSchemaName(), tableMetadata.getTable().getTableName()), skipSpan)) {
             CatalogMetadata catalogMetadata = getCatalogMetadataForWrite(session, catalogName);
             ConnectorId connectorId = catalogMetadata.getConnectorId();
             ConnectorMetadata metadata = catalogMetadata.getMetadata();
@@ -906,7 +906,7 @@ public class MetadataManager
     @Override
     public OutputTableHandle beginCreateTable(Session session, String catalogName, ConnectorTableMetadata tableMetadata, Optional<NewTableLayout> layout)
     {
-        try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan(TracingEnum.BEGIN_CREATE_TABLE.getName(), catalogName, tableMetadata.getTable().getSchemaName(), tableMetadata.getTable().getTableName()), skipSpan)) {
+        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(TracingEnum.BEGIN_CREATE_TABLE.getName(), catalogName, tableMetadata.getTable().getSchemaName(), tableMetadata.getTable().getTableName()), skipSpan)) {
             CatalogMetadata catalogMetadata = getCatalogMetadataForWrite(session, catalogName);
             ConnectorId connectorId = catalogMetadata.getConnectorId();
             ConnectorMetadata metadata = catalogMetadata.getMetadata();
@@ -1059,7 +1059,7 @@ public class MetadataManager
     @Override
     public List<QualifiedObjectName> listViews(Session session, QualifiedTablePrefix prefix)
     {
-        try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan(TracingEnum.LIST_VIEWS.getName(), prefix.getCatalogName(), prefix.getSchemaName().orElse(null), prefix.getTableName().orElse(null)), skipSpan)) {
+        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(TracingEnum.LIST_VIEWS.getName(), prefix.getCatalogName(), prefix.getSchemaName().orElse(null), prefix.getTableName().orElse(null)), skipSpan)) {
             requireNonNull(prefix, "prefix is null");
 
             Optional<CatalogMetadata> catalog = getOptionalCatalogMetadata(session, transactionManager, prefix.getCatalogName());
@@ -1084,7 +1084,7 @@ public class MetadataManager
     @Override
     public Map<QualifiedObjectName, ViewDefinition> getViews(Session session, QualifiedTablePrefix prefix)
     {
-        try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan(TracingEnum.GET_VIEWS.getName(), prefix.getCatalogName(), prefix.getSchemaName().orElse(null), prefix.getTableName().orElse(null)), skipSpan)) {
+        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(TracingEnum.GET_VIEWS.getName(), prefix.getCatalogName(), prefix.getSchemaName().orElse(null), prefix.getTableName().orElse(null)), skipSpan)) {
             requireNonNull(prefix, "prefix is null");
 
             Optional<CatalogMetadata> catalog = getOptionalCatalogMetadata(session, transactionManager, prefix.getCatalogName());
@@ -1113,7 +1113,7 @@ public class MetadataManager
     @Override
     public void createView(Session session, String catalogName, ConnectorTableMetadata viewMetadata, String viewData, boolean replace)
     {
-        try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan(TracingEnum.CREATE_VIEW.getName(), catalogName, viewMetadata.getTable().getSchemaName(), viewMetadata.getTable().getTableName()), skipSpan)) {
+        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(TracingEnum.CREATE_VIEW.getName(), catalogName, viewMetadata.getTable().getSchemaName(), viewMetadata.getTable().getTableName()), skipSpan)) {
             CatalogMetadata catalogMetadata = getCatalogMetadataForWrite(session, catalogName);
             ConnectorId connectorId = catalogMetadata.getConnectorId();
             ConnectorMetadata metadata = catalogMetadata.getMetadata();
@@ -1125,7 +1125,7 @@ public class MetadataManager
     @Override
     public void dropView(Session session, QualifiedObjectName viewName)
     {
-        try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan(TracingEnum.DROP_VIEW.getName(), viewName.getCatalogName(), viewName.getSchemaName(), viewName.getObjectName()), skipSpan)) {
+        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(TracingEnum.DROP_VIEW.getName(), viewName.getCatalogName(), viewName.getSchemaName(), viewName.getObjectName()), skipSpan)) {
             CatalogMetadata catalogMetadata = getCatalogMetadataForWrite(session, viewName.getCatalogName());
             ConnectorId connectorId = catalogMetadata.getConnectorId();
             ConnectorMetadata metadata = catalogMetadata.getMetadata();
@@ -1137,7 +1137,7 @@ public class MetadataManager
     @Override
     public void createMaterializedView(Session session, String catalogName, ConnectorTableMetadata viewMetadata, MaterializedViewDefinition viewDefinition, boolean ignoreExisting)
     {
-        try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan(TracingEnum.CREATE_MATERIALIZED_VIEW.getName(), catalogName, viewMetadata.getTable().getSchemaName(), viewMetadata.getTable().getTableName()), skipSpan)) {
+        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(TracingEnum.CREATE_MATERIALIZED_VIEW.getName(), catalogName, viewMetadata.getTable().getSchemaName(), viewMetadata.getTable().getTableName()), skipSpan)) {
             CatalogMetadata catalogMetadata = getCatalogMetadataForWrite(session, catalogName);
             ConnectorId connectorId = catalogMetadata.getConnectorId();
             ConnectorMetadata metadata = catalogMetadata.getMetadata();
@@ -1149,7 +1149,7 @@ public class MetadataManager
     @Override
     public void dropMaterializedView(Session session, QualifiedObjectName viewName)
     {
-        try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan(TracingEnum.DROP_MATERIALIZED_VIEW.getName(), viewName.getCatalogName(), viewName.getSchemaName(), viewName.getObjectName()), skipSpan)) {
+        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(TracingEnum.DROP_MATERIALIZED_VIEW.getName(), viewName.getCatalogName(), viewName.getSchemaName(), viewName.getObjectName()), skipSpan)) {
             CatalogMetadata catalogMetadata = getCatalogMetadataForWrite(session, viewName.getCatalogName());
             ConnectorId connectorId = catalogMetadata.getConnectorId();
             ConnectorMetadata metadata = catalogMetadata.getMetadata();
@@ -1160,7 +1160,7 @@ public class MetadataManager
 
     private MaterializedViewStatus getMaterializedViewStatus(Session session, QualifiedObjectName materializedViewName, TupleDomain<String> baseQueryDomain)
     {
-        try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan(TracingEnum.GET_MATERIALIZED_VIEW_STATUS.getName(), materializedViewName.getCatalogName(), materializedViewName.getSchemaName(), materializedViewName.getObjectName()), skipSpan)) {
+        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(TracingEnum.GET_MATERIALIZED_VIEW_STATUS.getName(), materializedViewName.getCatalogName(), materializedViewName.getSchemaName(), materializedViewName.getObjectName()), skipSpan)) {
             Optional<TableHandle> materializedViewHandle = getOptionalTableHandle(session, transactionManager, materializedViewName, Optional.empty());
 
             ConnectorId connectorId = materializedViewHandle.get().getConnectorId();
@@ -1198,7 +1198,7 @@ public class MetadataManager
     @Override
     public List<QualifiedObjectName> getReferencedMaterializedViews(Session session, QualifiedObjectName tableName)
     {
-        try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan(TracingEnum.GET_REFERENCED_MATERIALIZED_VIEWS.getName(), tableName.getCatalogName(), tableName.getSchemaName(), tableName.getObjectName()), skipSpan)) {
+        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(TracingEnum.GET_REFERENCED_MATERIALIZED_VIEWS.getName(), tableName.getCatalogName(), tableName.getSchemaName(), tableName.getObjectName()), skipSpan)) {
             requireNonNull(tableName, "tableName is null");
 
             Optional<CatalogMetadata> catalog = getOptionalCatalogMetadata(session, transactionManager, tableName.getCatalogName());
@@ -1341,7 +1341,7 @@ public class MetadataManager
     @Override
     public void grantTablePrivileges(Session session, QualifiedObjectName tableName, Set<Privilege> privileges, PrestoPrincipal grantee, boolean grantOption)
     {
-        try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan(TracingEnum.GRANT_TABLE_PRIVILEGES.getName(), tableName.getCatalogName(), tableName.getSchemaName(), tableName.getObjectName()), skipSpan)) {
+        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(TracingEnum.GRANT_TABLE_PRIVILEGES.getName(), tableName.getCatalogName(), tableName.getSchemaName(), tableName.getObjectName()), skipSpan)) {
             CatalogMetadata catalogMetadata = getCatalogMetadataForWrite(session, tableName.getCatalogName());
             ConnectorId connectorId = catalogMetadata.getConnectorId();
             ConnectorMetadata metadata = catalogMetadata.getMetadata();
@@ -1353,7 +1353,7 @@ public class MetadataManager
     @Override
     public void revokeTablePrivileges(Session session, QualifiedObjectName tableName, Set<Privilege> privileges, PrestoPrincipal grantee, boolean grantOption)
     {
-        try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan(TracingEnum.REVOKE_TABLE_PRIVILEGES.getName(), tableName.getCatalogName(), tableName.getSchemaName(), tableName.getObjectName()), skipSpan)) {
+        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(TracingEnum.REVOKE_TABLE_PRIVILEGES.getName(), tableName.getCatalogName(), tableName.getSchemaName(), tableName.getObjectName()), skipSpan)) {
             CatalogMetadata catalogMetadata = getCatalogMetadataForWrite(session, tableName.getCatalogName());
             ConnectorId connectorId = catalogMetadata.getConnectorId();
             ConnectorMetadata metadata = catalogMetadata.getMetadata();
@@ -1365,7 +1365,7 @@ public class MetadataManager
     @Override
     public List<GrantInfo> listTablePrivileges(Session session, QualifiedTablePrefix prefix)
     {
-        try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan(TracingEnum.LIST_TABLE_PRIVILEGES.getName(), prefix.getCatalogName(), prefix.getSchemaName().orElse(null), prefix.getTableName().orElse(null)), skipSpan)) {
+        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(TracingEnum.LIST_TABLE_PRIVILEGES.getName(), prefix.getCatalogName(), prefix.getSchemaName().orElse(null), prefix.getTableName().orElse(null)), skipSpan)) {
             requireNonNull(prefix, "prefix is null");
             SchemaTablePrefix tablePrefix = prefix.asSchemaTablePrefix();
 
@@ -1499,7 +1499,7 @@ public class MetadataManager
                 @Override
                 public boolean schemaExists(CatalogSchemaName schema)
                 {
-                    try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan(TracingEnum.SCHEMA_EXISTS.getName(), schema.getCatalogName(), schema.getSchemaName()), skipSpan)) {
+                    try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(TracingEnum.SCHEMA_EXISTS.getName(), schema.getCatalogName(), schema.getSchemaName()), skipSpan)) {
                         Optional<CatalogMetadata> catalog = getOptionalCatalogMetadata(session, transactionManager, schema.getCatalogName());
                         if (!catalog.isPresent()) {
                             return false;
@@ -1515,7 +1515,7 @@ public class MetadataManager
                 @Override
                 public boolean tableExists(QualifiedObjectName tableName)
                 {
-                    try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan(TracingEnum.TABLE_EXISTS.getName(), tableName.getCatalogName(), tableName.getSchemaName(), tableName.getObjectName()), skipSpan)) {
+                    try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(TracingEnum.TABLE_EXISTS.getName(), tableName.getCatalogName(), tableName.getSchemaName(), tableName.getObjectName()), skipSpan)) {
                         return getOptionalTableHandle(session, transactionManager, tableName, Optional.empty()).isPresent();
                     }
                 }
@@ -1523,7 +1523,7 @@ public class MetadataManager
                 @Override
                 public Optional<TableHandle> getTableHandle(QualifiedObjectName tableName)
                 {
-                    try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan(TracingEnum.GET_TABLE_HANDLE.getName(), tableName.getCatalogName(), tableName.getSchemaName(), tableName.getObjectName()), skipSpan)) {
+                    try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(TracingEnum.GET_TABLE_HANDLE.getName(), tableName.getCatalogName(), tableName.getSchemaName(), tableName.getObjectName()), skipSpan)) {
                         return getOptionalTableHandle(session, transactionManager, tableName, Optional.empty());
                     }
                 }
@@ -1547,7 +1547,7 @@ public class MetadataManager
                 @Override
                 public Optional<ViewDefinition> getView(QualifiedObjectName viewName)
                 {
-                    try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan(TracingEnum.GET_VIEW.getName(), viewName.getCatalogName(), viewName.getSchemaName(), viewName.getObjectName()), skipSpan)) {
+                    try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(TracingEnum.GET_VIEW.getName(), viewName.getCatalogName(), viewName.getSchemaName(), viewName.getObjectName()), skipSpan)) {
                         Optional<CatalogMetadata> catalog = getOptionalCatalogMetadata(session, transactionManager, viewName.getCatalogName());
                         if (catalog.isPresent()) {
                             CatalogMetadata catalogMetadata = catalog.get();
@@ -1573,7 +1573,7 @@ public class MetadataManager
                 @Override
                 public Optional<MaterializedViewDefinition> getMaterializedView(QualifiedObjectName viewName)
                 {
-                    try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan(TracingEnum.GET_MATERIALIZED_VIEW.getName(), viewName.getCatalogName(), viewName.getSchemaName(), viewName.getObjectName()), skipSpan)) {
+                    try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(TracingEnum.GET_MATERIALIZED_VIEW.getName(), viewName.getCatalogName(), viewName.getSchemaName(), viewName.getObjectName()), skipSpan)) {
                         Optional<CatalogMetadata> catalog = getOptionalCatalogMetadata(session, transactionManager, viewName.getCatalogName());
                         if (catalog.isPresent()) {
                             CatalogMetadata catalogMetadata = catalog.get();
@@ -1589,7 +1589,7 @@ public class MetadataManager
                 @Override
                 public MaterializedViewStatus getMaterializedViewStatus(QualifiedObjectName materializedViewName, TupleDomain<String> baseQueryDomain)
                 {
-                    try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan(TracingEnum.GET_MATERIALIZED_VIEW_STATUS.getName(), materializedViewName.getCatalogName(), materializedViewName.getSchemaName(), materializedViewName.getObjectName()), skipSpan)) {
+                    try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(TracingEnum.GET_MATERIALIZED_VIEW_STATUS.getName(), materializedViewName.getCatalogName(), materializedViewName.getSchemaName(), materializedViewName.getObjectName()), skipSpan)) {
                         return MetadataManager.this.getMaterializedViewStatus(session, materializedViewName, baseQueryDomain);
                     }
                 }

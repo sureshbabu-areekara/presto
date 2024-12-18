@@ -14,7 +14,6 @@
 package com.facebook.presto.eventlistener;
 
 import com.facebook.airlift.log.Logger;
-import com.facebook.presto.opentelemetry.tracing.OtelTracerWrapper;
 import com.facebook.presto.opentelemetry.tracing.ScopedSpan;
 import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.spi.classloader.ThreadContextClassLoader;
@@ -127,9 +126,9 @@ public class EventListenerManager
                 .ifPresent(eventListener -> eventListener.publishQueryProgress(queryProgressEvent));
     }
 
-    public void splitCompleted(SplitCompletedEvent splitCompletedEvent, TracingSpan pipelineSpan, OtelTracerWrapper tracer)
+    public void splitCompleted(SplitCompletedEvent splitCompletedEvent, TracingSpan pipelineSpan)
     {
-        try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan(splitCompletedEvent, pipelineSpan, tracer))) {
+        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(pipelineSpan, splitCompletedEvent.getQueryId(), splitCompletedEvent.getStageId(), splitCompletedEvent.getTaskId(), splitCompletedEvent.getStartTime().map(String::valueOf).orElse(""), splitCompletedEvent.getEndTime().map(String::valueOf).orElse(""), splitCompletedEvent.getPayload(), splitCompletedEvent.getFailureInfo().map(String::valueOf).orElse("")))) {
             configuredEventListener.get()
                     .ifPresent(eventListener -> eventListener.splitCompleted(splitCompletedEvent));
         }

@@ -15,12 +15,12 @@ package com.facebook.presto.testing;
 
 import com.facebook.presto.common.TelemetryConfig;
 import com.facebook.presto.opentelemetry.OpenTelemetryImpl;
-import com.facebook.presto.opentelemetry.tracing.OtelTracerWrapper;
 import com.facebook.presto.telemetry.TelemetryManager;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.baggage.propagation.W3CBaggagePropagator;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.context.propagation.TextMapPropagator;
@@ -47,7 +47,7 @@ public class TestingTelemetryManager
         extends TelemetryManager
 {
     private OpenTelemetry openTelemetry = OpenTelemetry.noop();
-    private OtelTracerWrapper tracer = (OtelTracerWrapper) openTelemetry.getTracer("no-op");
+    private Tracer tracer = openTelemetry.getTracer("no-op");
     private TelemetryManager openTelemetryManager;
     private OpenTelemetryImpl openTelemetryFactory;
     Map<String, String> properties = new HashMap<>();
@@ -70,7 +70,7 @@ public class TestingTelemetryManager
                         TextMapPropagator.composite(W3CTraceContextPropagator.getInstance(), W3CBaggagePropagator.getInstance())))
                 .build();
 
-        tracer = (OtelTracerWrapper) openTelemetry.getTracer("sdk in mem tracer");
+        tracer = openTelemetry.getTracer("sdk in mem tracer");
 
         if (TelemetryConfig.getTracingEnabled()) {
             TelemetryManager.setTracer(tracer);
