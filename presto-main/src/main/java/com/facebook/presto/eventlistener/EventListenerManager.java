@@ -128,7 +128,7 @@ public class EventListenerManager
 
     public void splitCompleted(SplitCompletedEvent splitCompletedEvent, TracingSpan pipelineSpan)
     {
-        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(pipelineSpan, splitCompletedEvent.getQueryId(), splitCompletedEvent.getStageId(), splitCompletedEvent.getTaskId(), splitCompletedEvent.getStartTime().map(String::valueOf).orElse(""), splitCompletedEvent.getEndTime().map(String::valueOf).orElse(""), splitCompletedEvent.getPayload(), splitCompletedEvent.getFailureInfo().map(String::valueOf).orElse("")))) {
+        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSplitSpan(pipelineSpan, splitCompletedEvent.getQueryId(), splitCompletedEvent.getStageId(), splitCompletedEvent.getTaskId(), splitCompletedEvent.getStartTime().map(String::valueOf).orElse(""), splitCompletedEvent.getEndTime().map(String::valueOf).orElse(""), splitCompletedEvent.getPayload(), splitCompletedEvent.getFailureInfo().map(String::valueOf).orElse("")))) {
             configuredEventListener.get()
                     .ifPresent(eventListener -> eventListener.splitCompleted(splitCompletedEvent));
         }

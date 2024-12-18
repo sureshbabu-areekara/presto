@@ -690,7 +690,7 @@ public class MetadataManager
     @Override
     public TableHandle createTemporaryTable(Session session, String catalogName, List<ColumnMetadata> columns, Optional<PartitioningMetadata> partitioningMetadata)
     {
-        try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan_2(TracingEnum.CREATE_TEMPORARY_TABLE.getName(), catalogName), skipSpan)) {
+        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getMetadataSpan(TracingEnum.CREATE_TEMPORARY_TABLE.getName(), catalogName), skipSpan)) {
             CatalogMetadata catalogMetadata = getCatalogMetadataForWrite(session, catalogName);
             ConnectorId connectorId = catalogMetadata.getConnectorId();
             ConnectorMetadata metadata = catalogMetadata.getMetadata();
@@ -1043,7 +1043,7 @@ public class MetadataManager
     @Override
     public Optional<ConnectorId> getCatalogHandle(Session session, String catalogName)
     {
-        try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan_2(TracingEnum.GET_CATALOG_HANDLE.getName(), catalogName), skipSpan)) {
+        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getMetadataSpan(TracingEnum.GET_CATALOG_HANDLE.getName(), catalogName), skipSpan)) {
             return transactionManager.getOptionalCatalogMetadata(session.getRequiredTransactionId(), catalogName).map(CatalogMetadata::getConnectorId);
         }
     }
@@ -1491,7 +1491,7 @@ public class MetadataManager
                 @Override
                 public boolean catalogExists(String catalogName)
                 {
-                    try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan_2(TracingEnum.CATALOG_EXISTS.getName(), catalogName), skipSpan)) {
+                    try (ScopedSpan ignored = scopedSpan(TelemetryManager.getMetadataSpan(TracingEnum.CATALOG_EXISTS.getName(), catalogName), skipSpan)) {
                         return getOptionalCatalogMetadata(session, transactionManager, catalogName).isPresent();
                     }
                 }
@@ -1664,7 +1664,7 @@ public class MetadataManager
 
     private CatalogMetadata getCatalogMetadataForWrite(Session session, String catalogName)
     {
-        try (ScopedSpan ignored = scopedSpan(TelemetryManager.startSpan_2(TracingEnum.GET_CATALOG_METADATA_FOR_WRITE.getName(), catalogName), skipSpan)) {
+        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getMetadataSpan(TracingEnum.GET_CATALOG_METADATA_FOR_WRITE.getName(), catalogName), skipSpan)) {
             return transactionManager.getCatalogMetadataForWrite(session.getRequiredTransactionId(), catalogName);
         }
     }

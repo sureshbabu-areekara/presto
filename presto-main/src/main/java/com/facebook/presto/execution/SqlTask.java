@@ -18,7 +18,6 @@ import com.facebook.airlift.log.Logger;
 import com.facebook.airlift.stats.CounterStat;
 import com.facebook.presto.Session;
 import com.facebook.presto.common.TelemetryConfig;
-import com.facebook.presto.common.telemetry.tracing.TracingEnum;
 import com.facebook.presto.execution.StateMachine.StateChangeListener;
 import com.facebook.presto.execution.buffer.BufferResult;
 import com.facebook.presto.execution.buffer.LazyOutputBuffer;
@@ -463,7 +462,7 @@ public class SqlTask
                     checkState(tableWriteInfo.isPresent(), "tableWriteInfo must be present");
 
                     if (TelemetryConfig.getTracingEnabled() && Objects.nonNull(taskSpan)) {
-                        taskSpan = TelemetryManager.getSpan(span, taskSpan, TracingEnum.TASK.getName(), nodeId, taskId.getQueryId().toString(), taskId.getStageId().toString(), taskId.toString(), getTaskInstanceId());
+                        taskSpan = TelemetryManager.getTaskSpan(span, taskSpan, nodeId, taskId.getQueryId().toString(), taskId.getStageId().toString(), taskId.toString(), getTaskInstanceId());
                     }
 
                     taskExecution = sqlTaskExecutionFactory.create(
