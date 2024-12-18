@@ -49,7 +49,6 @@ import com.facebook.presto.server.InternalCommunicationConfig;
 import com.facebook.presto.server.TaskUpdateRequest;
 import com.facebook.presto.spi.plan.PlanNodeId;
 import com.facebook.presto.sql.planner.PlanFragment;
-import com.facebook.presto.telemetry.TelemetryManager;
 import com.google.common.collect.Multimap;
 import io.airlift.units.Duration;
 import org.weakref.jmx.Managed;
@@ -103,7 +102,6 @@ public class HttpRemoteTaskFactory
     private final MetadataManager metadataManager;
     private final QueryManager queryManager;
     private final DecayCounter taskUpdateRequestSize;
-    private final TelemetryManager openTelemetryManager;
 
     @Inject
     public HttpRemoteTaskFactory(
@@ -128,8 +126,7 @@ public class HttpRemoteTaskFactory
             MetadataManager metadataManager,
             QueryManager queryManager,
             HandleResolver handleResolver,
-            ConnectorTypeSerdeManager connectorTypeSerdeManager,
-            TelemetryManager openTelemetryManager)
+            ConnectorTypeSerdeManager connectorTypeSerdeManager)
     {
         this.httpClient = httpClient;
         this.locationFactory = locationFactory;
@@ -150,7 +147,6 @@ public class HttpRemoteTaskFactory
         taskInfoThriftTransportEnabled = communicationConfig.isTaskInfoThriftTransportEnabled();
         thriftProtocol = communicationConfig.getThriftProtocol();
         this.maxTaskUpdateSizeInBytes = toIntExact(requireNonNull(communicationConfig, "communicationConfig is null").getMaxTaskUpdateSize().toBytes());
-        this.openTelemetryManager = openTelemetryManager;
 
         if (thriftTransportEnabled) {
             this.taskStatusCodec = wrapThriftCodec(taskStatusThriftCodec);
@@ -264,7 +260,6 @@ public class HttpRemoteTaskFactory
                 handleResolver,
                 connectorTypeSerdeManager,
                 schedulerStatsTracker,
-                openTelemetryManager,
                 stageSpan);
     }
 }

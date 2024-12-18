@@ -101,7 +101,6 @@ public class TaskResource
     private final Codec<PlanFragment> planFragmentCodec;
     private final HandleResolver handleResolver;
     private final ConnectorTypeSerdeManager connectorTypeSerdeManager;
-    private final TelemetryManager telemetryManager;
 
     @Inject
     public TaskResource(
@@ -111,8 +110,7 @@ public class TaskResource
             @ForAsyncRpc ScheduledExecutorService timeoutExecutor,
             JsonCodec<PlanFragment> planFragmentJsonCodec,
             HandleResolver handleResolver,
-            ConnectorTypeSerdeManager connectorTypeSerdeManager,
-            TelemetryManager telemetryManager)
+            ConnectorTypeSerdeManager connectorTypeSerdeManager)
     {
         this.taskManager = requireNonNull(taskManager, "taskManager is null");
         this.sessionPropertyManager = requireNonNull(sessionPropertyManager, "sessionPropertyManager is null");
@@ -121,7 +119,6 @@ public class TaskResource
         this.planFragmentCodec = planFragmentJsonCodec;
         this.handleResolver = requireNonNull(handleResolver, "handleResolver is null");
         this.connectorTypeSerdeManager = requireNonNull(connectorTypeSerdeManager, "connectorTypeSerdeManager is null");
-        this.telemetryManager = telemetryManager;
     }
 
     @GET

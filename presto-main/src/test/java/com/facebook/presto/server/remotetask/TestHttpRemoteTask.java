@@ -64,7 +64,6 @@ import com.facebook.presto.sql.analyzer.FeaturesConfig;
 import com.facebook.presto.sql.planner.PlanFragment;
 import com.facebook.presto.testing.TestingHandleResolver;
 import com.facebook.presto.testing.TestingSplit;
-import com.facebook.presto.testing.TestingTelemetryManager;
 import com.facebook.presto.testing.TestingTransactionHandle;
 import com.facebook.presto.type.TypeDeserializer;
 import com.google.common.collect.ImmutableMultimap;
@@ -424,8 +423,7 @@ public class TestHttpRemoteTask
                                 createTestMetadataManager(),
                                 new TestQueryManager(),
                                 new HandleResolver(),
-                                new ConnectorTypeSerdeManager(new ConnectorMetadataUpdateHandleJsonSerde()),
-                                new TestingTelemetryManager());
+                                new ConnectorTypeSerdeManager(new ConnectorMetadataUpdateHandleJsonSerde()));
                     }
                 });
         Injector injector = app

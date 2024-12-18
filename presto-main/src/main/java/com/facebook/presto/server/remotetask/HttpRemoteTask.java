@@ -155,7 +155,6 @@ public final class HttpRemoteTask
 
     private final TaskId taskId;
     private final TracingSpan stageSpan;
-    private final TelemetryManager openTelemetryManager;
     private final TracingSpan span;
     private final URI taskLocation;
     private final URI remoteTaskLocation;
@@ -278,7 +277,6 @@ public final class HttpRemoteTask
             HandleResolver handleResolver,
             ConnectorTypeSerdeManager connectorTypeSerdeManager,
             SchedulerStatsTracker schedulerStatsTracker,
-            TelemetryManager openTelemetryManager,
             TracingSpan stageSpan)
     {
         requireNonNull(session, "session is null");
@@ -310,7 +308,6 @@ public final class HttpRemoteTask
         try (SetThreadName ignored = new SetThreadName("HttpRemoteTask-%s", taskId)) {
             this.taskId = taskId;
             this.stageSpan = stageSpan;
-            this.openTelemetryManager = openTelemetryManager;
             this.span = (!TelemetryConfig.getTracingEnabled()) ? null : TelemetryManager.getRemoteTaskSpan(stageSpan, taskId.getQueryId().toString(), taskId.getStageId().toString(), taskId.toString());
             this.taskLocation = location;
             this.remoteTaskLocation = remoteLocation;
