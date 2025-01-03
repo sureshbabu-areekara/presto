@@ -15,6 +15,7 @@ package com.facebook.presto.execution;
 
 import com.facebook.airlift.stats.CounterStat;
 import com.facebook.airlift.stats.TestingGcMonitor;
+import com.facebook.presto.common.TelemetryConfig;
 import com.facebook.presto.common.block.BlockEncodingManager;
 import com.facebook.presto.execution.TestSqlTaskManager.MockExchangeClientSupplier;
 import com.facebook.presto.execution.buffer.BufferInfo;
@@ -36,6 +37,7 @@ import com.facebook.presto.spiller.SpillSpaceTracker;
 import com.facebook.presto.sql.analyzer.FeaturesConfig;
 import com.facebook.presto.sql.gen.OrderingCompiler;
 import com.facebook.presto.sql.planner.LocalExecutionPlanner;
+import com.facebook.presto.testing.TestingTelemetryManager;
 import com.google.common.base.Functions;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
@@ -146,7 +148,7 @@ public class TestSqlTask
         assertEquals(taskInfo.getTaskStatus().getState(), TaskState.FINISHED);
     }
 
-/*    @Test
+    @Test
     public void testSqlTaskUpdateTaskTracingEnabled() throws InterruptedException
     {
         TelemetryConfig.getTelemetryConfig().setTracingEnabled(true);
@@ -160,13 +162,11 @@ public class TestSqlTask
                 createInitialEmptyOutputBuffers(PARTITIONED)
                         .withNoMoreBufferIds(),
                 Optional.of(new TableWriteInfo(Optional.empty(), Optional.empty(), Optional.empty())),
-                TracingSpan.getInvalid(),
-                TelemetryManager.getTracer());
+                TracingSpan.getInvalid());
 
         Thread.sleep(5000);
-        List<SpanData> spans = testingTelemetryManager.getFinishedSpanItems();
-        assertTrue(!spans.isEmpty());
-        assertTrue(spans.stream().anyMatch(spanName -> "task".equals(spanName.getName())));
+        assertFalse(testingTelemetryManager.isSpansEmpty());
+        assertTrue(testingTelemetryManager.spansAnyMatch("task"));
 
         testingTelemetryManager.clearSpanList();
     }
@@ -185,16 +185,14 @@ public class TestSqlTask
                 createInitialEmptyOutputBuffers(PARTITIONED)
                         .withNoMoreBufferIds(),
                 Optional.of(new TableWriteInfo(Optional.empty(), Optional.empty(), Optional.empty())),
-                TracingSpan.getInvalid(),
-                TelemetryManager.getTracer());
+                TracingSpan.getInvalid());
 
         Thread.sleep(5000);
-        List<SpanData> spans = testingTelemetryManager.getFinishedSpanItems();
-        assertTrue(spans.isEmpty());
-        assertFalse(spans.stream().anyMatch(spanName -> "task".equals(spanName.getName())));
+        assertTrue(testingTelemetryManager.isSpansEmpty());
+        assertFalse(testingTelemetryManager.spansAnyMatch("task"));
 
         testingTelemetryManager.clearSpanList();
-    }*/
+    }
 
     @Test
     public void testSimpleQuery()

@@ -18,6 +18,7 @@ import com.facebook.presto.common.CatalogSchemaName;
 import com.facebook.presto.common.QualifiedObjectName;
 import com.facebook.presto.common.RuntimeStats;
 import com.facebook.presto.common.Subfield;
+import com.facebook.presto.common.TelemetryConfig;
 import com.facebook.presto.connector.informationSchema.InformationSchemaConnector;
 import com.facebook.presto.connector.system.SystemConnector;
 import com.facebook.presto.metadata.Catalog;
@@ -43,6 +44,7 @@ import com.facebook.presto.spi.security.Privilege;
 import com.facebook.presto.spi.security.SystemAccessControl;
 import com.facebook.presto.spi.security.SystemAccessControlFactory;
 import com.facebook.presto.testing.TestingConnectorContext;
+import com.facebook.presto.testing.TestingTelemetryManager;
 import com.facebook.presto.tpch.TpchConnectorFactory;
 import com.facebook.presto.transaction.TransactionManager;
 import com.google.common.collect.ImmutableList;
@@ -67,6 +69,7 @@ import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.util.Objects.requireNonNull;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertThrows;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class TestAccessControlManager
@@ -138,7 +141,6 @@ public class TestAccessControlManager
         }
     }
 
-/*
     @Test
     public void testSetSystemAccessControlTracingEnabled() throws InterruptedException
     {
@@ -154,9 +156,8 @@ public class TestAccessControlManager
         accessControlManager.setSystemAccessControl("test", ImmutableMap.of());
 
         Thread.sleep(5000);
-        List<SpanData> spans = testingTelemetryManager.getFinishedSpanItems();
-        assertTrue(!spans.isEmpty());
-        assertTrue(spans.stream().anyMatch(spanName -> "AccessControl.setSystemAccessControl".equals(spanName.getName())));
+        assertTrue(!testingTelemetryManager.isSpansEmpty());
+        assertTrue(testingTelemetryManager.spansAnyMatch("AccessControl.setSystemAccessControl"));
 
         testingTelemetryManager.clearSpanList();
     }
@@ -175,12 +176,10 @@ public class TestAccessControlManager
         accessControlManager.setSystemAccessControl("test", ImmutableMap.of());
 
         Thread.sleep(5000);
-        List<SpanData> spans = testingTelemetryManager.getFinishedSpanItems();
-        assertTrue(spans.isEmpty());
+        assertTrue(testingTelemetryManager.isSpansEmpty());
 
         testingTelemetryManager.clearSpanList();
     }
-*/
 
     @Test
     public void testSetAccessControl()

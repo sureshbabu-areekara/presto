@@ -63,8 +63,7 @@ public class TelemetryManager
 
     private final Map<String, TelemetryFactory> openTelemetryFactories = new ConcurrentHashMap<>();
     private static OpenTelemetry configuredOpenTelemetry;
-    private static Tracer tracer = OpenTelemetry.noop().getTracer("no-op");
-               //default tracer
+    private static Tracer tracer = OpenTelemetry.noop().getTracer("no-op"); //default tracer
 
     public TelemetryManager()
     {
@@ -145,6 +144,16 @@ public class TelemetryManager
     public static void setTracer(Tracer tracer)
     {
         TelemetryManager.tracer = tracer;
+    }
+
+    public OpenTelemetry getOpenTelemetry()
+    {
+        return this.configuredOpenTelemetry;
+    }
+
+    public static void setOpenTelemetry(OpenTelemetry configuredOpenTelemetry)
+    {
+        TelemetryManager.configuredOpenTelemetry = configuredOpenTelemetry;
     }
 
     public static Map<String, String> loadProperties(File file)

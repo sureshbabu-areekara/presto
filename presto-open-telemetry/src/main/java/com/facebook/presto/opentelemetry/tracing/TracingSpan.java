@@ -22,20 +22,6 @@ import java.util.Objects;
 public class TracingSpan
 {
     private final Span span;
-/*    public static TracingSpan getInvalid()
-    {
-        return (TracingSpan) Span.getInvalid();
-    }
-
-    public static TracingSpan current()
-    {
-        return (TracingSpan) Span.current();
-    }
-
-    public static TracingSpan fromContext(Context context)
-    {
-        return (TracingSpan) Span.fromContext(context);
-    }*/
 
     public TracingSpan(Span span)
     {
@@ -72,6 +58,13 @@ public class TracingSpan
         return new TracingSpan(span.setAttribute(key, value));
     }
 
+    public static void addEvent(TracingSpan span, String eventName)
+    {
+        if (TelemetryConfig.getTracingEnabled() && Objects.nonNull(span)) {
+            span.getSpan().addEvent(eventName);
+        }
+    }
+
     public boolean isRecording()
     {
         return span.isRecording();
@@ -80,12 +73,5 @@ public class TracingSpan
     public void end()
     {
         span.end();
-    }
-
-    public static void addEvent(TracingSpan span, String eventName)
-    {
-        if (TelemetryConfig.getTracingEnabled() && Objects.nonNull(span)) {
-            span.getSpan().addEvent(eventName);
-        }
     }
 }
