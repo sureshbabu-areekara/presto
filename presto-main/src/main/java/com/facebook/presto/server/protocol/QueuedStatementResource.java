@@ -18,6 +18,7 @@ import com.facebook.airlift.stats.TimeStat;
 import com.facebook.presto.client.QueryError;
 import com.facebook.presto.client.QueryResults;
 import com.facebook.presto.common.ErrorCode;
+import com.facebook.presto.common.telemetry.tracing.TracingEnum;
 import com.facebook.presto.dispatcher.DispatchExecutor;
 import com.facebook.presto.dispatcher.DispatchInfo;
 import com.facebook.presto.dispatcher.DispatchManager;
@@ -532,7 +533,7 @@ public class QueuedStatementResource
                 if (querySubmissionFuture == null) {
                     //start tracing with root span for POST /v1/statement endpoint
                     TracingSpan rootSpan = TelemetryManager.getRootSpan();
-                    TracingSpan querySpan = TelemetryManager.getQuerySpan(rootSpan, queryId.toString());
+                    TracingSpan querySpan = TelemetryManager.getSpan(rootSpan, TracingEnum.QUERY.getName(), Map.of("QUERY_ID", queryId.toString()));
 
                     //propagate root and query spans through session
                     querySubmissionFuture = dispatchManager.createQuery(queryId, querySpan, rootSpan, slug, retryCount, sessionContext, query);

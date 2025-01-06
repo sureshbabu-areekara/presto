@@ -17,6 +17,7 @@ import com.facebook.airlift.concurrent.BoundedExecutor;
 import com.facebook.presto.Session;
 import com.facebook.presto.common.analyzer.PreparedQuery;
 import com.facebook.presto.common.resourceGroups.QueryType;
+import com.facebook.presto.common.telemetry.tracing.TracingEnum;
 import com.facebook.presto.execution.QueryIdGenerator;
 import com.facebook.presto.execution.QueryInfo;
 import com.facebook.presto.execution.QueryManagerConfig;
@@ -248,7 +249,7 @@ public class DispatchManager
         DispatchQueryCreationFuture queryCreationFuture = new DispatchQueryCreationFuture();
 
         boundedQueryExecutor.execute(TelemetryManager.getCurrentContextWrap(() -> {
-            try (ScopedSpan ignored = scopedSpan(TelemetryManager.getDispatchSpan(querySpan))) {
+            try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(querySpan, TracingEnum.DISPATCH.getName()))) {
                 createQueryInternal(queryId, querySpan, rootSpan, slug, retryCount, sessionContext, query, resourceGroupManager);
             }
             finally {

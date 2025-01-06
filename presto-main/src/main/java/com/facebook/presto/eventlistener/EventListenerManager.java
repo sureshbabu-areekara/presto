@@ -14,6 +14,7 @@
 package com.facebook.presto.eventlistener;
 
 import com.facebook.airlift.log.Logger;
+import com.facebook.presto.common.telemetry.tracing.TracingEnum;
 import com.facebook.presto.opentelemetry.tracing.ScopedSpan;
 import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.spi.classloader.ThreadContextClassLoader;
@@ -128,7 +129,7 @@ public class EventListenerManager
 
     public void splitCompleted(SplitCompletedEvent splitCompletedEvent, TracingSpan pipelineSpan)
     {
-        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSplitSpan(pipelineSpan, splitCompletedEvent.getQueryId(), splitCompletedEvent.getStageId(), splitCompletedEvent.getTaskId(), splitCompletedEvent.getStartTime().map(String::valueOf).orElse(""), splitCompletedEvent.getEndTime().map(String::valueOf).orElse(""), splitCompletedEvent.getPayload(), splitCompletedEvent.getFailureInfo().map(String::valueOf).orElse("")))) {
+        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(pipelineSpan, TracingEnum.SPLIT.getName(), Map.of("QUERY_ID", splitCompletedEvent.getQueryId(), "STAGE_ID", splitCompletedEvent.getStageId(), "TASK_ID", splitCompletedEvent.getTaskId(), "START_TIME", splitCompletedEvent.getStartTime().map(String::valueOf).orElse(""), "END_TIME", splitCompletedEvent.getEndTime().map(String::valueOf).orElse(""), "PAYLOAD", splitCompletedEvent.getPayload(), "FAILURE_INFO", splitCompletedEvent.getFailureInfo().map(String::valueOf).orElse(""))))) {
             configuredEventListener.get()
                     .ifPresent(eventListener -> eventListener.splitCompleted(splitCompletedEvent));
         }

@@ -17,6 +17,7 @@ import com.facebook.airlift.concurrent.SetThreadName;
 import com.facebook.airlift.log.Logger;
 import com.facebook.airlift.stats.TimeStat;
 import com.facebook.presto.Session;
+import com.facebook.presto.common.telemetry.tracing.TracingEnum;
 import com.facebook.presto.cost.StatsAndCosts;
 import com.facebook.presto.execution.BasicStageExecutionStats;
 import com.facebook.presto.execution.LocationFactory;
@@ -247,7 +248,7 @@ public class SqlQueryScheduler
         this.summarizeTaskInfo = summarizeTaskInfo;
 
         TracingSpan querySpan = queryStateMachine.getSession().getQuerySpan();
-        this.schedulerSpan = TelemetryManager.createSchedulerSpan(querySpan, queryStateMachine.getQueryId().toString());
+        this.schedulerSpan = TelemetryManager.getSpan(querySpan, TracingEnum.SCHEDULER.getName(), Map.of("QUERY_ID", queryStateMachine.getQueryId().toString()));
 
         OutputBufferId rootBufferId = getOnlyElement(rootOutputBuffers.getBuffers().keySet());
         List<StageExecutionAndScheduler> stageExecutions = createStageExecutions(

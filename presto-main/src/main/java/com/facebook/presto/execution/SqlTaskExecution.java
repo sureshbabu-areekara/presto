@@ -14,6 +14,7 @@
 package com.facebook.presto.execution;
 
 import com.facebook.airlift.concurrent.SetThreadName;
+import com.facebook.presto.common.telemetry.tracing.TracingEnum;
 import com.facebook.presto.event.SplitMonitor;
 import com.facebook.presto.execution.StateMachine.StateChangeListener;
 import com.facebook.presto.execution.buffer.BufferState;
@@ -938,7 +939,7 @@ public class SqlTaskExecution
             this.driverFactory = driverFactory;
             this.pipelineContext = taskContext.addPipelineContext(driverFactory.getPipelineId(), driverFactory.isInputDriver(), driverFactory.isOutputDriver(), partitioned);
             this.pipelineId = pipelineContext.getPipelineId();
-            this.pipelineSpan = TelemetryManager.getPipelineSpan(taskSpan, taskId.getQueryId().toString(), taskId.getStageId().toString(), taskId.toString(), taskId.getStageId() + "-" + pipelineContext.getPipelineId());
+            this.pipelineSpan = TelemetryManager.getSpan(taskSpan, TracingEnum.PIPELINE.getName(), Map.of("QUERY_ID", taskId.getQueryId().toString(), "STAGE_ID", taskId.getStageId().toString(), "TASK_ID", taskId.toString(), "PIPELINE_ID", taskId.getStageId() + "-" + pipelineContext.getPipelineId()));
         }
 
         // TODO: split this method into two: createPartitionedDriverRunner and createUnpartitionedDriverRunner.

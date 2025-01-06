@@ -29,7 +29,7 @@ import com.facebook.airlift.log.Logger;
 import com.facebook.airlift.stats.DecayCounter;
 import com.facebook.drift.transport.netty.codec.Protocol;
 import com.facebook.presto.Session;
-import com.facebook.presto.common.TelemetryConfig;
+import com.facebook.presto.common.telemetry.tracing.TracingEnum;
 import com.facebook.presto.connector.ConnectorTypeSerdeManager;
 import com.facebook.presto.execution.FutureStateChange;
 import com.facebook.presto.execution.Lifespan;
@@ -308,7 +308,7 @@ public final class HttpRemoteTask
         try (SetThreadName ignored = new SetThreadName("HttpRemoteTask-%s", taskId)) {
             this.taskId = taskId;
             this.stageSpan = stageSpan;
-            this.span = (!TelemetryConfig.getTracingEnabled()) ? null : TelemetryManager.getRemoteTaskSpan(stageSpan, taskId.getQueryId().toString(), taskId.getStageId().toString(), taskId.toString());
+            this.span = TelemetryManager.getSpan(stageSpan, TracingEnum.REMOTE_TASK.getName(), Map.of("QUERY_ID", taskId.getQueryId().toString(), "STAGE_ID", taskId.getStageId().toString(), "TASK_ID", taskId.toString()));
             this.taskLocation = location;
             this.remoteTaskLocation = remoteLocation;
             this.session = session;

@@ -18,6 +18,7 @@ import com.facebook.presto.telemetry.TelemetryManager;
 import com.google.errorprone.annotations.MustBeClosed;
 import io.opentelemetry.context.Scope;
 
+import java.util.Map;
 import java.util.Objects;
 
 public final class ScopedSpan

@@ -21,6 +21,7 @@ import com.facebook.presto.ExceededIntermediateWrittenBytesException;
 import com.facebook.presto.ExceededOutputSizeLimitException;
 import com.facebook.presto.ExceededScanLimitException;
 import com.facebook.presto.Session;
+import com.facebook.presto.common.telemetry.tracing.TracingEnum;
 import com.facebook.presto.cost.HistoryBasedPlanStatisticsManager;
 import com.facebook.presto.cost.HistoryBasedPlanStatisticsTracker;
 import com.facebook.presto.event.QueryMonitor;
@@ -75,6 +76,7 @@ import static com.facebook.presto.execution.QueryLimit.Source.SYSTEM;
 import static com.facebook.presto.execution.QueryLimit.createDurationLimit;
 import static com.facebook.presto.execution.QueryLimit.getMinimum;
 import static com.facebook.presto.execution.QueryState.RUNNING;
+import static com.facebook.presto.opentelemetry.tracing.ScopedSpan.scopedSpan;
 import static com.facebook.presto.spi.StandardErrorCode.EXCEEDED_OUTPUT_POSITIONS_LIMIT;
 import static com.facebook.presto.spi.StandardErrorCode.GENERIC_INTERNAL_ERROR;
 import static com.google.common.collect.ImmutableList.toImmutableList;
@@ -322,7 +324,7 @@ public class SqlQueryManager
 
         TracingSpan querySpan = queryExecution.getSession().getQuerySpan();
         try (SetThreadName ignored = new SetThreadName("Query-%s", queryExecution.getQueryId())) {
-            try (ScopedSpan ignoredStartScope = TelemetryManager.startQueryStartSpan(querySpan)) {
+            try (ScopedSpan ignoredStartScope = scopedSpan(TelemetryManager.getSpan(querySpan, TracingEnum.QUERY_START.getName()))) {
                 embedVersion.embedVersion(queryExecution::start).run();
             }
         }

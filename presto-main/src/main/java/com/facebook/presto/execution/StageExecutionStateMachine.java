@@ -17,6 +17,7 @@ import com.facebook.airlift.log.Logger;
 import com.facebook.airlift.stats.Distribution;
 import com.facebook.presto.common.RuntimeStats;
 import com.facebook.presto.common.TelemetryConfig;
+import com.facebook.presto.common.telemetry.tracing.TracingEnum;
 import com.facebook.presto.execution.StateMachine.StateChangeListener;
 import com.facebook.presto.execution.scheduler.ScheduleResult;
 import com.facebook.presto.execution.scheduler.SplitSchedulerStats;
@@ -33,6 +34,7 @@ import javax.annotation.concurrent.ThreadSafe;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.Set;
@@ -115,7 +117,7 @@ public class StageExecutionStateMachine
 
         finalInfo = new StateMachine<>("final stage execution " + stageExecutionId, executor, Optional.empty());
 
-        stageSpan = TelemetryManager.getStageSpan(schedulerSpan, stageExecutionId.getStageId().getQueryId().toString(), stageExecutionId.getStageId().toString());
+        stageSpan = TelemetryManager.getSpan(schedulerSpan, TracingEnum.STAGE.getName(), Map.of("QUERY_ID", stageExecutionId.getStageId().getQueryId().toString(), "STAGE_ID", stageExecutionId.getStageId().toString()));
 
         try (ScopedSpan spanIgnored = (TelemetryConfig.getTracingEnabled() && (stageSpan != null)) ? ScopedSpan.scopedSpan(stageSpan) : null) { //Recheck if working
             state.addStateChangeListener(state -> {
