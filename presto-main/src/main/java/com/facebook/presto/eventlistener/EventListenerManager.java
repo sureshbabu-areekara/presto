@@ -25,7 +25,6 @@ import com.facebook.presto.spi.eventlistener.QueryCreatedEvent;
 import com.facebook.presto.spi.eventlistener.QueryProgressEvent;
 import com.facebook.presto.spi.eventlistener.QueryUpdatedEvent;
 import com.facebook.presto.spi.eventlistener.SplitCompletedEvent;
-import com.facebook.presto.telemetry.TelemetryManager;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 
@@ -129,7 +128,7 @@ public class EventListenerManager
 
     public void splitCompleted(SplitCompletedEvent splitCompletedEvent, TracingSpan pipelineSpan)
     {
-        try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(pipelineSpan, TracingEnum.SPLIT.getName(), Map.of("QUERY_ID", splitCompletedEvent.getQueryId(), "STAGE_ID", splitCompletedEvent.getStageId(), "TASK_ID", splitCompletedEvent.getTaskId(), "START_TIME", splitCompletedEvent.getStartTime().map(String::valueOf).orElse(""), "END_TIME", splitCompletedEvent.getEndTime().map(String::valueOf).orElse(""), "PAYLOAD", splitCompletedEvent.getPayload(), "FAILURE_INFO", splitCompletedEvent.getFailureInfo().map(String::valueOf).orElse(""))))) {
+        try (ScopedSpan ignored = scopedSpan(pipelineSpan, TracingEnum.SPLIT.getName(), ImmutableMap.of("QUERY_ID", splitCompletedEvent.getQueryId(), "STAGE_ID", splitCompletedEvent.getStageId(), "TASK_ID", splitCompletedEvent.getTaskId(), "START_TIME", splitCompletedEvent.getStartTime().map(String::valueOf).orElse(""), "END_TIME", splitCompletedEvent.getEndTime().map(String::valueOf).orElse(""), "PAYLOAD", splitCompletedEvent.getPayload(), "FAILURE_INFO", splitCompletedEvent.getFailureInfo().map(String::valueOf).orElse("")))) {
             configuredEventListener.get()
                     .ifPresent(eventListener -> eventListener.splitCompleted(splitCompletedEvent));
         }

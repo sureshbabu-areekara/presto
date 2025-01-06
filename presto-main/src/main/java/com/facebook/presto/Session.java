@@ -39,7 +39,7 @@ import com.facebook.presto.spi.session.SessionPropertyConfigurationManager.Syste
 import com.facebook.presto.sql.analyzer.CTEInformationCollector;
 import com.facebook.presto.sql.planner.optimizations.OptimizerInformationCollector;
 import com.facebook.presto.sql.planner.optimizations.OptimizerResultCollector;
-import com.facebook.presto.telemetry.TelemetryManager;
+import com.facebook.presto.telemetry.OpenTelemetryTracingManager;
 import com.facebook.presto.transaction.TransactionManager;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -530,7 +530,7 @@ public final class Session
     {
         return toStringHelper(this)
                 .add("queryId", queryId)
-                .add("querySpan", TelemetryManager.spanString(querySpan).orElse(null))
+                .add("querySpan", OpenTelemetryTracingManager.spanString(querySpan).orElse(null))
                 .add("rootSpan", rootSpan.toString())
                 .add("transactionId", transactionId)
                 .add("user", getUser())

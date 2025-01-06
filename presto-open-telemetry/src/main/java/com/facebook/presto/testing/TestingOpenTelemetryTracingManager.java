@@ -14,7 +14,7 @@
 package com.facebook.presto.testing;
 
 import com.facebook.presto.common.TelemetryConfig;
-import com.facebook.presto.telemetry.TelemetryManager;
+import com.facebook.presto.telemetry.OpenTelemetryTracingManager;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.baggage.propagation.W3CBaggagePropagator;
 import io.opentelemetry.api.common.AttributeKey;
@@ -32,8 +32,8 @@ import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 
 import java.util.List;
 
-public class TestingTelemetryManager
-        extends TelemetryManager
+public class TestingOpenTelemetryTracingManager
+        extends OpenTelemetryTracingManager
 {
     private static OpenTelemetry openTelemetry = OpenTelemetry.noop();
 
@@ -56,11 +56,11 @@ public class TestingTelemetryManager
                 .setPropagators(ContextPropagators.create(
                         TextMapPropagator.composite(W3CTraceContextPropagator.getInstance(), W3CBaggagePropagator.getInstance())))
                 .build();
-        TelemetryManager.setOpenTelemetry(openTelemetry);
+        OpenTelemetryTracingManager.setOpenTelemetry(openTelemetry);
 
         if (TelemetryConfig.getTracingEnabled()) {
             tracer = openTelemetry.getTracer("sdk in mem tracer");
-            TelemetryManager.setTracer(tracer);
+            OpenTelemetryTracingManager.setTracer(tracer);
         }
     }
 
@@ -97,6 +97,6 @@ public class TestingTelemetryManager
 
     public static void setTracer(Tracer tracer)
     {
-        TestingTelemetryManager.tracer = tracer;
+        TestingOpenTelemetryTracingManager.tracer = tracer;
     }
 }

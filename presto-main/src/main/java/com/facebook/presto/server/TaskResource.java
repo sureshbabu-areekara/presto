@@ -32,7 +32,7 @@ import com.facebook.presto.opentelemetry.tracing.ScopedSpan;
 import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.operator.TaskStats;
 import com.facebook.presto.sql.planner.PlanFragment;
-import com.facebook.presto.telemetry.TelemetryManager;
+import com.facebook.presto.telemetry.OpenTelemetryTracingManager;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -141,7 +141,7 @@ public class TaskResource
     {
         requireNonNull(taskUpdateRequest, "taskUpdateRequest is null");
 
-        TracingSpan span = TelemetryManager.getSpan(traceParent, "POST /v1/task/{taskId}"); // Recheck if working without context.makeCurrent();
+        TracingSpan span = OpenTelemetryTracingManager.getSpan(traceParent, "POST /v1/task/{taskId}"); // Recheck if working without context.makeCurrent();
 
         TaskInfo taskInfo;
 
@@ -178,7 +178,7 @@ public class TaskResource
     {
         requireNonNull(taskId, "taskId is null");
 
-        TracingSpan span = TelemetryManager.getSpan(traceParent, "GET /v1/task/{taskId}"); // Recheck if working
+        TracingSpan span = OpenTelemetryTracingManager.getSpan(traceParent, "GET /v1/task/{taskId}"); // Recheck if working
 
         boolean isThriftRequest = isThriftRequest(httpHeaders);
 
@@ -237,7 +237,7 @@ public class TaskResource
     {
         requireNonNull(taskId, "taskId is null");
 
-        TracingSpan span = TelemetryManager.getSpan(traceParent, "GET /v1/task/{taskId}/status");
+        TracingSpan span = OpenTelemetryTracingManager.getSpan(traceParent, "GET /v1/task/{taskId}/status");
 
         if (currentState == null || maxWait == null) {
             TaskStatus taskStatus = taskManager.getTaskStatus(taskId);
@@ -272,7 +272,7 @@ public class TaskResource
     {
         requireNonNull(metadataUpdates, "metadataUpdates is null");
 
-        TracingSpan span = TelemetryManager.getSpan(traceParent, "POST /v1/task/{taskId}/metadataresults");
+        TracingSpan span = OpenTelemetryTracingManager.getSpan(traceParent, "POST /v1/task/{taskId}/metadataresults");
 
         taskManager.updateMetadataResults(taskId, metadataUpdates);
 
@@ -296,7 +296,7 @@ public class TaskResource
         requireNonNull(taskId, "taskId is null");
         TaskInfo taskInfo;
 
-        TracingSpan span = TelemetryManager.getSpan(traceParent, "DELETE /v1/task/{taskId}");
+        TracingSpan span = OpenTelemetryTracingManager.getSpan(traceParent, "DELETE /v1/task/{taskId}");
 
         if (abort) {
             taskInfo = taskManager.abortTask(taskId);
@@ -351,7 +351,7 @@ public class TaskResource
         requireNonNull(taskId, "taskId is null");
         requireNonNull(bufferId, "bufferId is null");
 
-        TracingSpan span = TelemetryManager.getSpan(traceParent, "GET /v1/task/{taskId}/results/{bufferId}/{token}/acknowledge");
+        TracingSpan span = OpenTelemetryTracingManager.getSpan(traceParent, "GET /v1/task/{taskId}/results/{bufferId}/{token}/acknowledge");
 
         taskManager.acknowledgeTaskResults(taskId, bufferId, token);
 
@@ -370,7 +370,7 @@ public class TaskResource
         requireNonNull(taskId, "taskId is null");
         requireNonNull(bufferId, "bufferId is null");
 
-        TracingSpan span = TelemetryManager.getSpan(traceParent, "HEAD /v1/task/{taskId}/results/{bufferId}");
+        TracingSpan span = OpenTelemetryTracingManager.getSpan(traceParent, "HEAD /v1/task/{taskId}/results/{bufferId}");
 
         if (!Objects.isNull(span)) {
             span.end();
@@ -400,7 +400,7 @@ public class TaskResource
             @PathParam("token") final long token,
             @HeaderParam("traceparent") String traceParent)
     {
-        TracingSpan span = TelemetryManager.getSpan(traceParent, "HEAD /v1/task/{taskId}/results/{bufferId}/{token}");
+        TracingSpan span = OpenTelemetryTracingManager.getSpan(traceParent, "HEAD /v1/task/{taskId}/results/{bufferId}/{token}");
 
         if (!Objects.isNull(span)) {
             span.end();
@@ -418,7 +418,7 @@ public class TaskResource
         requireNonNull(taskId, "taskId is null");
         requireNonNull(bufferId, "bufferId is null");
 
-        TracingSpan span = TelemetryManager.getSpan(traceParent, "DELETE v1/task/{taskId}/results/{bufferId}");
+        TracingSpan span = OpenTelemetryTracingManager.getSpan(traceParent, "DELETE v1/task/{taskId}/results/{bufferId}");
 
         taskManager.abortTaskResults(taskId, bufferId);
 
@@ -434,7 +434,7 @@ public class TaskResource
         requireNonNull(taskId, "taskId is null");
         requireNonNull(remoteSourceTaskId, "remoteSourceTaskId is null");
 
-        TracingSpan span = TelemetryManager.getSpan(traceParent, "DELETE /v1/task/{taskId}/remote-source/{remoteSourceTaskId}");
+        TracingSpan span = OpenTelemetryTracingManager.getSpan(traceParent, "DELETE /v1/task/{taskId}/remote-source/{remoteSourceTaskId}");
 
         taskManager.removeRemoteSource(taskId, remoteSourceTaskId);
 

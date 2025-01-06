@@ -44,7 +44,7 @@ import com.facebook.presto.spi.security.Privilege;
 import com.facebook.presto.spi.security.SystemAccessControl;
 import com.facebook.presto.spi.security.SystemAccessControlFactory;
 import com.facebook.presto.testing.TestingConnectorContext;
-import com.facebook.presto.testing.TestingTelemetryManager;
+import com.facebook.presto.testing.TestingOpenTelemetryTracingManager;
 import com.facebook.presto.tpch.TpchConnectorFactory;
 import com.facebook.presto.transaction.TransactionManager;
 import com.google.common.collect.ImmutableList;
@@ -146,7 +146,7 @@ public class TestAccessControlManager
     {
         TelemetryConfig.getTelemetryConfig().setTracingEnabled(true);
         TelemetryConfig.getTelemetryConfig().setSpanSampling(false);
-        TestingTelemetryManager testingTelemetryManager = new TestingTelemetryManager();
+        TestingOpenTelemetryTracingManager testingTelemetryManager = new TestingOpenTelemetryTracingManager();
         testingTelemetryManager.createInstances();
 
         AccessControlManager accessControlManager = new AccessControlManager(createTestTransactionManager());
@@ -165,7 +165,7 @@ public class TestAccessControlManager
     @Test
     public void testSetSystemAccessControlTracingDisabled() throws InterruptedException
     {
-        TestingTelemetryManager testingTelemetryManager = new TestingTelemetryManager();
+        TestingOpenTelemetryTracingManager testingTelemetryManager = new TestingOpenTelemetryTracingManager();
         testingTelemetryManager.createInstances();
         TelemetryConfig.getTelemetryConfig().setTracingEnabled(false);
 

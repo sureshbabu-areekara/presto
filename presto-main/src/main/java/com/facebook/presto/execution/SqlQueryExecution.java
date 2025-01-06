@@ -65,7 +65,6 @@ import com.facebook.presto.sql.planner.SplitSourceFactory;
 import com.facebook.presto.sql.planner.SubPlan;
 import com.facebook.presto.sql.planner.optimizations.PlanOptimizer;
 import com.facebook.presto.sql.planner.sanity.PlanChecker;
-import com.facebook.presto.telemetry.TelemetryManager;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.units.DataSize;
@@ -207,7 +206,7 @@ public class SqlQueryExecution
             requireNonNull(preparedQuery, "preparedQuery is null");
 
             TracingSpan querySpan = getSession().getQuerySpan();
-            try (ScopedSpan spanIgnored = scopedSpan(TelemetryManager.getSpan(querySpan, TracingEnum.ANALYZER.getName()))) {
+            try (ScopedSpan spanIgnored = scopedSpan(querySpan, TracingEnum.ANALYZER.getName())) {
                 try (TimeoutThread unused = new TimeoutThread(
                         Thread.currentThread(),
                         timeoutThreadExecutor,
@@ -564,7 +563,7 @@ public class SqlQueryExecution
                             () -> queryAnalyzer.plan(this.analyzerContext, queryAnalysis));
 
             TracingSpan querySpan = getSession().getQuerySpan();
-            try (ScopedSpan ignored = scopedSpan(TelemetryManager.getSpan(querySpan, TracingEnum.PLANNER.getName()))) {
+            try (ScopedSpan ignored = scopedSpan(querySpan, TracingEnum.PLANNER.getName())) {
                 return optimizePlan(planNode);
             }
         }

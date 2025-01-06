@@ -42,7 +42,7 @@ import com.facebook.presto.sql.planner.optimizations.PlanNodeSearcher;
 import com.facebook.presto.sql.planner.optimizations.PlanOptimizer;
 import com.facebook.presto.sql.planner.optimizations.PlanOptimizerResult;
 import com.facebook.presto.sql.planner.sanity.PlanChecker;
-import com.facebook.presto.telemetry.TelemetryManager;
+import com.facebook.presto.telemetry.OpenTelemetryTracingManager;
 
 import java.util.List;
 import java.util.Optional;
@@ -106,10 +106,10 @@ public class Optimizer
 
     private ScopedSpan optimizerSpan(PlanOptimizer optimizer)
     {
-        if (!TelemetryManager.isRecording()) {
+        if (!OpenTelemetryTracingManager.isRecording()) {
             return null;
         }
-        TracingSpan span = TelemetryManager.getSpan(optimizer.getClass().getSimpleName()); //Recheck if working
+        TracingSpan span = OpenTelemetryTracingManager.getSpan(optimizer.getClass().getSimpleName()); //Recheck if working
 
         if (optimizer instanceof IterativeOptimizer) {
             List<String> ruleNames = ((IterativeOptimizer) optimizer).getRules().stream()

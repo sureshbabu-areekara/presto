@@ -37,7 +37,7 @@ import com.facebook.presto.spi.QueryId;
 import com.facebook.presto.spi.WarningCode;
 import com.facebook.presto.spi.eventlistener.QueryCompletedEvent;
 import com.facebook.presto.spi.memory.MemoryPoolId;
-import com.facebook.presto.testing.TestingTelemetryManager;
+import com.facebook.presto.testing.TestingOpenTelemetryTracingManager;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -158,7 +158,7 @@ public class TestQueryManager
     public void testDispatchManagerCreateQueryWithTracingEnabled() throws Exception
     {
         TelemetryConfig.getTelemetryConfig().setTracingEnabled(true);
-        TestingTelemetryManager testingTelemetryManager = new TestingTelemetryManager();
+        TestingOpenTelemetryTracingManager testingTelemetryManager = new TestingOpenTelemetryTracingManager();
         testingTelemetryManager.createInstances();
 
         DispatchManager dispatchManager = queryRunner.getCoordinator().getDispatchManager();
@@ -187,7 +187,7 @@ public class TestQueryManager
     public void testDispatchManagerCreateQueryWithTracingDisabled() throws Exception
     {
         TelemetryConfig.getTelemetryConfig().setTracingEnabled(false);
-        TestingTelemetryManager testingTelemetryManager = new TestingTelemetryManager();
+        TestingOpenTelemetryTracingManager testingTelemetryManager = new TestingOpenTelemetryTracingManager();
         testingTelemetryManager.createInstances();
 
         DispatchManager dispatchManager = queryRunner.getCoordinator().getDispatchManager();

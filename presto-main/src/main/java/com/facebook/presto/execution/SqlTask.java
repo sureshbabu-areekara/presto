@@ -42,9 +42,10 @@ import com.facebook.presto.spi.ConnectorMetadataUpdateHandle;
 import com.facebook.presto.spi.connector.ConnectorMetadataUpdater;
 import com.facebook.presto.spi.plan.PlanNodeId;
 import com.facebook.presto.sql.planner.PlanFragment;
-import com.facebook.presto.telemetry.TelemetryManager;
+import com.facebook.presto.telemetry.OpenTelemetryTracingManager;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -55,7 +56,6 @@ import javax.annotation.Nullable;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -464,7 +464,7 @@ public class SqlTask
                     checkState(tableWriteInfo.isPresent(), "tableWriteInfo must be present");
 
                     if (TelemetryConfig.getTracingEnabled() && Objects.nonNull(taskSpan)) {
-                        taskSpan = TelemetryManager.getSpan(span, TracingEnum.TASK.getName(), Map.of("node id", nodeId, "QUERY_ID", taskId.getQueryId().toString(), "STAGE_ID", taskId.getStageId().toString(), "TASK_ID", taskId.toString(), "task instance id", getTaskInstanceId()));
+                        taskSpan = OpenTelemetryTracingManager.getSpan(span, TracingEnum.TASK.getName(), ImmutableMap.of("node id", nodeId, "QUERY_ID", taskId.getQueryId().toString(), "STAGE_ID", taskId.getStageId().toString(), "TASK_ID", taskId.toString(), "task instance id", getTaskInstanceId()));
                     }
 
                     taskExecution = sqlTaskExecutionFactory.create(

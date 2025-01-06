@@ -16,7 +16,7 @@ package com.facebook.presto.telemetry;
 
 import com.facebook.presto.common.TelemetryConfig;
 import com.facebook.presto.opentelemetry.OpenTelemetryImpl;
-import com.facebook.presto.testing.TestingTelemetryManager;
+import com.facebook.presto.testing.TestingOpenTelemetryTracingManager;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;
 import org.testng.annotations.AfterMethod;
@@ -31,9 +31,9 @@ import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.fail;
 
-public class TestTelemetryManager
+public class TestOpenTelemetryTracingManager
 {
-    private TestingTelemetryManager telemetryManager;
+    private TestingOpenTelemetryTracingManager telemetryManager;
     private OpenTelemetryImpl openTelemetryFactory;
     Map<String, String> properties = new HashMap<>();
 
@@ -50,7 +50,7 @@ public class TestTelemetryManager
         properties.put("trace-sampling-ratio", "1.0");
         properties.put("span-sampling", "true");
 
-        telemetryManager = new TestingTelemetryManager();
+        telemetryManager = new TestingOpenTelemetryTracingManager();
 
         openTelemetryFactory = new OpenTelemetryImpl();
         telemetryManager.clearFactories();

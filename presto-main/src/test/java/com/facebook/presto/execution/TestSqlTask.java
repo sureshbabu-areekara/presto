@@ -37,7 +37,7 @@ import com.facebook.presto.spiller.SpillSpaceTracker;
 import com.facebook.presto.sql.analyzer.FeaturesConfig;
 import com.facebook.presto.sql.gen.OrderingCompiler;
 import com.facebook.presto.sql.planner.LocalExecutionPlanner;
-import com.facebook.presto.testing.TestingTelemetryManager;
+import com.facebook.presto.testing.TestingOpenTelemetryTracingManager;
 import com.google.common.base.Functions;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
@@ -152,7 +152,7 @@ public class TestSqlTask
     public void testSqlTaskUpdateTaskTracingEnabled() throws InterruptedException
     {
         TelemetryConfig.getTelemetryConfig().setTracingEnabled(true);
-        TestingTelemetryManager testingTelemetryManager = new TestingTelemetryManager();
+        TestingOpenTelemetryTracingManager testingTelemetryManager = new TestingOpenTelemetryTracingManager();
         testingTelemetryManager.createInstances();
 
         SqlTask sqlTask = createInitialTask();
@@ -174,7 +174,7 @@ public class TestSqlTask
     @Test
     public void testSqlTaskUpdateTaskTracingDisabled() throws InterruptedException
     {
-        TestingTelemetryManager testingTelemetryManager = new TestingTelemetryManager();
+        TestingOpenTelemetryTracingManager testingTelemetryManager = new TestingOpenTelemetryTracingManager();
         testingTelemetryManager.createInstances();
         TelemetryConfig.getTelemetryConfig().setTracingEnabled(false);
 

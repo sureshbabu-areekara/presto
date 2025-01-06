@@ -50,8 +50,9 @@ import com.facebook.presto.sql.planner.SubPlan;
 import com.facebook.presto.sql.planner.TypeProvider;
 import com.facebook.presto.sql.planner.optimizations.PlanOptimizer;
 import com.facebook.presto.sql.planner.sanity.PlanChecker;
-import com.facebook.presto.telemetry.TelemetryManager;
+import com.facebook.presto.telemetry.OpenTelemetryTracingManager;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -248,7 +249,7 @@ public class SqlQueryScheduler
         this.summarizeTaskInfo = summarizeTaskInfo;
 
         TracingSpan querySpan = queryStateMachine.getSession().getQuerySpan();
-        this.schedulerSpan = TelemetryManager.getSpan(querySpan, TracingEnum.SCHEDULER.getName(), Map.of("QUERY_ID", queryStateMachine.getQueryId().toString()));
+        this.schedulerSpan = OpenTelemetryTracingManager.getSpan(querySpan, TracingEnum.SCHEDULER.getName(), ImmutableMap.of("QUERY_ID", queryStateMachine.getQueryId().toString()));
 
         OutputBufferId rootBufferId = getOnlyElement(rootOutputBuffers.getBuffers().keySet());
         List<StageExecutionAndScheduler> stageExecutions = createStageExecutions(

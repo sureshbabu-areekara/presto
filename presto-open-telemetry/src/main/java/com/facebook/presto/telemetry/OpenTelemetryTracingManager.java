@@ -54,9 +54,9 @@ import static java.util.Objects.requireNonNull;
 /**
  * OpenTelemetryManager class creates and manages OpenTelemetry and Tracer instances.
  */
-public class TelemetryManager
+public class OpenTelemetryTracingManager
 {
-    private static final Logger log = Logger.get(TelemetryManager.class);
+    private static final Logger log = Logger.get(OpenTelemetryTracingManager.class);
     private static final File OPENTELEMETRY_CONFIGURATION = new File("etc/telemetry-tracing.properties");
     private static final String TRACING_FACTORY_NAME = "tracing-factory.name";
 
@@ -64,7 +64,7 @@ public class TelemetryManager
     private static OpenTelemetry configuredOpenTelemetry;
     private static Tracer tracer = OpenTelemetry.noop().getTracer("no-op"); //default tracer
 
-    public TelemetryManager()
+    public OpenTelemetryTracingManager()
     {
         addOpenTelemetryFactory(new OpenTelemetryImpl());
     }
@@ -142,7 +142,7 @@ public class TelemetryManager
 
     public static void setTracer(Tracer tracer)
     {
-        TelemetryManager.tracer = tracer;
+        OpenTelemetryTracingManager.tracer = tracer;
     }
 
     public OpenTelemetry getOpenTelemetry()
@@ -152,7 +152,7 @@ public class TelemetryManager
 
     public static void setOpenTelemetry(OpenTelemetry configuredOpenTelemetry)
     {
-        TelemetryManager.configuredOpenTelemetry = configuredOpenTelemetry;
+        OpenTelemetryTracingManager.configuredOpenTelemetry = configuredOpenTelemetry;
     }
 
     public static Map<String, String> loadProperties(File file)
@@ -261,13 +261,6 @@ public class TelemetryManager
                 .startSpan());
     }
 
-    public static TracingSpan getSpan(TracingSpan parentSpan, String spanName)
-    {
-        return !TelemetryConfig.getTracingEnabled() ? null : new TracingSpan(tracer.spanBuilder(spanName)
-                .setParent(getContext(parentSpan))
-                .startSpan());
-    }
-
     public static TracingSpan getSpan(String traceParent, String spanName)
     {
         TracingSpan span = !TelemetryConfig.getTracingEnabled() && traceParent != null ? null : new TracingSpan(tracer.spanBuilder(spanName)
@@ -275,12 +268,6 @@ public class TelemetryManager
                 .startSpan());
         //context.makeCurrent();
         return span;
-    }
-
-    public static TracingSpan getSpan(String spanName, Map<String, String> attributes)
-    {
-        return !TelemetryConfig.getTracingEnabled() ? null : new TracingSpan(setAttributes(tracer.spanBuilder(spanName), attributes)
-                .startSpan());
     }
 
     public static TracingSpan getSpan(TracingSpan parentSpan, String spanName, Map<String, String> attributes)

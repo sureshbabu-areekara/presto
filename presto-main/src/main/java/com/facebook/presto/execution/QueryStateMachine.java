@@ -45,7 +45,7 @@ import com.facebook.presto.spi.statistics.ColumnStatistics;
 import com.facebook.presto.spi.statistics.TableStatistics;
 import com.facebook.presto.sql.planner.CanonicalPlanWithInfo;
 import com.facebook.presto.sql.planner.PlanFragment;
-import com.facebook.presto.telemetry.TelemetryManager;
+import com.facebook.presto.telemetry.OpenTelemetryTracingManager;
 import com.facebook.presto.transaction.TransactionInfo;
 import com.facebook.presto.transaction.TransactionManager;
 import com.google.common.base.Ticker;
@@ -268,7 +268,7 @@ public class QueryStateMachine
         TracingSpan querySpan = session.getQuerySpan();
         TracingSpan rootSpan = session.getRootSpan();
 
-        TelemetryManager.setAttributeQueryType(querySpan, queryType.map(Enum::name).orElse("UNKNOWN"));
+        OpenTelemetryTracingManager.setAttributeQueryType(querySpan, queryType.map(Enum::name).orElse("UNKNOWN"));
 
         QueryStateMachine queryStateMachine = new QueryStateMachine(
                 query,
@@ -287,7 +287,7 @@ public class QueryStateMachine
             QUERY_STATE_LOG.debug("Query %s is %s", queryStateMachine.getQueryId(), newState);
             // mark finished or failed transaction as inactive
 
-            TelemetryManager.addEvent(newState.toString(), querySpan);
+            OpenTelemetryTracingManager.addEvent(newState.toString(), querySpan);
             if (newState.isDone()) {
                 try {
                     queryStateMachine.getSession().getTransactionId().ifPresent(transactionManager::trySetInactive);
@@ -296,11 +296,11 @@ public class QueryStateMachine
                             failure -> {
                                 ErrorCode errorCode = requireNonNull(failure.getErrorCode());
 
-                                TelemetryManager.recordException(querySpan, failure.getMessage(), failure.toException(), errorCode);
+                                OpenTelemetryTracingManager.recordException(querySpan, failure.getMessage(), failure.toException(), errorCode);
                             });
 
                     queryStateMachine.getFailureInfo().orElseGet(() -> {
-                        TelemetryManager.setSuccess(querySpan);
+                        OpenTelemetryTracingManager.setSuccess(querySpan);
                         return null;
                     });
                 }

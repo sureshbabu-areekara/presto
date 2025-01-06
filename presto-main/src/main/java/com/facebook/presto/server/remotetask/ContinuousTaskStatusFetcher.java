@@ -35,7 +35,7 @@ import com.facebook.presto.server.smile.BaseResponse;
 import com.facebook.presto.server.thrift.ThriftHttpResponseHandler;
 import com.facebook.presto.spi.HostAddress;
 import com.facebook.presto.spi.PrestoException;
-import com.facebook.presto.telemetry.TelemetryManager;
+import com.facebook.presto.telemetry.OpenTelemetryTracingManager;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -189,7 +189,7 @@ class ContinuousTaskStatusFetcher
             responseHandler = createAdaptingJsonResponseHandler((JsonCodec<TaskStatus>) taskStatusCodec);
         }
 
-        Map<String, String> headersMap = TelemetryManager.getHeadersMap(remoteTaskSpan);
+        Map<String, String> headersMap = OpenTelemetryTracingManager.getHeadersMap(remoteTaskSpan);
 
         for (Map.Entry<String, String> entry : headersMap.entrySet()) {
             requestBuilder.addHeader(entry.getKey(), entry.getValue());

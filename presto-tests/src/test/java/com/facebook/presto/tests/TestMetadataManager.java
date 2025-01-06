@@ -27,7 +27,7 @@ import com.facebook.presto.spi.QueryId;
 import com.facebook.presto.spi.TableHandle;
 import com.facebook.presto.spi.connector.ConnectorFactory;
 import com.facebook.presto.spi.statistics.TableStatistics;
-import com.facebook.presto.testing.TestingTelemetryManager;
+import com.facebook.presto.testing.TestingOpenTelemetryTracingManager;
 import com.facebook.presto.testing.TestingTransactionHandle;
 import com.facebook.presto.tests.tpch.TpchQueryRunnerBuilder;
 import com.facebook.presto.transaction.TransactionBuilder;
@@ -64,7 +64,7 @@ public class TestMetadataManager
 {
     private DistributedQueryRunner queryRunner;
     private MetadataManager metadataManager;
-    private static TestingTelemetryManager testingTelemetryManager;
+    private static TestingOpenTelemetryTracingManager testingTelemetryManager;
 
     @BeforeClass
     public void setUp()
@@ -214,7 +214,7 @@ public class TestMetadataManager
         //With sampling
         TelemetryConfig.getTelemetryConfig().setTracingEnabled(true);
         TelemetryConfig.getTelemetryConfig().setSpanSampling(true);
-        TestingTelemetryManager testingTelemetryManager = new TestingTelemetryManager();
+        TestingOpenTelemetryTracingManager testingTelemetryManager = new TestingOpenTelemetryTracingManager();
         testingTelemetryManager.createInstances();
 
         @Language("SQL") String sql = "SELECT * FROM nation";
@@ -238,7 +238,7 @@ public class TestMetadataManager
         //Without sampling
         TelemetryConfig.getTelemetryConfig().setTracingEnabled(true);
         TelemetryConfig.getTelemetryConfig().setSpanSampling(false);
-        TestingTelemetryManager testingTelemetryManager = new TestingTelemetryManager();
+        TestingOpenTelemetryTracingManager testingTelemetryManager = new TestingOpenTelemetryTracingManager();
         testingTelemetryManager.createInstances();
 
         @Language("SQL") String sql = "SELECT * FROM nation";
@@ -263,7 +263,7 @@ public class TestMetadataManager
     {
         TelemetryConfig.getTelemetryConfig().setTracingEnabled(false);
         TelemetryConfig.getTelemetryConfig().setSpanSampling(false);
-        TestingTelemetryManager testingTelemetryManager = new TestingTelemetryManager();
+        TestingOpenTelemetryTracingManager testingTelemetryManager = new TestingOpenTelemetryTracingManager();
         testingTelemetryManager.createInstances();
 
         @Language("SQL") String sql = "SELECT * FROM nation";
@@ -283,7 +283,7 @@ public class TestMetadataManager
     {
         TelemetryConfig.getTelemetryConfig().setTracingEnabled(true);
         TelemetryConfig.getTelemetryConfig().setSpanSampling(true);
-        TestingTelemetryManager testingTelemetryManager = new TestingTelemetryManager();
+        TestingOpenTelemetryTracingManager testingTelemetryManager = new TestingOpenTelemetryTracingManager();
         testingTelemetryManager.createInstances();
 
         @Language("SQL") String sql = "SELECT * FROM dummy";

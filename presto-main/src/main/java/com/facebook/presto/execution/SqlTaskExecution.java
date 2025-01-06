@@ -33,7 +33,7 @@ import com.facebook.presto.spi.SplitWeight;
 import com.facebook.presto.spi.plan.PlanNodeId;
 import com.facebook.presto.spi.plan.StageExecutionDescriptor;
 import com.facebook.presto.sql.planner.LocalExecutionPlanner.LocalExecutionPlan;
-import com.facebook.presto.telemetry.TelemetryManager;
+import com.facebook.presto.telemetry.OpenTelemetryTracingManager;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -939,7 +939,7 @@ public class SqlTaskExecution
             this.driverFactory = driverFactory;
             this.pipelineContext = taskContext.addPipelineContext(driverFactory.getPipelineId(), driverFactory.isInputDriver(), driverFactory.isOutputDriver(), partitioned);
             this.pipelineId = pipelineContext.getPipelineId();
-            this.pipelineSpan = TelemetryManager.getSpan(taskSpan, TracingEnum.PIPELINE.getName(), Map.of("QUERY_ID", taskId.getQueryId().toString(), "STAGE_ID", taskId.getStageId().toString(), "TASK_ID", taskId.toString(), "PIPELINE_ID", taskId.getStageId() + "-" + pipelineContext.getPipelineId()));
+            this.pipelineSpan = OpenTelemetryTracingManager.getSpan(taskSpan, TracingEnum.PIPELINE.getName(), ImmutableMap.of("QUERY_ID", taskId.getQueryId().toString(), "STAGE_ID", taskId.getStageId().toString(), "TASK_ID", taskId.toString(), "PIPELINE_ID", taskId.getStageId() + "-" + pipelineContext.getPipelineId()));
         }
 
         // TODO: split this method into two: createPartitionedDriverRunner and createUnpartitionedDriverRunner.

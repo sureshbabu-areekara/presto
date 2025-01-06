@@ -25,16 +25,16 @@ import com.facebook.presto.opentelemetry.tracing.ScopedSpan;
 import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.operator.BlockedReason;
 import com.facebook.presto.operator.TaskStats;
-import com.facebook.presto.telemetry.TelemetryManager;
+import com.facebook.presto.telemetry.OpenTelemetryTracingManager;
 import com.facebook.presto.util.Failures;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import org.joda.time.DateTime;
 
 import javax.annotation.concurrent.ThreadSafe;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.Set;
@@ -117,7 +117,7 @@ public class StageExecutionStateMachine
 
         finalInfo = new StateMachine<>("final stage execution " + stageExecutionId, executor, Optional.empty());
 
-        stageSpan = TelemetryManager.getSpan(schedulerSpan, TracingEnum.STAGE.getName(), Map.of("QUERY_ID", stageExecutionId.getStageId().getQueryId().toString(), "STAGE_ID", stageExecutionId.getStageId().toString()));
+        stageSpan = OpenTelemetryTracingManager.getSpan(schedulerSpan, TracingEnum.STAGE.getName(), ImmutableMap.of("QUERY_ID", stageExecutionId.getStageId().getQueryId().toString(), "STAGE_ID", stageExecutionId.getStageId().toString()));
 
         try (ScopedSpan spanIgnored = (TelemetryConfig.getTracingEnabled() && (stageSpan != null)) ? ScopedSpan.scopedSpan(stageSpan) : null) { //Recheck if working
             state.addStateChangeListener(state -> {
