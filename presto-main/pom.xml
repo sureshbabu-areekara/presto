@@ -40,11 +40,6 @@
             <groupId>com.facebook.presto</groupId>
             <artifactId>presto-spi</artifactId>
         </dependency>
-	
-	    <dependency>
-            <groupId>com.facebook.presto</groupId>
-            <artifactId>presto-open-telemetry</artifactId>
-        </dependency>
 
         <dependency>
             <groupId>com.facebook.presto</groupId>
@@ -508,7 +503,6 @@
             <artifactId>ratis-common</artifactId>
             <optional>true</optional>
         </dependency>
-
     </dependencies>
 
     <build>

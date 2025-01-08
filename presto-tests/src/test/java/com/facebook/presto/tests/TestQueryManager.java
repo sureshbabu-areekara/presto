@@ -37,14 +37,14 @@ import com.facebook.presto.spi.QueryId;
 import com.facebook.presto.spi.WarningCode;
 import com.facebook.presto.spi.eventlistener.QueryCompletedEvent;
 import com.facebook.presto.spi.memory.MemoryPoolId;
-import com.facebook.presto.testing.TestingOpenTelemetryTracingManager;
+import com.facebook.presto.sql.parser.SqlParserOptions;
+import com.facebook.presto.testing.TestingTracingManager;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
-import io.opentelemetry.sdk.trace.data.SpanData;
 import org.intellij.lang.annotations.Language;
 import org.joda.time.DateTime;
 import org.testng.annotations.AfterClass;
@@ -54,7 +54,9 @@ import org.testng.annotations.Test;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.facebook.presto.SessionTestUtils.TEST_SESSION;
@@ -86,11 +88,32 @@ public class TestQueryManager
 {
     private DistributedQueryRunner queryRunner;
     private static final String LONG_LASTING_QUERY = "SELECT COUNT(*) FROM blackhole.default.dummy";
+    private TestingTracingManager testingTracingManager;
 
     @BeforeClass
     public void setUp()
             throws Exception
     {
+        Map<String, String> properties = new HashMap<>();
+        properties.put("tracing-enabled", "true");
+        properties.put("tracing-backend-url", "http://localhost:4317");
+        properties.put("max-exporter-batch-size", "256");
+        properties.put("max-queue-size", "1024");
+        properties.put("exporter-timeout", "5000");
+        properties.put("schedule-delay", "1000");
+        properties.put("trace-sampling-ratio", "1.0");
+        properties.put("span-sampling", "true");
+        TelemetryConfig.getTelemetryConfig().setTelemetryProperties(properties);
+
+        TestingPrestoServer testingPrestoServer = new TestingPrestoServer(
+                ImmutableMap.<String, String>builder()
+                        .put("plugin.bundles", "../presto-open-telemetry/pom.xml")
+                        .build(), new SqlParserOptions());
+        testingPrestoServer.getPluginManager().loadPlugins();
+
+        testingTracingManager = testingPrestoServer.getTestingTracingManager();
+        testingTracingManager.loadConfiguredOpenTelemetry();
+
         queryRunner = getSimpleQueryRunner();
         queryRunner.installPlugin(new BlackHolePlugin());
         queryRunner.createCatalog("blackhole", "blackhole");
@@ -158,8 +181,6 @@ public class TestQueryManager
     public void testDispatchManagerCreateQueryWithTracingEnabled() throws Exception
     {
         TelemetryConfig.getTelemetryConfig().setTracingEnabled(true);
-        TestingOpenTelemetryTracingManager testingTelemetryManager = new TestingOpenTelemetryTracingManager();
-        testingTelemetryManager.createInstances();
 
         DispatchManager dispatchManager = queryRunner.getCoordinator().getDispatchManager();
         QueryId queryId = dispatchManager.createQueryId();
@@ -174,21 +195,17 @@ public class TestQueryManager
                 .get();
 
         Thread.sleep(5000);
-        List<SpanData> spanDataList = testingTelemetryManager.getFinishedSpanItems();
-        spanDataList.forEach(spanData -> System.out.println(spanData.getName()));
 
-        assertTrue(!spanDataList.isEmpty());
-        assertTrue(spanDataList.stream().anyMatch(spandata -> "dispatch".equals(spandata.getName())));
+        assertFalse(testingTracingManager.isSpansEmpty());
+        assertTrue(testingTracingManager.spansAnyMatch("dispatch"));
 
-        testingTelemetryManager.clearSpanList();
+        testingTracingManager.clearSpanList();
     }
 
     @Test
     public void testDispatchManagerCreateQueryWithTracingDisabled() throws Exception
     {
         TelemetryConfig.getTelemetryConfig().setTracingEnabled(false);
-        TestingOpenTelemetryTracingManager testingTelemetryManager = new TestingOpenTelemetryTracingManager();
-        testingTelemetryManager.createInstances();
 
         DispatchManager dispatchManager = queryRunner.getCoordinator().getDispatchManager();
         QueryId queryId = dispatchManager.createQueryId();
@@ -203,13 +220,11 @@ public class TestQueryManager
                 .get();
 
         Thread.sleep(5000);
-        List<SpanData> spanDataList = testingTelemetryManager.getFinishedSpanItems();
-        spanDataList.forEach(spanData -> System.out.println(spanData.getName()));
 
-        assertTrue(spanDataList.isEmpty());
-        assertFalse(spanDataList.stream().anyMatch(spandata -> "dispatch".equals(spandata.getName())));
+        assertFalse(testingTracingManager.isSpansEmpty());
+        assertTrue(testingTracingManager.spansAnyMatch("dispatch"));
 
-        testingTelemetryManager.clearSpanList();
+        testingTracingManager.clearSpanList();
     }
 
     @Test(timeOut = 60_000L)

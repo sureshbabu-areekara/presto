@@ -11,27 +11,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.facebook.presto.common.util;
+package com.facebook.presto.spi.testing;
 
-import io.opentelemetry.context.propagation.TextMapGetter;
+import java.util.List;
 
-import java.util.Collections;
-
-public class TextMapGetterImpl
-        implements TextMapGetter<Object>
+public interface TestingTelemetryTracing
 {
-    @Override
-    public Iterable<String> keys(Object carrier)
-    {
-        return Collections.singletonList("traceparent");
-    }
+    void loadConfiguredOpenTelemetry();
 
-    @Override
-    public String get(Object carrier, String key)
-    {
-        if ("traceparent".equals(key)) {
-            return (String) carrier;
-        }
-        return null;
-    }
+    List<?> getFinishedSpanItems();
+
+    boolean isSpansEmpty();
+
+    boolean spansAnyMatch(String spanName);
+
+    void clearSpanList();
+
+    //OpenTelemetry getOpenTelemetry();
 }

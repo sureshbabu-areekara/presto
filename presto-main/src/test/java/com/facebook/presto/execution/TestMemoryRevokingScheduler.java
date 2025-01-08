@@ -26,7 +26,6 @@ import com.facebook.presto.memory.MemoryPool;
 import com.facebook.presto.memory.QueryContext;
 import com.facebook.presto.memory.context.LocalMemoryContext;
 import com.facebook.presto.memory.context.MemoryTrackingContext;
-import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.operator.DriverContext;
 import com.facebook.presto.operator.OperatorContext;
 import com.facebook.presto.operator.PipelineContext;
@@ -39,6 +38,7 @@ import com.facebook.presto.spiller.SpillSpaceTracker;
 import com.facebook.presto.sql.analyzer.FeaturesConfig;
 import com.facebook.presto.sql.gen.OrderingCompiler;
 import com.facebook.presto.sql.planner.LocalExecutionPlanner;
+import com.facebook.presto.telemetry.TracingManager;
 import com.google.common.base.Functions;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
@@ -705,7 +705,7 @@ public class TestMemoryRevokingScheduler
                 ImmutableList.of(new TaskSource(TABLE_SCAN_NODE_ID, ImmutableSet.of(SPLIT), false)),
                 createInitialEmptyOutputBuffers(PARTITIONED).withBuffer(OUT, 0).withNoMoreBufferIds(),
                 Optional.of(new TableWriteInfo(Optional.empty(), Optional.empty(), Optional.empty())),
-                TracingSpan.getInvalid());
+                TracingManager.getRootSpan());
 
         // use implicitly created task context from updateTask. It should be the only task in this QueryContext's tasks
         TaskContext taskContext = sqlTask.getQueryContext().getTaskContextByTaskId(sqlTask.getTaskId());

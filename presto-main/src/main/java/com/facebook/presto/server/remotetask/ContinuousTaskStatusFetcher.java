@@ -27,7 +27,6 @@ import com.facebook.drift.transport.netty.codec.Protocol;
 import com.facebook.presto.execution.StateMachine;
 import com.facebook.presto.execution.TaskId;
 import com.facebook.presto.execution.TaskStatus;
-import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.server.RequestErrorTracker;
 import com.facebook.presto.server.SimpleHttpResponseCallback;
 import com.facebook.presto.server.SimpleHttpResponseHandler;
@@ -35,7 +34,8 @@ import com.facebook.presto.server.smile.BaseResponse;
 import com.facebook.presto.server.thrift.ThriftHttpResponseHandler;
 import com.facebook.presto.spi.HostAddress;
 import com.facebook.presto.spi.PrestoException;
-import com.facebook.presto.telemetry.OpenTelemetryTracingManager;
+import com.facebook.presto.spi.telemetry.BaseSpan;
+import com.facebook.presto.telemetry.TracingManager;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -85,7 +85,7 @@ class ContinuousTaskStatusFetcher
     private final boolean binaryTransportEnabled;
     private final boolean thriftTransportEnabled;
     private final Protocol thriftProtocol;
-    private final TracingSpan remoteTaskSpan;
+    private final BaseSpan remoteTaskSpan;
 
     private final AtomicLong currentRequestStartNanos = new AtomicLong();
 
@@ -109,7 +109,7 @@ class ContinuousTaskStatusFetcher
             boolean binaryTransportEnabled,
             boolean thriftTransportEnabled,
             Protocol thriftProtocol,
-            TracingSpan remoteTaskSpan)
+            BaseSpan remoteTaskSpan)
     {
         requireNonNull(initialTaskStatus, "initialTaskStatus is null");
 
@@ -189,7 +189,7 @@ class ContinuousTaskStatusFetcher
             responseHandler = createAdaptingJsonResponseHandler((JsonCodec<TaskStatus>) taskStatusCodec);
         }
 
-        Map<String, String> headersMap = OpenTelemetryTracingManager.getHeadersMap(remoteTaskSpan);
+        Map<String, String> headersMap = TracingManager.getHeadersMap(remoteTaskSpan);
 
         for (Map.Entry<String, String> entry : headersMap.entrySet()) {
             requestBuilder.addHeader(entry.getKey(), entry.getValue());

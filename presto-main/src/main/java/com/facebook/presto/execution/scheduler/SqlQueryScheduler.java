@@ -36,13 +36,13 @@ import com.facebook.presto.execution.buffer.OutputBuffers;
 import com.facebook.presto.execution.buffer.OutputBuffers.OutputBufferId;
 import com.facebook.presto.metadata.FunctionAndTypeManager;
 import com.facebook.presto.metadata.Metadata;
-import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.VariableAllocator;
 import com.facebook.presto.spi.WarningCollector;
 import com.facebook.presto.spi.plan.PlanFragmentId;
 import com.facebook.presto.spi.plan.PlanNode;
 import com.facebook.presto.spi.plan.PlanNodeIdAllocator;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.facebook.presto.sql.parser.SqlParser;
 import com.facebook.presto.sql.planner.PlanFragment;
 import com.facebook.presto.sql.planner.SplitSourceFactory;
@@ -50,7 +50,7 @@ import com.facebook.presto.sql.planner.SubPlan;
 import com.facebook.presto.sql.planner.TypeProvider;
 import com.facebook.presto.sql.planner.optimizations.PlanOptimizer;
 import com.facebook.presto.sql.planner.sanity.PlanChecker;
-import com.facebook.presto.telemetry.OpenTelemetryTracingManager;
+import com.facebook.presto.telemetry.TracingManager;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -154,7 +154,7 @@ public class SqlQueryScheduler
     private final AtomicBoolean scheduling = new AtomicBoolean();
 
     private final PartialResultQueryTaskTracker partialResultQueryTaskTracker;
-    private TracingSpan schedulerSpan;
+    private BaseSpan schedulerSpan;
 
     public static SqlQueryScheduler createSqlQueryScheduler(
             LocationFactory locationFactory,
@@ -248,8 +248,8 @@ public class SqlQueryScheduler
         this.sectionedPlan = extractStreamingSections(plan);
         this.summarizeTaskInfo = summarizeTaskInfo;
 
-        TracingSpan querySpan = queryStateMachine.getSession().getQuerySpan();
-        this.schedulerSpan = OpenTelemetryTracingManager.getSpan(querySpan, TracingEnum.SCHEDULER.getName(), ImmutableMap.of("QUERY_ID", queryStateMachine.getQueryId().toString()));
+        BaseSpan querySpan = queryStateMachine.getSession().getQuerySpan();
+        this.schedulerSpan = TracingManager.getSpan(querySpan, TracingEnum.SCHEDULER.getName(), ImmutableMap.of("QUERY_ID", queryStateMachine.getQueryId().toString()));
 
         OutputBufferId rootBufferId = getOnlyElement(rootOutputBuffers.getBuffers().keySet());
         List<StageExecutionAndScheduler> stageExecutions = createStageExecutions(

@@ -17,7 +17,6 @@ import com.facebook.presto.Session;
 import com.facebook.presto.common.analyzer.PreparedQuery;
 import com.facebook.presto.common.telemetry.tracing.TracingEnum;
 import com.facebook.presto.metadata.Metadata;
-import com.facebook.presto.opentelemetry.tracing.ScopedSpan;
 import com.facebook.presto.spi.VariableAllocator;
 import com.facebook.presto.spi.analyzer.AnalyzerContext;
 import com.facebook.presto.spi.analyzer.MetadataResolver;
@@ -26,6 +25,7 @@ import com.facebook.presto.spi.analyzer.QueryAnalyzer;
 import com.facebook.presto.spi.plan.PlanNode;
 import com.facebook.presto.spi.plan.PlanNodeIdAllocator;
 import com.facebook.presto.spi.security.AccessControl;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.facebook.presto.sql.parser.SqlParser;
 import com.facebook.presto.sql.planner.LogicalPlanner;
 import com.google.inject.Inject;
@@ -33,8 +33,8 @@ import com.google.inject.Inject;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 
-import static com.facebook.presto.opentelemetry.tracing.ScopedSpan.scopedSpan;
 import static com.facebook.presto.sql.analyzer.utils.ParameterUtils.parameterExtractor;
+import static com.facebook.presto.telemetry.TracingManager.scopedSpan;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
@@ -93,7 +93,7 @@ public class BuiltInQueryAnalyzer
                 session.getWarningCollector(),
                 Optional.of(metadataExtractorExecutor));
 
-        try (ScopedSpan ignored = scopedSpan(TracingEnum.ANALYZE.getName())) {
+        try (BaseSpan ignored = scopedSpan(TracingEnum.ANALYZE.getName())) {
             Analysis analysis = analyzer.analyzeSemantic(((BuiltInQueryPreparer.BuiltInPreparedQuery) preparedQuery).getStatement(), false);
             return new BuiltInQueryAnalysis(analysis);
         }

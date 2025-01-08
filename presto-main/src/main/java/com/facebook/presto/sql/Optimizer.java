@@ -24,8 +24,6 @@ import com.facebook.presto.cost.StatsAndCosts;
 import com.facebook.presto.cost.StatsCalculator;
 import com.facebook.presto.cost.StatsProvider;
 import com.facebook.presto.metadata.Metadata;
-import com.facebook.presto.opentelemetry.tracing.ScopedSpan;
-import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.VariableAllocator;
 import com.facebook.presto.spi.WarningCollector;
@@ -34,6 +32,7 @@ import com.facebook.presto.spi.plan.JoinNode;
 import com.facebook.presto.spi.plan.PlanNode;
 import com.facebook.presto.spi.plan.PlanNodeIdAllocator;
 import com.facebook.presto.spi.plan.SemiJoinNode;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.facebook.presto.sql.planner.Plan;
 import com.facebook.presto.sql.planner.PlannerUtils;
 import com.facebook.presto.sql.planner.TypeProvider;
@@ -42,7 +41,8 @@ import com.facebook.presto.sql.planner.optimizations.PlanNodeSearcher;
 import com.facebook.presto.sql.planner.optimizations.PlanOptimizer;
 import com.facebook.presto.sql.planner.optimizations.PlanOptimizerResult;
 import com.facebook.presto.sql.planner.sanity.PlanChecker;
-import com.facebook.presto.telemetry.OpenTelemetryTracingManager;
+import com.facebook.presto.telemetry.TracingManager;
+import com.google.common.collect.ImmutableMap;
 
 import java.util.List;
 import java.util.Optional;
@@ -53,12 +53,13 @@ import static com.facebook.presto.SystemSessionProperties.isPrintStatsForNonJoin
 import static com.facebook.presto.SystemSessionProperties.isVerboseOptimizerInfoEnabled;
 import static com.facebook.presto.SystemSessionProperties.isVerboseOptimizerResults;
 import static com.facebook.presto.common.RuntimeUnit.NANO;
-import static com.facebook.presto.opentelemetry.tracing.ScopedSpan.scopedSpan;
 import static com.facebook.presto.spi.StandardErrorCode.QUERY_PLANNING_TIMEOUT;
 import static com.facebook.presto.sql.Optimizer.PlanStage.OPTIMIZED;
 import static com.facebook.presto.sql.Optimizer.PlanStage.OPTIMIZED_AND_VALIDATED;
 import static com.facebook.presto.sql.OptimizerRuntimeTrackUtil.getOptimizerNameForLog;
 import static com.facebook.presto.sql.OptimizerRuntimeTrackUtil.trackOptimizerRuntime;
+import static com.facebook.presto.telemetry.TracingManager.scopedSpan;
+import static com.facebook.presto.telemetry.TracingManager.setAttributes;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
@@ -104,12 +105,12 @@ public class Optimizer
         this.explain = explain;
     }
 
-    private ScopedSpan optimizerSpan(PlanOptimizer optimizer)
+    private BaseSpan optimizerSpan(PlanOptimizer optimizer)
     {
-        if (!OpenTelemetryTracingManager.isRecording()) {
+        if (!TracingManager.isRecording()) {
             return null;
         }
-        TracingSpan span = OpenTelemetryTracingManager.getSpan(optimizer.getClass().getSimpleName()); //Recheck if working
+        BaseSpan span = TracingManager.getSpan(optimizer.getClass().getSimpleName()); //Recheck if working
 
         if (optimizer instanceof IterativeOptimizer) {
             List<String> ruleNames = ((IterativeOptimizer) optimizer).getRules().stream()
@@ -117,20 +118,20 @@ public class Optimizer
                     .collect(Collectors.toList());
 
             String rulesAsString = String.join(", ", ruleNames);
-            //span.setAttribute("OPTIMIZER_RULES", rulesAsString);
+            setAttributes(span, ImmutableMap.of("OPTIMIZER_RULES", rulesAsString));
         }
         return scopedSpan(span);
     }
 
     public Plan validateAndOptimizePlan(PlanNode root, PlanStage stage)
     {
-        try (ScopedSpan ignored = scopedSpan("validate intermediate")) {
+        try (BaseSpan ignored = scopedSpan("validate intermediate")) {
             planChecker.validateIntermediatePlan(root, session, metadata, warningCollector);
         }
 
         boolean enableVerboseRuntimeStats = SystemSessionProperties.isVerboseRuntimeStatsEnabled(session);
         if (stage.ordinal() >= OPTIMIZED.ordinal()) {
-            try (ScopedSpan ignored = scopedSpan("validate and optimize")) {
+            try (BaseSpan ignored = scopedSpan("validate and optimize")) {
                 for (PlanOptimizer optimizer : planOptimizers) {
                     if (Thread.currentThread().isInterrupted()) {
                         throw new PrestoException(QUERY_PLANNING_TIMEOUT, String.format("The query optimizer exceeded the timeout of %s.", getQueryAnalyzerTimeout(session).toString()));
@@ -139,7 +140,7 @@ public class Optimizer
 
                     PlanOptimizerResult optimizerResult;
 
-                    try (ScopedSpan opSpanIgnored = !TelemetryConfig.getTracingEnabled() ? null : optimizerSpan(optimizer)) {
+                    try (BaseSpan opSpanIgnored = !TelemetryConfig.getTracingEnabled() ? null : optimizerSpan(optimizer)) {
                         optimizerResult = optimizer.optimize(root, session, TypeProvider.viewOf(variableAllocator.getVariables()), variableAllocator, idAllocator, warningCollector);
                         requireNonNull(optimizerResult, format("%s returned a null plan", optimizer.getClass().getName()));
                     }
@@ -155,7 +156,7 @@ public class Optimizer
             }
         }
 
-        try (ScopedSpan ignored = scopedSpan("validate final")) {
+        try (BaseSpan ignored = scopedSpan("validate final")) {
             if (stage.ordinal() >= OPTIMIZED_AND_VALIDATED.ordinal()) {
                 // make sure we produce a valid plan after optimizations run. This is mainly to catch programming errors
                 planChecker.validateFinalPlan(root, session, metadata, warningCollector);
@@ -163,7 +164,7 @@ public class Optimizer
         }
 
         TypeProvider types = TypeProvider.viewOf(variableAllocator.getVariables());
-        try (ScopedSpan ignored = scopedSpan("plan stats")) {
+        try (BaseSpan ignored = scopedSpan("plan stats")) {
             return new Plan(root, types, computeStats(root, types));
         }
     }

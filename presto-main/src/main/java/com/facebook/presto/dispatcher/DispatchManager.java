@@ -25,8 +25,6 @@ import com.facebook.presto.execution.QueryManagerStats;
 import com.facebook.presto.execution.QueryTracker;
 import com.facebook.presto.execution.resourceGroups.ResourceGroupManager;
 import com.facebook.presto.execution.warnings.WarningCollectorFactory;
-import com.facebook.presto.opentelemetry.tracing.ScopedSpan;
-import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.resourcemanager.ClusterQueryTrackerService;
 import com.facebook.presto.resourcemanager.ClusterStatusSender;
 import com.facebook.presto.server.BasicQueryInfo;
@@ -40,8 +38,9 @@ import com.facebook.presto.spi.analyzer.QueryPreparerProvider;
 import com.facebook.presto.spi.resourceGroups.SelectionContext;
 import com.facebook.presto.spi.resourceGroups.SelectionCriteria;
 import com.facebook.presto.spi.security.AccessControl;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.facebook.presto.sql.analyzer.QueryPreparerProviderManager;
-import com.facebook.presto.telemetry.OpenTelemetryTracingManager;
+import com.facebook.presto.telemetry.TracingManager;
 import com.facebook.presto.transaction.TransactionManager;
 import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -60,8 +59,8 @@ import java.util.concurrent.Executor;
 import static com.facebook.presto.Session.SessionBuilder;
 import static com.facebook.presto.SystemSessionProperties.getAnalyzerType;
 import static com.facebook.presto.metadata.SessionPropertyManager.createTestingSessionPropertyManager;
-import static com.facebook.presto.opentelemetry.tracing.ScopedSpan.scopedSpan;
 import static com.facebook.presto.spi.StandardErrorCode.QUERY_TEXT_TOO_LARGE;
+import static com.facebook.presto.telemetry.TracingManager.scopedSpan;
 import static com.facebook.presto.util.AnalyzerUtil.createAnalyzerOptions;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
@@ -238,7 +237,7 @@ public class DispatchManager
      * @return the listenable future
      * @see ResourceGroupManager <a href="https://prestodb.io/docs/current/admin/resource-groups.html">Resource Groups</a>
      */
-    public ListenableFuture<?> createQuery(QueryId queryId, TracingSpan querySpan, TracingSpan rootSpan, String slug, int retryCount, SessionContext sessionContext, String query)
+    public ListenableFuture<?> createQuery(QueryId queryId, BaseSpan querySpan, BaseSpan rootSpan, String slug, int retryCount, SessionContext sessionContext, String query)
     {
         requireNonNull(queryId, "queryId is null");
         requireNonNull(sessionContext, "sessionFactory is null");
@@ -248,8 +247,8 @@ public class DispatchManager
 
         DispatchQueryCreationFuture queryCreationFuture = new DispatchQueryCreationFuture();
 
-        boundedQueryExecutor.execute(OpenTelemetryTracingManager.getCurrentContextWrap(() -> {
-            try (ScopedSpan ignored = scopedSpan(querySpan, TracingEnum.DISPATCH.getName())) {
+        boundedQueryExecutor.execute(TracingManager.getCurrentContextWrap(() -> {
+            try (BaseSpan ignored = scopedSpan(querySpan, TracingEnum.DISPATCH.getName())) {
                 createQueryInternal(queryId, querySpan, rootSpan, slug, retryCount, sessionContext, query, resourceGroupManager);
             }
             finally {
@@ -263,7 +262,7 @@ public class DispatchManager
      * Creates and registers a dispatch query with the query tracker.  This method will never fail to register a query with the query
      * tracker. If an error occurs while creating a dispatch query, a failed dispatch will be created and registered.
      */
-    private <C> void createQueryInternal(QueryId queryId, TracingSpan querySpan, TracingSpan rootSpan, String slug, int retryCount, SessionContext sessionContext, String query, ResourceGroupManager<C> resourceGroupManager)
+    private <C> void createQueryInternal(QueryId queryId, BaseSpan querySpan, BaseSpan rootSpan, String slug, int retryCount, SessionContext sessionContext, String query, ResourceGroupManager<C> resourceGroupManager)
     {
         Session session = null;
         SessionBuilder sessionBuilder = null;
@@ -345,7 +344,7 @@ public class DispatchManager
             DispatchQuery failedDispatchQuery = failedDispatchQueryFactory.createFailedDispatchQuery(session, query, Optional.empty(), throwable);
             queryCreated(failedDispatchQuery);
 
-            OpenTelemetryTracingManager.endSpanOnError(querySpan, throwable);
+            TracingManager.endSpanOnError(querySpan, throwable);
         }
     }
 

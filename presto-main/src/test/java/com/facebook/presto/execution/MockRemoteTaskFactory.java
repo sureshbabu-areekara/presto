@@ -28,7 +28,6 @@ import com.facebook.presto.memory.QueryContext;
 import com.facebook.presto.memory.context.SimpleLocalMemoryContext;
 import com.facebook.presto.metadata.InternalNode;
 import com.facebook.presto.metadata.Split;
-import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.operator.TaskContext;
 import com.facebook.presto.operator.TaskMemoryReservationSummary;
 import com.facebook.presto.operator.TaskStats;
@@ -44,6 +43,7 @@ import com.facebook.presto.spi.plan.PlanNodeId;
 import com.facebook.presto.spi.plan.StageExecutionDescriptor;
 import com.facebook.presto.spi.plan.TableScanNode;
 import com.facebook.presto.spi.relation.VariableReferenceExpression;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.facebook.presto.spiller.SpillSpaceTracker;
 import com.facebook.presto.sql.analyzer.FeaturesConfig;
 import com.facebook.presto.sql.planner.PlanFragment;
@@ -164,7 +164,7 @@ public class MockRemoteTaskFactory
             boolean summarizeTaskInfo,
             TableWriteInfo tableWriteInfo,
             SchedulerStatsTracker schedulerStatsTracker,
-            TracingSpan stageSpan)
+            BaseSpan stageSpan)
     {
         return new MockRemoteTask(taskId, fragment, node.getNodeIdentifier(), executor, scheduledExecutor, initialSplits, nodeStatsTracker);
     }

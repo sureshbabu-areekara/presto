@@ -296,10 +296,6 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.facebook.presto</groupId>
-            <artifactId>presto-open-telemetry</artifactId>
-        </dependency>
     </dependencies>
 
     <build>

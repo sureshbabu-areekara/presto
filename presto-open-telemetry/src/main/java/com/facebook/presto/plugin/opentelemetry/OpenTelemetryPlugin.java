@@ -11,28 +11,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.facebook.presto.execution;
+package com.facebook.presto.plugin.opentelemetry;
 
-import com.facebook.presto.spi.telemetry.BaseSpan;
-import com.google.common.util.concurrent.ListenableFuture;
-import io.airlift.units.Duration;
+import com.facebook.presto.opentelemetry.tracing.OpenTelemetryFactoryImpl;
+import com.facebook.presto.spi.Plugin;
+import com.facebook.presto.spi.telemetry.TelemetryFactory;
+import com.facebook.presto.testing.TestingOpenTelemetryFactoryImpl;
+import com.google.common.collect.ImmutableList;
 
-import java.io.Closeable;
-
-public interface SplitRunner
-        extends Closeable
+public class OpenTelemetryPlugin
+        implements Plugin
 {
-    boolean isFinished();
-
-    ListenableFuture<?> processFor(Duration duration);
-
-    String getInfo();
-
     @Override
-    void close();
-
-    default BaseSpan getPipelineSpan()
+    public Iterable<TelemetryFactory> getTelemetryFactories()
     {
-        return null;
+        return ImmutableList.of(new OpenTelemetryFactoryImpl(), new TestingOpenTelemetryFactoryImpl());
     }
 }

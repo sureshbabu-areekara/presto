@@ -16,11 +16,11 @@ package com.facebook.presto.event;
 import com.facebook.airlift.log.Logger;
 import com.facebook.presto.eventlistener.EventListenerManager;
 import com.facebook.presto.execution.TaskId;
-import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.operator.DriverStats;
 import com.facebook.presto.spi.eventlistener.SplitCompletedEvent;
 import com.facebook.presto.spi.eventlistener.SplitFailureInfo;
 import com.facebook.presto.spi.eventlistener.SplitStatistics;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -48,17 +48,17 @@ public class SplitMonitor
         this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
     }
 
-    public void splitCompletedEvent(TaskId taskId, DriverStats driverStats, TracingSpan pipelineSpan)
+    public void splitCompletedEvent(TaskId taskId, DriverStats driverStats, BaseSpan pipelineSpan)
     {
         splitCompletedEvent(taskId, driverStats, null, null, pipelineSpan);
     }
 
-    public void splitFailedEvent(TaskId taskId, DriverStats driverStats, Throwable cause, TracingSpan pipelineSpan)
+    public void splitFailedEvent(TaskId taskId, DriverStats driverStats, Throwable cause, BaseSpan pipelineSpan)
     {
         splitCompletedEvent(taskId, driverStats, cause.getClass().getName(), cause.getMessage(), pipelineSpan);
     }
 
-    private void splitCompletedEvent(TaskId taskId, DriverStats driverStats, @Nullable String failureType, @Nullable String failureMessage, TracingSpan pipelineSpan)
+    private void splitCompletedEvent(TaskId taskId, DriverStats driverStats, @Nullable String failureType, @Nullable String failureMessage, BaseSpan pipelineSpan)
     {
         Optional<Duration> timeToStart = Optional.empty();
         if (driverStats.getStartTime() != null) {

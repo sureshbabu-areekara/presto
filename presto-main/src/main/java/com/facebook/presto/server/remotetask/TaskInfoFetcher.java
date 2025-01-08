@@ -36,13 +36,13 @@ import com.facebook.presto.execution.TaskStatus;
 import com.facebook.presto.metadata.HandleResolver;
 import com.facebook.presto.metadata.MetadataManager;
 import com.facebook.presto.metadata.MetadataUpdates;
-import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.server.RequestErrorTracker;
 import com.facebook.presto.server.SimpleHttpResponseCallback;
 import com.facebook.presto.server.SimpleHttpResponseHandler;
 import com.facebook.presto.server.smile.BaseResponse;
 import com.facebook.presto.server.thrift.ThriftHttpResponseHandler;
-import com.facebook.presto.telemetry.OpenTelemetryTracingManager;
+import com.facebook.presto.spi.telemetry.BaseSpan;
+import com.facebook.presto.telemetry.TracingManager;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -99,7 +99,7 @@ public class TaskInfoFetcher
     private final RequestErrorTracker errorTracker;
 
     private final boolean summarizeTaskInfo;
-    private final TracingSpan remoteTaskSpan;
+    private final BaseSpan remoteTaskSpan;
 
     @GuardedBy("this")
     private final AtomicLong currentRequestStartNanos = new AtomicLong();
@@ -149,7 +149,7 @@ public class TaskInfoFetcher
             HandleResolver handleResolver,
             ConnectorTypeSerdeManager connectorTypeSerdeManager,
             Protocol thriftProtocol,
-            TracingSpan remoteTaskSpan)
+            BaseSpan remoteTaskSpan)
     {
         requireNonNull(initialTask, "initialTask is null");
         requireNonNull(errorScheduledExecutor, "errorScheduledExecutor is null");
@@ -303,7 +303,7 @@ public class TaskInfoFetcher
                     .setHeader(PRESTO_MAX_WAIT, taskInfoRefreshMaxWait.toString());
         }
 
-        Map<String, String> headersMap = OpenTelemetryTracingManager.getHeadersMap(remoteTaskSpan);
+        Map<String, String> headersMap = TracingManager.getHeadersMap(remoteTaskSpan);
 
         for (Map.Entry<String, String> entry : headersMap.entrySet()) {
             requestBuilder.addHeader(entry.getKey(), entry.getValue());
@@ -428,7 +428,7 @@ public class TaskInfoFetcher
         }
 
         //for POST {taskId}/metadataresults endpoint
-        Map<String, String> headersMap = OpenTelemetryTracingManager.getHeadersMap(remoteTaskSpan);
+        Map<String, String> headersMap = TracingManager.getHeadersMap(remoteTaskSpan);
 
         byte[] metadataUpdatesJson = metadataUpdatesCodec.toBytes(results);
         Request.Builder requestBuilder = setContentTypeHeaders(isBinaryTransportEnabled, preparePost())

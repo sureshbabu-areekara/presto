@@ -11,21 +11,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.facebook.presto.opentelemetry.tracing;
+package com.facebook.presto.opentelemetry;
 
-import com.facebook.presto.common.TelemetryConfig;
-import org.testng.annotations.Test;
+import io.opentelemetry.context.propagation.TextMapGetter;
 
-import static org.testng.Assert.assertNotNull;
+import java.util.Collections;
 
-public class TestScopedSpan
+public class TextMapGetterImpl
+        implements TextMapGetter<Object>
 {
-    @Test
-    public void testScopedSpan()
+    @Override
+    public Iterable<String> keys(Object carrier)
     {
-        assertNotNull(ScopedSpan.scopedSpan("no-op"));
+        return Collections.singletonList("traceparent");
+    }
 
-        TelemetryConfig.getTelemetryConfig().setTracingEnabled(true);
-        assertNotNull(ScopedSpan.scopedSpan("no-op"));
+    @Override
+    public String get(Object carrier, String key)
+    {
+        if ("traceparent".equals(key)) {
+            return (String) carrier;
+        }
+        return null;
     }
 }

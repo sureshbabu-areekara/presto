@@ -78,12 +78,12 @@ import com.facebook.presto.sql.planner.NodePartitioningManager;
 import com.facebook.presto.sql.planner.Plan;
 import com.facebook.presto.sql.planner.sanity.PlanCheckerProviderManager;
 import com.facebook.presto.storage.TempStorageManager;
-import com.facebook.presto.telemetry.OpenTelemetryTracingManager;
+import com.facebook.presto.telemetry.TracingManager;
 import com.facebook.presto.testing.ProcedureTester;
 import com.facebook.presto.testing.TestingAccessControlManager;
 import com.facebook.presto.testing.TestingEventListenerManager;
-import com.facebook.presto.testing.TestingOpenTelemetryTracingManager;
 import com.facebook.presto.testing.TestingTempStorageManager;
+import com.facebook.presto.testing.TestingTracingManager;
 import com.facebook.presto.testing.TestingWarningCollectorModule;
 import com.facebook.presto.transaction.TransactionManager;
 import com.facebook.presto.ttl.clusterttlprovidermanagers.ClusterTtlProviderManagerModule;
@@ -180,6 +180,7 @@ public class TestingPrestoServer
     private final ResourceManagerClusterStateProvider clusterStateProvider;
     private final PlanCheckerProviderManager planCheckerProviderManager;
     private final NodeManager pluginNodeManager;
+    private final TestingTracingManager testingTracingManager;
 
     public static class TestShutdownAction
             implements ShutdownAction
@@ -206,6 +207,28 @@ public class TestingPrestoServer
         {
             return isShutdown;
         }
+    }
+
+    public TestingPrestoServer(
+            Map<String, String> properties,
+            SqlParserOptions parserOptions)
+            throws Exception
+    {
+        this(
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                true,
+                false,
+                properties,
+                null,
+                null,
+                parserOptions,
+                ImmutableList.of(),
+                Optional.empty());
     }
 
     public TestingPrestoServer()
@@ -314,7 +337,7 @@ public class TestingPrestoServer
                 .add(new NodeTtlFetcherManagerModule())
                 .add(new ClusterTtlProviderManagerModule())
                 .add(binder -> {
-                    binder.bind(OpenTelemetryTracingManager.class).to(TestingOpenTelemetryTracingManager.class).in(Scopes.SINGLETON);
+                    binder.bind(TracingManager.class).to(TestingTracingManager.class).in(Scopes.SINGLETON);
                     binder.bind(TestingAccessControlManager.class).in(Scopes.SINGLETON);
                     binder.bind(TestingEventListenerManager.class).in(Scopes.SINGLETON);
                     binder.bind(TestingTempStorageManager.class).in(Scopes.SINGLETON);
@@ -388,6 +411,7 @@ public class TestingPrestoServer
             eventListenerManager = ((TestingEventListenerManager) injector.getInstance(EventListenerManager.class));
             clusterStateProvider = null;
             planCheckerProviderManager = injector.getInstance(PlanCheckerProviderManager.class);
+            testingTracingManager = (TestingTracingManager) injector.getInstance(TracingManager.class);
         }
         else if (resourceManager) {
             dispatchManager = null;
@@ -400,6 +424,7 @@ public class TestingPrestoServer
             eventListenerManager = ((TestingEventListenerManager) injector.getInstance(EventListenerManager.class));
             clusterStateProvider = injector.getInstance(ResourceManagerClusterStateProvider.class);
             planCheckerProviderManager = null;
+            testingTracingManager = (TestingTracingManager) injector.getInstance(TracingManager.class);
         }
         else if (coordinatorSidecar) {
             dispatchManager = null;
@@ -412,6 +437,7 @@ public class TestingPrestoServer
             eventListenerManager = null;
             clusterStateProvider = null;
             planCheckerProviderManager = null;
+            testingTracingManager = null;
         }
         else if (catalogServer) {
             dispatchManager = null;
@@ -424,6 +450,7 @@ public class TestingPrestoServer
             eventListenerManager = null;
             clusterStateProvider = null;
             planCheckerProviderManager = null;
+            testingTracingManager = null;
         }
         else {
             dispatchManager = null;
@@ -436,6 +463,7 @@ public class TestingPrestoServer
             eventListenerManager = null;
             clusterStateProvider = null;
             planCheckerProviderManager = null;
+            testingTracingManager = null;
         }
         localMemoryManager = injector.getInstance(LocalMemoryManager.class);
         nodeManager = injector.getInstance(InternalNodeManager.class);
@@ -658,6 +686,11 @@ public class TestingPrestoServer
     public NodeManager getPluginNodeManager()
     {
         return pluginNodeManager;
+    }
+
+    public TestingTracingManager getTestingTracingManager()
+    {
+        return testingTracingManager;
     }
 
     public NodePartitioningManager getNodePartitioningManager()

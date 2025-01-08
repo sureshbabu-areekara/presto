@@ -24,11 +24,11 @@ import com.facebook.presto.failureDetector.FailureDetector;
 import com.facebook.presto.metadata.InternalNode;
 import com.facebook.presto.metadata.RemoteTransactionHandle;
 import com.facebook.presto.metadata.Split;
-import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.server.remotetask.HttpRemoteTask;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.plan.PlanFragmentId;
 import com.facebook.presto.spi.plan.PlanNodeId;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.facebook.presto.split.RemoteSplit;
 import com.facebook.presto.sql.planner.PlanFragment;
 import com.facebook.presto.sql.planner.plan.RemoteSourceNode;
@@ -153,7 +153,7 @@ public final class SqlStageExecution
             FailureDetector failureDetector,
             SplitSchedulerStats schedulerStats,
             TableWriteInfo tableWriteInfo,
-            TracingSpan schedulerSpan)
+            BaseSpan schedulerSpan)
     {
         requireNonNull(stageExecutionId, "stageId is null");
         requireNonNull(fragment, "fragment is null");
