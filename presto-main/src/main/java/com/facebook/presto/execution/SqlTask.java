@@ -42,7 +42,7 @@ import com.facebook.presto.spi.ConnectorMetadataUpdateHandle;
 import com.facebook.presto.spi.connector.ConnectorMetadataUpdater;
 import com.facebook.presto.spi.plan.PlanNodeId;
 import com.facebook.presto.sql.planner.PlanFragment;
-import com.facebook.presto.telemetry.OpenTelemetryTracingManager;
+import com.facebook.presto.telemetry.TracingManager;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -464,7 +464,7 @@ public class SqlTask
                     checkState(tableWriteInfo.isPresent(), "tableWriteInfo must be present");
 
                     if (TelemetryConfig.getTracingEnabled() && Objects.nonNull(taskSpan)) {
-                        taskSpan = OpenTelemetryTracingManager.getSpan(span, TracingEnum.TASK.getName(), ImmutableMap.of("node id", nodeId, "QUERY_ID", taskId.getQueryId().toString(), "STAGE_ID", taskId.getStageId().toString(), "TASK_ID", taskId.toString(), "task instance id", getTaskInstanceId()));
+                        taskSpan = TracingManager.getSpan(span, TracingEnum.TASK.getName(), ImmutableMap.of("node id", nodeId, "QUERY_ID", taskId.getQueryId().toString(), "STAGE_ID", taskId.getStageId().toString(), "TASK_ID", taskId.toString(), "task instance id", getTaskInstanceId()));
                     }
 
                     taskExecution = sqlTaskExecutionFactory.create(

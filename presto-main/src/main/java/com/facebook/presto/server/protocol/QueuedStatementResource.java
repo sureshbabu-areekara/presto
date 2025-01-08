@@ -31,7 +31,7 @@ import com.facebook.presto.server.SessionContext;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.QueryId;
 import com.facebook.presto.sql.parser.SqlParserOptions;
-import com.facebook.presto.telemetry.OpenTelemetryTracingManager;
+import com.facebook.presto.telemetry.TracingManager;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Ordering;
@@ -533,8 +533,8 @@ public class QueuedStatementResource
             synchronized (this) {
                 if (querySubmissionFuture == null) {
                     //start tracing with root span for POST /v1/statement endpoint
-                    TracingSpan rootSpan = OpenTelemetryTracingManager.getRootSpan();
-                    TracingSpan querySpan = OpenTelemetryTracingManager.getSpan(rootSpan, TracingEnum.QUERY.getName(), ImmutableMap.of("QUERY_ID", queryId.toString()));
+                    TracingSpan rootSpan = TracingManager.getRootSpan();
+                    TracingSpan querySpan = TracingManager.getSpan(rootSpan, TracingEnum.QUERY.getName(), ImmutableMap.of("QUERY_ID", queryId.toString()));
 
                     //propagate root and query spans through session
                     querySubmissionFuture = dispatchManager.createQuery(queryId, querySpan, rootSpan, slug, retryCount, sessionContext, query);

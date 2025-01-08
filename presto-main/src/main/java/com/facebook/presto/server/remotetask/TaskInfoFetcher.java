@@ -42,7 +42,7 @@ import com.facebook.presto.server.SimpleHttpResponseCallback;
 import com.facebook.presto.server.SimpleHttpResponseHandler;
 import com.facebook.presto.server.smile.BaseResponse;
 import com.facebook.presto.server.thrift.ThriftHttpResponseHandler;
-import com.facebook.presto.telemetry.OpenTelemetryTracingManager;
+import com.facebook.presto.telemetry.TracingManager;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -303,7 +303,7 @@ public class TaskInfoFetcher
                     .setHeader(PRESTO_MAX_WAIT, taskInfoRefreshMaxWait.toString());
         }
 
-        Map<String, String> headersMap = OpenTelemetryTracingManager.getHeadersMap(remoteTaskSpan);
+        Map<String, String> headersMap = TracingManager.getHeadersMap(remoteTaskSpan);
 
         for (Map.Entry<String, String> entry : headersMap.entrySet()) {
             requestBuilder.addHeader(entry.getKey(), entry.getValue());
@@ -428,7 +428,7 @@ public class TaskInfoFetcher
         }
 
         //for POST {taskId}/metadataresults endpoint
-        Map<String, String> headersMap = OpenTelemetryTracingManager.getHeadersMap(remoteTaskSpan);
+        Map<String, String> headersMap = TracingManager.getHeadersMap(remoteTaskSpan);
 
         byte[] metadataUpdatesJson = metadataUpdatesCodec.toBytes(results);
         Request.Builder requestBuilder = setContentTypeHeaders(isBinaryTransportEnabled, preparePost())

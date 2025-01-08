@@ -21,7 +21,6 @@ import com.facebook.presto.common.type.TimeZoneKey;
 import com.facebook.presto.cost.PlanCostEstimate;
 import com.facebook.presto.cost.PlanNodeStatsEstimate;
 import com.facebook.presto.metadata.SessionPropertyManager;
-import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.spi.ConnectorId;
 import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.PrestoException;
@@ -39,7 +38,7 @@ import com.facebook.presto.spi.session.SessionPropertyConfigurationManager.Syste
 import com.facebook.presto.sql.analyzer.CTEInformationCollector;
 import com.facebook.presto.sql.planner.optimizations.OptimizerInformationCollector;
 import com.facebook.presto.sql.planner.optimizations.OptimizerResultCollector;
-import com.facebook.presto.telemetry.OpenTelemetryTracingManager;
+import com.facebook.presto.telemetry.TracingManager;
 import com.facebook.presto.transaction.TransactionManager;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -76,8 +75,8 @@ import static java.util.Objects.requireNonNull;
 public final class Session
 {
     private final QueryId queryId;
-    private final TracingSpan querySpan;
-    private final TracingSpan rootSpan;
+    private final Object querySpan;
+    private final Object rootSpan;
     private final Optional<TransactionId> transactionId;
     private final boolean clientTransactionSupport;
     private final Identity identity;
@@ -111,8 +110,8 @@ public final class Session
 
     public Session(
             QueryId queryId,
-            TracingSpan querySpan,
-            TracingSpan rootSpan,
+            Object querySpan,
+            Object rootSpan,
             Optional<TransactionId> transactionId,
             boolean clientTransactionSupport,
             Identity identity,
@@ -185,12 +184,12 @@ public final class Session
         return queryId;
     }
 
-    public TracingSpan getQuerySpan()
+    public Object getQuerySpan()
     {
         return querySpan;
     }
 
-    public TracingSpan getRootSpan()
+    public Object getRootSpan()
     {
         return rootSpan;
     }
@@ -530,7 +529,7 @@ public final class Session
     {
         return toStringHelper(this)
                 .add("queryId", queryId)
-                .add("querySpan", OpenTelemetryTracingManager.spanString(querySpan).orElse(null))
+                .add("querySpan", TracingManager.spanString(querySpan).orElse(null))
                 .add("rootSpan", rootSpan.toString())
                 .add("transactionId", transactionId)
                 .add("user", getUser())
@@ -563,8 +562,8 @@ public final class Session
     public static class SessionBuilder
     {
         private QueryId queryId;
-        private TracingSpan querySpan = TracingSpan.getInvalid();     //do not initialize with null
-        private TracingSpan rootSpan = TracingSpan.getInvalid();      //do not initialize with null
+        private Object querySpan = null; //TracingSpan.getInvalid();     //do not initialize with null
+        private Object rootSpan = null; //TracingSpan.getInvalid();      //do not initialize with null
         private TransactionId transactionId;
         private boolean clientTransactionSupport;
         private Identity identity;
@@ -729,13 +728,13 @@ public final class Session
             return this;
         }
 
-        public SessionBuilder setQuerySpan(TracingSpan querySpan)
+        public SessionBuilder setQuerySpan(Object querySpan)
         {
             this.querySpan = querySpan;
             return this;
         }
 
-        public SessionBuilder setRootSpan(TracingSpan rootSpan)
+        public SessionBuilder setRootSpan(Object rootSpan)
         {
             this.rootSpan = rootSpan;
             return this;

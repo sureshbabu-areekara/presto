@@ -13,11 +13,7 @@
  */
 package com.facebook.presto.opentelemetry.tracing;
 
-import com.facebook.presto.common.TelemetryConfig;
 import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.context.Context;
-
-import java.util.Objects;
 
 public class TracingSpan
 {
@@ -43,10 +39,10 @@ public class TracingSpan
         return new TracingSpan(Span.current());
     }
 
-    public static TracingSpan fromContext(Context context)
+/*    public static TracingSpan fromContext(Context context)
     {
         return new TracingSpan(Span.fromContext(context));
-    }
+    }*/
 
     public TracingSpan setAttribute(String key, String value)
     {
@@ -58,12 +54,12 @@ public class TracingSpan
         return new TracingSpan(span.setAttribute(key, value));
     }
 
-    public static void addEvent(TracingSpan span, String eventName)
+/*    public static void addEvent(TracingSpan span, String eventName)
     {
         if (TelemetryConfig.getTracingEnabled() && Objects.nonNull(span)) {
             span.getSpan().addEvent(eventName);
         }
-    }
+    }*/
 
     public boolean isRecording()
     {

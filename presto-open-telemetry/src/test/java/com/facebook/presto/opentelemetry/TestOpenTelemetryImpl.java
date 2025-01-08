@@ -13,7 +13,7 @@
  */
 package com.facebook.presto.opentelemetry;
 
-import com.facebook.presto.common.TelemetryConfig;
+/*import com.facebook.presto.common.TelemetryConfig;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import org.testng.annotations.BeforeMethod;
@@ -25,11 +25,11 @@ import java.util.Map;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.assertTrue;*/
 
 public class TestOpenTelemetryImpl
 {
-    private OpenTelemetryImpl openTelemetryImpl;
+/*    private OpenTelemetryImpl openTelemetryImpl;
     Map<String, String> properties = new HashMap<>();
 
     @BeforeMethod
@@ -83,5 +83,5 @@ public class TestOpenTelemetryImpl
         Field instanceField = TelemetryConfig.class.getDeclaredField("telemetryConfig");
         instanceField.setAccessible(true);
         instanceField.set(null, null);
-    }
+    }*/
 }

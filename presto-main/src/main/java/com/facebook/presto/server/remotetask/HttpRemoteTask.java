@@ -65,7 +65,7 @@ import com.facebook.presto.spi.SplitWeight;
 import com.facebook.presto.spi.plan.PlanNode;
 import com.facebook.presto.spi.plan.PlanNodeId;
 import com.facebook.presto.sql.planner.PlanFragment;
-import com.facebook.presto.telemetry.OpenTelemetryTracingManager;
+import com.facebook.presto.telemetry.TracingManager;
 import com.google.common.base.Ticker;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
@@ -309,7 +309,7 @@ public final class HttpRemoteTask
         try (SetThreadName ignored = new SetThreadName("HttpRemoteTask-%s", taskId)) {
             this.taskId = taskId;
             this.stageSpan = stageSpan;
-            this.span = OpenTelemetryTracingManager.getSpan(stageSpan, TracingEnum.REMOTE_TASK.getName(), ImmutableMap.of("QUERY_ID", taskId.getQueryId().toString(), "STAGE_ID", taskId.getStageId().toString(), "TASK_ID", taskId.toString()));
+            this.span = TracingManager.getSpan(stageSpan, TracingEnum.REMOTE_TASK.getName(), ImmutableMap.of("QUERY_ID", taskId.getQueryId().toString(), "STAGE_ID", taskId.getStageId().toString(), "TASK_ID", taskId.toString()));
             this.taskLocation = location;
             this.remoteTaskLocation = remoteLocation;
             this.session = session;
@@ -913,7 +913,7 @@ public final class HttpRemoteTask
         }
 
         //extract current context and pass it to worker nodes by injecting in http header for some of the TaskResource endpoints
-        Map<String, String> headersMap = OpenTelemetryTracingManager.getHeadersMap(stageSpan);
+        Map<String, String> headersMap = TracingManager.getHeadersMap(stageSpan);
 
         HttpUriBuilder uriBuilder = getHttpUriBuilder(taskStatus);
 
@@ -992,7 +992,7 @@ public final class HttpRemoteTask
             }
 
             //extract remote-write span context and pass it to worker nodes on GET /v1/task/{taskId}/status endpoint
-            Map<String, String> headersMap = OpenTelemetryTracingManager.getHeadersMap(span);
+            Map<String, String> headersMap = TracingManager.getHeadersMap(span);
 
             // send cancel to task and ignore response
             HttpUriBuilder uriBuilder = getHttpUriBuilder(taskStatus).addParameter("abort", "false");

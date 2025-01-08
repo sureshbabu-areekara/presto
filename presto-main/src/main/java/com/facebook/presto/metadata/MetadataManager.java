@@ -29,7 +29,6 @@ import com.facebook.presto.common.telemetry.tracing.TracingEnum;
 import com.facebook.presto.common.type.Type;
 import com.facebook.presto.common.type.TypeSignature;
 import com.facebook.presto.execution.QueryManager;
-import com.facebook.presto.opentelemetry.tracing.ScopedSpan;
 import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.ColumnMetadata;
 import com.facebook.presto.spi.ConnectorId;
@@ -125,7 +124,6 @@ import static com.facebook.presto.metadata.MetadataUtil.getOptionalTableHandle;
 import static com.facebook.presto.metadata.MetadataUtil.toSchemaTableName;
 import static com.facebook.presto.metadata.SessionPropertyManager.createTestingSessionPropertyManager;
 import static com.facebook.presto.metadata.TableLayout.fromConnectorLayout;
-import static com.facebook.presto.opentelemetry.tracing.ScopedSpan.scopedSpan;
 import static com.facebook.presto.spi.Constraint.alwaysTrue;
 import static com.facebook.presto.spi.StandardErrorCode.INVALID_VIEW;
 import static com.facebook.presto.spi.StandardErrorCode.NOT_FOUND;
@@ -134,6 +132,7 @@ import static com.facebook.presto.spi.StandardErrorCode.SYNTAX_ERROR;
 import static com.facebook.presto.spi.TableLayoutFilterCoverage.NOT_APPLICABLE;
 import static com.facebook.presto.spi.analyzer.ViewDefinition.ViewColumn;
 import static com.facebook.presto.sql.analyzer.TypeSignatureProvider.fromTypes;
+import static com.facebook.presto.telemetry.TracingManager.scopedSpan;
 import static com.facebook.presto.transaction.InMemoryTransactionManager.createTestTransactionManager;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
@@ -307,7 +306,7 @@ public class MetadataManager
     @Override
     public List<String> listSchemaNames(Session session, String catalogName)
     {
-        try (ScopedSpan ignored = scopedSpan(TracingEnum.LIST_SCHEMA_NAMES.getName(), skipSpan)) {
+        try (AutoCloseable ignored = scopedSpan(TracingEnum.LIST_SCHEMA_NAMES.getName(), skipSpan)) {
             Optional<CatalogMetadata> catalog = getOptionalCatalogMetadata(session, transactionManager, catalogName);
 
             ImmutableSet.Builder<String> schemaNames = ImmutableSet.builder();
@@ -322,13 +321,15 @@ public class MetadataManager
                 }
             }
             return ImmutableList.copyOf(schemaNames.build());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
     @Override
     public Optional<TableHandle> getTableHandleForStatisticsCollection(Session session, QualifiedObjectName table, Map<String, Object> analyzeProperties)
     {
-        try (ScopedSpan ignored = scopedSpan(TracingEnum.GET_TABLE_HANDLE_FOR_STATISTICS_COLLECTION.getName(), skipSpan)) {
+        try (AutoCloseable ignored = scopedSpan(TracingEnum.GET_TABLE_HANDLE_FOR_STATISTICS_COLLECTION.getName(), skipSpan)) {
             requireNonNull(table, "table is null");
 
             Optional<CatalogMetadata> catalog = getOptionalCatalogMetadata(session, transactionManager, table.getCatalogName());
@@ -347,21 +348,25 @@ public class MetadataManager
                 }
             }
             return Optional.empty();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
     @Override
     public Optional<TableHandle> getHandleVersion(Session session, QualifiedObjectName tableName, Optional<ConnectorTableVersion> tableVersion)
     {
-        try (ScopedSpan ignored = scopedSpan(TracingEnum.GET_HANDLE_VERSION.getName(), skipSpan)) {
+        try (AutoCloseable ignored = scopedSpan(TracingEnum.GET_HANDLE_VERSION.getName(), skipSpan)) {
             return getOptionalTableHandle(session, transactionManager, tableName, tableVersion);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
     @Override
     public Optional<SystemTable> getSystemTable(Session session, QualifiedObjectName tableName)
     {
-        try (ScopedSpan ignored = scopedSpan(TracingEnum.GET_SYSTEM_TABLE.getName(), skipSpan)) {
+        try (AutoCloseable ignored = scopedSpan(TracingEnum.GET_SYSTEM_TABLE.getName(), skipSpan)) {
             requireNonNull(session, "session is null");
             requireNonNull(tableName, "table is null");
 
@@ -376,13 +381,15 @@ public class MetadataManager
                 return metadata.getSystemTable(session.toConnectorSession(connectorId), toSchemaTableName(tableName));
             }
             return Optional.empty();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
     @Override
     public TableLayoutResult getLayout(Session session, TableHandle table, Constraint<ColumnHandle> constraint, Optional<Set<ColumnHandle>> desiredColumns)
     {
-        try (ScopedSpan ignored = scopedSpan(TracingEnum.GET_LAYOUT.getName(), skipSpan)) {
+        try (AutoCloseable ignored = scopedSpan(TracingEnum.GET_LAYOUT.getName(), skipSpan)) {
             long startTime = System.nanoTime();
             checkArgument(!constraint.getSummary().isNone(), "Cannot get Layout if constraint is none");
 
@@ -396,24 +403,28 @@ public class MetadataManager
             session.getRuntimeStats().addMetricValue(GET_LAYOUT_TIME_NANOS, NANO, System.nanoTime() - startTime);
 
             return new TableLayoutResult(fromConnectorLayout(connectorId, table.getConnectorHandle(), table.getTransaction(), layout.getTableLayout()), layout.getUnenforcedConstraint());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
     @Override
     public TableLayout getLayout(Session session, TableHandle handle)
     {
-        try (ScopedSpan ignored = scopedSpan(TracingEnum.GET_LAYOUT.getName(), skipSpan)) {
+        try (AutoCloseable ignored = scopedSpan(TracingEnum.GET_LAYOUT.getName(), skipSpan)) {
             ConnectorId connectorId = handle.getConnectorId();
             CatalogMetadata catalogMetadata = getCatalogMetadata(session, connectorId);
             ConnectorMetadata metadata = catalogMetadata.getMetadataFor(connectorId);
             return fromConnectorLayout(connectorId, handle.getConnectorHandle(), handle.getTransaction(), metadata.getTableLayout(session.toConnectorSession(connectorId), resolveTableLayout(session, handle)));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
     @Override
     public TableHandle getAlternativeTableHandle(Session session, TableHandle tableHandle, PartitioningHandle partitioningHandle)
     {
-        try (ScopedSpan ignored = scopedSpan(TracingEnum.GET_ALTERNATE_TABLE_HANDLE.getName(), skipSpan)) {
+        try (AutoCloseable ignored = scopedSpan(TracingEnum.GET_ALTERNATE_TABLE_HANDLE.getName(), skipSpan)) {
             checkArgument(partitioningHandle.getConnectorId().isPresent(), "Expect partitioning handle from connector, got system partitioning handle");
             ConnectorId connectorId = partitioningHandle.getConnectorId().get();
             checkArgument(connectorId.equals(tableHandle.getConnectorId()), "ConnectorId of tableLayoutHandle and partitioningHandle does not match");
@@ -421,25 +432,29 @@ public class MetadataManager
             ConnectorMetadata metadata = catalogMetadata.getMetadataFor(connectorId);
             ConnectorTableLayoutHandle newTableLayoutHandle = metadata.getAlternativeLayoutHandle(session.toConnectorSession(connectorId), tableHandle.getLayout().get(), partitioningHandle.getConnectorHandle());
             return new TableHandle(tableHandle.getConnectorId(), tableHandle.getConnectorHandle(), tableHandle.getTransaction(), Optional.of(newTableLayoutHandle));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
     @Override
     public boolean isLegacyGetLayoutSupported(Session session, TableHandle tableHandle)
     {
-        try (ScopedSpan ignored = scopedSpan(TracingEnum.IS_LEGACY_GET_LAYOUT_SUPPORTED.getName(), skipSpan)) {
+        try (AutoCloseable ignored = scopedSpan(TracingEnum.IS_LEGACY_GET_LAYOUT_SUPPORTED.getName(), skipSpan)) {
             ConnectorId connectorId = tableHandle.getConnectorId();
 
             CatalogMetadata catalogMetadata = getCatalogMetadata(session, connectorId);
             ConnectorMetadata metadata = catalogMetadata.getMetadataFor(connectorId);
             return metadata.isLegacyGetLayoutSupported(session.toConnectorSession(connectorId), tableHandle.getConnectorHandle());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
     @Override
     public Optional<PartitioningHandle> getCommonPartitioning(Session session, PartitioningHandle left, PartitioningHandle right)
     {
-        try (ScopedSpan ignored = scopedSpan(TracingEnum.GET_COMMON_PARTITIONING.getName(), skipSpan)) {
+        try (AutoCloseable ignored = scopedSpan(TracingEnum.GET_COMMON_PARTITIONING.getName(), skipSpan)) {
             Optional<ConnectorId> leftConnectorId = left.getConnectorId();
             Optional<ConnectorId> rightConnectorId = right.getConnectorId();
             if (!leftConnectorId.isPresent() || !rightConnectorId.isPresent() || !leftConnectorId.equals(rightConnectorId)) {
@@ -453,13 +468,15 @@ public class MetadataManager
             ConnectorMetadata metadata = catalogMetadata.getMetadataFor(connectorId);
             Optional<ConnectorPartitioningHandle> commonHandle = metadata.getCommonPartitioningHandle(session.toConnectorSession(connectorId), left.getConnectorHandle(), right.getConnectorHandle());
             return commonHandle.map(handle -> new PartitioningHandle(Optional.of(connectorId), left.getTransactionHandle(), handle));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
     @Override
     public boolean isRefinedPartitioningOver(Session session, PartitioningHandle left, PartitioningHandle right)
     {
-        try (ScopedSpan ignored = scopedSpan(TracingEnum.IS_REFINED_PARTITIONING_OVER.getName(), skipSpan)) {
+        try (AutoCloseable ignored = scopedSpan(TracingEnum.IS_REFINED_PARTITIONING_OVER.getName(), skipSpan)) {
             Optional<ConnectorId> leftConnectorId = left.getConnectorId();
             Optional<ConnectorId> rightConnectorId = right.getConnectorId();
             if (!leftConnectorId.isPresent() || !rightConnectorId.isPresent() || !leftConnectorId.equals(rightConnectorId)) {
@@ -473,13 +490,15 @@ public class MetadataManager
             ConnectorMetadata metadata = catalogMetadata.getMetadataFor(connectorId);
 
             return metadata.isRefinedPartitioningOver(session.toConnectorSession(connectorId), left.getConnectorHandle(), right.getConnectorHandle());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
     @Override
     public PartitioningHandle getPartitioningHandleForExchange(Session session, String catalogName, int partitionCount, List<Type> partitionTypes)
     {
-        try (ScopedSpan ignored = scopedSpan(TracingEnum.GET_PARTITIONING_HANDLE.getName(), skipSpan)) {
+        try (AutoCloseable ignored = scopedSpan(TracingEnum.GET_PARTITIONING_HANDLE.getName(), skipSpan)) {
             CatalogMetadata catalogMetadata = getOptionalCatalogMetadata(session, transactionManager, catalogName)
                     .orElseThrow(() -> new PrestoException(NOT_FOUND, format("Catalog '%s' does not exist", catalogName)));
             ConnectorId connectorId = catalogMetadata.getConnectorId();
@@ -487,6 +506,8 @@ public class MetadataManager
             ConnectorPartitioningHandle connectorPartitioningHandle = metadata.getPartitioningHandleForExchange(session.toConnectorSession(connectorId), partitionCount, partitionTypes);
             ConnectorTransactionHandle transaction = catalogMetadata.getTransactionHandleFor(connectorId);
             return new PartitioningHandle(Optional.of(connectorId), Optional.of(transaction), connectorPartitioningHandle);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 

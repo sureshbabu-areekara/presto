@@ -11,21 +11,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.facebook.presto.telemetry;
+/*
+package com.facebook.presto.spi.telemetry;
 
-import com.google.inject.Binder;
-import com.google.inject.Module;
-import com.google.inject.Scopes;
-
-import static org.weakref.jmx.guice.ExportBinder.newExporter;
-
-public class TelemetryModule
-        implements Module
+public interface TelemetryTracing<T>
 {
-    @Override
-    public void configure(Binder binder)
-    {
-        binder.bind(TracingManager.class).in(Scopes.SINGLETON);
-        newExporter(binder).export(TracingManager.class).withGeneratedName();
-    }
+    void addOpenTelemetryFactory(T t);
 }
+*/

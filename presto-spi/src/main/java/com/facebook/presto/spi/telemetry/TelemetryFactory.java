@@ -13,9 +13,58 @@
  */
 package com.facebook.presto.spi.telemetry;
 
-public interface TelemetryFactory<T>
+import com.facebook.presto.common.ErrorCode;
+import com.google.errorprone.annotations.MustBeClosed;
+
+import java.util.Map;
+import java.util.Optional;
+
+public interface TelemetryFactory<T, U>
 {
     String getName();
 
-    T create();
+    void loadConfiguredOpenTelemetry();
+
+    Runnable getCurrentContextWrap(Runnable runnable);
+
+    boolean isRecording();
+
+    Map<String, String> getHeadersMap(T span);
+
+    void endSpanOnError(T querySpan, Throwable throwable);
+
+    void addEvent(String eventState, T querySpan);
+
+    void setAttributeQueryType(T querySpan, String queryType);
+
+    void recordException(T querySpan, String message, RuntimeException runtimeException, ErrorCode errorCode);
+
+    void setSuccess(T querySpan);
+
+    //GetSpans
+    T getRootSpan();
+
+    T getSpan(String spanName);
+
+    T getSpan(String traceParent, String spanName);
+
+    T getSpan(T parentSpan, String spanName, Map<String, String> attributes);
+
+    Optional<String> spanString(T span);
+
+    //scoped spans
+    @MustBeClosed
+    U scopedSpan(String name, Boolean... skipSpan);
+
+    @MustBeClosed
+    U scopedSpan(T span, Boolean... skipSpan);
+
+    @MustBeClosed
+    U scopedSpan(T parentSpan, String spanName, Map<String, String> attributes, Boolean... skipSpan);
+
+    @MustBeClosed
+    U scopedSpan(T parentSpan, String spanName, Boolean... skipSpan);
+
+    @MustBeClosed
+    U scopedSpan(String spanName, Map<String, String> attributes, Boolean... skipSpan);
 }

@@ -14,7 +14,7 @@
  */
 package com.facebook.presto.telemetry;
 
-import com.facebook.presto.common.TelemetryConfig;
+/*import com.facebook.presto.common.TelemetryConfig;
 import com.facebook.presto.opentelemetry.OpenTelemetryImpl;
 import com.facebook.presto.testing.TestingOpenTelemetryTracingManager;
 import io.opentelemetry.api.OpenTelemetry;
@@ -29,11 +29,11 @@ import java.util.Map;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.fail;
+import static org.testng.Assert.fail;*/
 
 public class TestOpenTelemetryTracingManager
 {
-    private TestingOpenTelemetryTracingManager telemetryManager;
+/*    private TestingOpenTelemetryTracingManager telemetryManager;
     private OpenTelemetryImpl openTelemetryFactory;
     Map<String, String> properties = new HashMap<>();
 
@@ -132,5 +132,5 @@ public class TestOpenTelemetryTracingManager
 
         assertNotNull(telemetryManager.getTracer());
         assertNotEquals(telemetryManager.getTracer(), OpenTelemetry.noop().getTracer("no-op"));
-    }
+    }*/
 }

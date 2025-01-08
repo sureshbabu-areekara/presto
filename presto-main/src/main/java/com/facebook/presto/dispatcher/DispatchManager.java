@@ -41,7 +41,7 @@ import com.facebook.presto.spi.resourceGroups.SelectionContext;
 import com.facebook.presto.spi.resourceGroups.SelectionCriteria;
 import com.facebook.presto.spi.security.AccessControl;
 import com.facebook.presto.sql.analyzer.QueryPreparerProviderManager;
-import com.facebook.presto.telemetry.OpenTelemetryTracingManager;
+import com.facebook.presto.telemetry.TracingManager;
 import com.facebook.presto.transaction.TransactionManager;
 import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -248,7 +248,7 @@ public class DispatchManager
 
         DispatchQueryCreationFuture queryCreationFuture = new DispatchQueryCreationFuture();
 
-        boundedQueryExecutor.execute(OpenTelemetryTracingManager.getCurrentContextWrap(() -> {
+        boundedQueryExecutor.execute(TracingManager.getCurrentContextWrap(() -> {
             try (ScopedSpan ignored = scopedSpan(querySpan, TracingEnum.DISPATCH.getName())) {
                 createQueryInternal(queryId, querySpan, rootSpan, slug, retryCount, sessionContext, query, resourceGroupManager);
             }
@@ -345,7 +345,7 @@ public class DispatchManager
             DispatchQuery failedDispatchQuery = failedDispatchQueryFactory.createFailedDispatchQuery(session, query, Optional.empty(), throwable);
             queryCreated(failedDispatchQuery);
 
-            OpenTelemetryTracingManager.endSpanOnError(querySpan, throwable);
+            TracingManager.endSpanOnError(querySpan, throwable);
         }
     }
 
