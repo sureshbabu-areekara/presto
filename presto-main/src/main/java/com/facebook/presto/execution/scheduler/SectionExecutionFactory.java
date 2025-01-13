@@ -29,7 +29,6 @@ import com.facebook.presto.execution.scheduler.nodeSelection.NodeSelector;
 import com.facebook.presto.failureDetector.FailureDetector;
 import com.facebook.presto.metadata.InternalNode;
 import com.facebook.presto.metadata.Metadata;
-import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.operator.ForScheduler;
 import com.facebook.presto.spi.ConnectorId;
 import com.facebook.presto.spi.Node;
@@ -170,7 +169,7 @@ public class SectionExecutionFactory
             RemoteTaskFactory remoteTaskFactory,
             SplitSourceFactory splitSourceFactory,
             int attemptId,
-            TracingSpan schedulerSpan)
+            Object schedulerSpan)
     {
         // Only fetch a distribution once per section to ensure all stages see the same machine assignments
         Map<PartitioningHandle, NodePartitionMap> partitioningCache = new HashMap<>();
@@ -207,7 +206,7 @@ public class SectionExecutionFactory
             RemoteTaskFactory remoteTaskFactory,
             SplitSourceFactory splitSourceFactory,
             int attemptId,
-            TracingSpan schedulerSpan)
+            Object schedulerSpan)
     {
         ImmutableList.Builder<StageExecutionAndScheduler> stageExecutionAndSchedulers = ImmutableList.builder();
 

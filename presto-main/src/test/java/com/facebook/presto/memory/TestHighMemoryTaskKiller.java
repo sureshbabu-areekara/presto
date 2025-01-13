@@ -27,7 +27,6 @@ import com.facebook.presto.execution.TestSqlTaskManager;
 import com.facebook.presto.execution.buffer.SpoolingOutputBufferFactory;
 import com.facebook.presto.execution.executor.TaskExecutor;
 import com.facebook.presto.execution.scheduler.TableWriteInfo;
-import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.operator.PipelineContext;
 import com.facebook.presto.operator.TaskContext;
 import com.facebook.presto.operator.TaskMemoryReservationSummary;
@@ -130,7 +129,7 @@ public class TestHighMemoryTaskKiller
                 createInitialEmptyOutputBuffers(PARTITIONED)
                         .withNoMoreBufferIds(),
                 Optional.of(new TableWriteInfo(Optional.empty(), Optional.empty(), Optional.empty())),
-                TracingSpan.getInvalid());
+                new Object());
         assertEquals(taskInfo.getTaskStatus().getState(), TaskState.RUNNING);
 
         TaskContext taskContext = sqlTask.getTaskContext().get();

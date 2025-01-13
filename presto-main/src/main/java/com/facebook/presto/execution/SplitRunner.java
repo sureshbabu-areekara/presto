@@ -13,7 +13,6 @@
  */
 package com.facebook.presto.execution;
 
-import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.units.Duration;
 
@@ -31,7 +30,7 @@ public interface SplitRunner
     @Override
     void close();
 
-    default TracingSpan getPipelineSpan()
+    default Object getPipelineSpan()
     {
         return null;
     }

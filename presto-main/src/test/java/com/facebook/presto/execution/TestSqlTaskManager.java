@@ -30,7 +30,6 @@ import com.facebook.presto.memory.MemoryPoolAssignmentsRequest;
 import com.facebook.presto.memory.NodeMemoryConfig;
 import com.facebook.presto.memory.context.LocalMemoryContext;
 import com.facebook.presto.metadata.InternalNode;
-import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.operator.ExchangeClient;
 import com.facebook.presto.operator.ExchangeClientSupplier;
 import com.facebook.presto.operator.NoOpFragmentResultCacheManager;
@@ -353,7 +352,7 @@ public class TestSqlTaskManager
                 ImmutableList.of(new TaskSource(TABLE_SCAN_NODE_ID, splits, true)),
                 outputBuffers,
                 Optional.of(new TableWriteInfo(Optional.empty(), Optional.empty(), Optional.empty())),
-                TracingSpan.getInvalid());
+                new Object());
     }
 
     private TaskInfo createTask(SqlTaskManager sqlTaskManager, TaskId taskId, OutputBuffers outputBuffers)
@@ -375,7 +374,7 @@ public class TestSqlTaskManager
                 ImmutableList.of(),
                 outputBuffers,
                 Optional.of(new TableWriteInfo(Optional.empty(), Optional.empty(), Optional.empty())),
-                TracingSpan.getInvalid());
+                new Object());
     }
 
     public static class MockExchangeClientSupplier

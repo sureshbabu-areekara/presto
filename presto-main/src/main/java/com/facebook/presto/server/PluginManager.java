@@ -45,12 +45,14 @@ import com.facebook.presto.spi.session.SessionPropertyConfigurationManagerFactor
 import com.facebook.presto.spi.session.WorkerSessionPropertyProviderFactory;
 import com.facebook.presto.spi.statistics.HistoryBasedPlanStatisticsProvider;
 import com.facebook.presto.spi.storage.TempStorageFactory;
+import com.facebook.presto.spi.telemetry.TelemetryFactory;
 import com.facebook.presto.spi.ttl.ClusterTtlProviderFactory;
 import com.facebook.presto.spi.ttl.NodeTtlFetcherFactory;
 import com.facebook.presto.sql.analyzer.AnalyzerProviderManager;
 import com.facebook.presto.sql.analyzer.QueryPreparerProviderManager;
 import com.facebook.presto.sql.planner.sanity.PlanCheckerProviderManager;
 import com.facebook.presto.storage.TempStorageManager;
+import com.facebook.presto.telemetry.TracingManager;
 import com.facebook.presto.ttl.clusterttlprovidermanagers.ClusterTtlProviderManager;
 import com.facebook.presto.ttl.nodettlfetchermanagers.NodeTtlFetcherManager;
 import com.google.common.collect.ImmutableList;
@@ -132,6 +134,7 @@ public class PluginManager
     private final QueryPreparerProviderManager queryPreparerProviderManager;
     private final NodeStatusNotificationManager nodeStatusNotificationManager;
     private final PlanCheckerProviderManager planCheckerProviderManager;
+    private final TracingManager tracingManager;
 
     @Inject
     public PluginManager(
@@ -153,7 +156,8 @@ public class PluginManager
             ClusterTtlProviderManager clusterTtlProviderManager,
             HistoryBasedPlanStatisticsManager historyBasedPlanStatisticsManager,
             NodeStatusNotificationManager nodeStatusNotificationManager,
-            PlanCheckerProviderManager planCheckerProviderManager)
+            PlanCheckerProviderManager planCheckerProviderManager,
+            TracingManager tracingManager)
     {
         requireNonNull(nodeInfo, "nodeInfo is null");
         requireNonNull(config, "config is null");
@@ -185,6 +189,7 @@ public class PluginManager
         this.queryPreparerProviderManager = requireNonNull(queryPreparerProviderManager, "queryPreparerProviderManager is null");
         this.nodeStatusNotificationManager = requireNonNull(nodeStatusNotificationManager, "nodeStatusNotificationManager is null");
         this.planCheckerProviderManager = requireNonNull(planCheckerProviderManager, "planCheckerProviderManager is null");
+        this.tracingManager = requireNonNull(tracingManager, "tracingManager is null");
     }
 
     public void loadPlugins()
@@ -348,6 +353,11 @@ public class PluginManager
         for (PlanCheckerProviderFactory planCheckerProviderFactory : plugin.getPlanCheckerProviderFactories()) {
             log.info("Registering plan checker provider factory %s", planCheckerProviderFactory.getName());
             planCheckerProviderManager.addPlanCheckerProviderFactory(planCheckerProviderFactory);
+        }
+
+        for (TelemetryFactory telemetryFactories : plugin.getTelemetryFactories()) {
+            log.info("Registering event listener %s", telemetryFactories.getName());
+            tracingManager.addOpenTelemetryFactory(telemetryFactories);
         }
     }
 

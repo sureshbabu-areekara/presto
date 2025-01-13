@@ -43,7 +43,6 @@ import com.facebook.presto.metadata.InternalNode;
 import com.facebook.presto.metadata.MetadataManager;
 import com.facebook.presto.metadata.MetadataUpdates;
 import com.facebook.presto.metadata.Split;
-import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.operator.ForScheduler;
 import com.facebook.presto.server.InternalCommunicationConfig;
 import com.facebook.presto.server.TaskUpdateRequest;
@@ -220,7 +219,7 @@ public class HttpRemoteTaskFactory
             boolean summarizeTaskInfo,
             TableWriteInfo tableWriteInfo,
             SchedulerStatsTracker schedulerStatsTracker,
-            TracingSpan stageSpan)
+            Object stageSpan)
     {
         return new HttpRemoteTask(
                 session,

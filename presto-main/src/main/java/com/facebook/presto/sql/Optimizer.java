@@ -41,6 +41,7 @@ import com.facebook.presto.sql.planner.optimizations.PlanOptimizer;
 import com.facebook.presto.sql.planner.optimizations.PlanOptimizerResult;
 import com.facebook.presto.sql.planner.sanity.PlanChecker;
 import com.facebook.presto.telemetry.TracingManager;
+import com.google.common.collect.ImmutableMap;
 
 import java.util.List;
 import java.util.Optional;
@@ -57,6 +58,7 @@ import static com.facebook.presto.sql.Optimizer.PlanStage.OPTIMIZED_AND_VALIDATE
 import static com.facebook.presto.sql.OptimizerRuntimeTrackUtil.getOptimizerNameForLog;
 import static com.facebook.presto.sql.OptimizerRuntimeTrackUtil.trackOptimizerRuntime;
 import static com.facebook.presto.telemetry.TracingManager.scopedSpan;
+import static com.facebook.presto.telemetry.TracingManager.setAttributes;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
@@ -115,7 +117,7 @@ public class Optimizer
                     .collect(Collectors.toList());
 
             String rulesAsString = String.join(", ", ruleNames);
-            //span.setAttribute("OPTIMIZER_RULES", rulesAsString);
+            setAttributes(span, ImmutableMap.of("OPTIMIZER_RULES", rulesAsString));
         }
         return scopedSpan(span);
     }
@@ -124,7 +126,8 @@ public class Optimizer
     {
         try (AutoCloseable ignored = scopedSpan("validate intermediate")) {
             planChecker.validateIntermediatePlan(root, session, metadata, warningCollector);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
 
@@ -152,7 +155,8 @@ public class Optimizer
                     collectOptimizerInformation(optimizer, root, optimizerResult, types);
                     root = optimizerResult.getPlanNode();
                 }
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
@@ -162,14 +166,16 @@ public class Optimizer
                 // make sure we produce a valid plan after optimizations run. This is mainly to catch programming errors
                 planChecker.validateFinalPlan(root, session, metadata, warningCollector);
             }
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
 
         TypeProvider types = TypeProvider.viewOf(variableAllocator.getVariables());
         try (AutoCloseable ignored = scopedSpan("plan stats")) {
             return new Plan(root, types, computeStats(root, types));
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

@@ -16,7 +16,6 @@ package com.facebook.presto.event;
 import com.facebook.airlift.log.Logger;
 import com.facebook.presto.eventlistener.EventListenerManager;
 import com.facebook.presto.execution.TaskId;
-import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.operator.DriverStats;
 import com.facebook.presto.spi.eventlistener.SplitCompletedEvent;
 import com.facebook.presto.spi.eventlistener.SplitFailureInfo;
@@ -31,6 +30,7 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
 
+import static com.facebook.presto.telemetry.TracingManager.endSpan;
 import static java.time.Duration.ofMillis;
 import static java.util.Objects.requireNonNull;
 
@@ -48,17 +48,17 @@ public class SplitMonitor
         this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
     }
 
-    public void splitCompletedEvent(TaskId taskId, DriverStats driverStats, TracingSpan pipelineSpan)
+    public void splitCompletedEvent(TaskId taskId, DriverStats driverStats, Object pipelineSpan)
     {
         splitCompletedEvent(taskId, driverStats, null, null, pipelineSpan);
     }
 
-    public void splitFailedEvent(TaskId taskId, DriverStats driverStats, Throwable cause, TracingSpan pipelineSpan)
+    public void splitFailedEvent(TaskId taskId, DriverStats driverStats, Throwable cause, Object pipelineSpan)
     {
         splitCompletedEvent(taskId, driverStats, cause.getClass().getName(), cause.getMessage(), pipelineSpan);
     }
 
-    private void splitCompletedEvent(TaskId taskId, DriverStats driverStats, @Nullable String failureType, @Nullable String failureMessage, TracingSpan pipelineSpan)
+    private void splitCompletedEvent(TaskId taskId, DriverStats driverStats, @Nullable String failureType, @Nullable String failureMessage, Object pipelineSpan)
     {
         Optional<Duration> timeToStart = Optional.empty();
         if (driverStats.getStartTime() != null) {
@@ -102,7 +102,7 @@ public class SplitMonitor
             log.error(e, "Error processing split completion event for task %s", taskId);
         }
         if (!Objects.isNull(pipelineSpan)) {
-            pipelineSpan.end();
+            endSpan(pipelineSpan);
         }
     }
 }

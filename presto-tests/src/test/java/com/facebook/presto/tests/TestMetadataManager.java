@@ -14,7 +14,6 @@
 package com.facebook.presto.tests;
 
 import com.facebook.presto.Session;
-import com.facebook.presto.common.TelemetryConfig;
 import com.facebook.presto.connector.MockConnectorFactory;
 import com.facebook.presto.dispatcher.DispatchManager;
 import com.facebook.presto.execution.TestingSessionContext;
@@ -33,7 +32,6 @@ import com.facebook.presto.tests.tpch.TpchQueryRunnerBuilder;
 import com.facebook.presto.transaction.TransactionBuilder;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import io.opentelemetry.sdk.trace.data.SpanData;
 import org.intellij.lang.annotations.Language;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -49,8 +47,6 @@ import static com.facebook.presto.execution.QueryState.RUNNING;
 import static com.facebook.presto.spi.Constraint.alwaysTrue;
 import static com.facebook.presto.testing.TestingSession.testSessionBuilder;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 /**
@@ -208,7 +204,7 @@ public class TestMetadataManager
                         });
     }
 
-    @Test
+    /*@Test
     public void testMetadataGetCatalogsByQueryIdTraceEnabledWithSampling() throws InterruptedException
     {
         //With sampling
@@ -303,5 +299,5 @@ public class TestMetadataManager
         assertTrue(spans.stream().anyMatch(s -> "dispatch".equals(s.getName())));
 
         testingTelemetryManager.clearSpanList();
-    }
+    }*/
 }

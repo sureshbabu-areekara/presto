@@ -19,7 +19,6 @@ import com.facebook.presto.common.WarningHandlingLevel;
 import com.facebook.presto.common.type.TimeZoneKey;
 import com.facebook.presto.execution.warnings.WarningCollectorFactory;
 import com.facebook.presto.metadata.SessionPropertyManager;
-import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.server.security.SecurityConfig;
 import com.facebook.presto.spi.QueryId;
 import com.facebook.presto.spi.WarningCollector;
@@ -75,7 +74,7 @@ public class QuerySessionSupplier
     }
 
     @Override
-    public Session createSession(QueryId queryId, TracingSpan querySpan, TracingSpan rootSpan, SessionContext context, WarningCollectorFactory warningCollectorFactory)
+    public Session createSession(QueryId queryId, Object querySpan, Object rootSpan, SessionContext context, WarningCollectorFactory warningCollectorFactory)
     {
         Session session = createSessionBuilder(queryId, querySpan, rootSpan, context, warningCollectorFactory).build();
         if (context.getTransactionId().isPresent()) {
@@ -85,7 +84,7 @@ public class QuerySessionSupplier
     }
 
     @Override
-    public SessionBuilder createSessionBuilder(QueryId queryId, TracingSpan querySpan, TracingSpan rootSpan, SessionContext context, WarningCollectorFactory warningCollectorFactory)
+    public SessionBuilder createSessionBuilder(QueryId queryId, Object querySpan, Object rootSpan, SessionContext context, WarningCollectorFactory warningCollectorFactory)
     {
         SessionBuilder sessionBuilder = Session.builder(sessionPropertyManager)
                 .setQueryId(queryId)

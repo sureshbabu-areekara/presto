@@ -20,7 +20,7 @@ import com.facebook.presto.common.telemetry.tracing.TracingEnum;
 import com.facebook.presto.common.util.TextMapGetterImpl;
 import com.facebook.presto.opentelemetry.tracing.ScopedSpan;
 import com.facebook.presto.opentelemetry.tracing.TracingSpan;
-import com.facebook.presto.spi.telemetry.TelemetryFactory;
+import com.facebook.presto.spi.telemetry.TelemetryTracing;
 import com.google.errorprone.annotations.MustBeClosed;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.baggage.propagation.W3CBaggagePropagator;
@@ -54,7 +54,7 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Strings.nullToEmpty;
 
 public class OpenTelemetryImpl
-        implements TelemetryFactory<TracingSpan, ScopedSpan>
+        implements TelemetryTracing<TracingSpan, ScopedSpan>
 {
     private static final Logger log = Logger.get(OpenTelemetryImpl.class);
     private static OpenTelemetry configuredOpenTelemetry;
@@ -65,11 +65,11 @@ public class OpenTelemetryImpl
      * telemetry.properties file during registration
      * @return
      */
-    @Override
+/*    @Override
     public String getName()
     {
         return "otel";
-    }
+    }*/
 
     /**
      * called from PrestoServer for loading the properties after OpenTelemetryManager is bound and injected
@@ -182,17 +182,17 @@ public class OpenTelemetryImpl
         return Context.current().wrap(runnable);
     }
 
-    public static Context getCurrentContext()
+    private static Context getCurrentContext()
     {
         return Context.current();
     }
 
-    public static Context getCurrentContextWith(TracingSpan tracingSpan)
+    private static Context getCurrentContextWith(TracingSpan tracingSpan)
     {
         return Context.current().with(tracingSpan.getSpan());
     }
 
-    public static Context getContext(TracingSpan span)
+    private static Context getContext(TracingSpan span)
     {
         return span != null ? getCurrentContextWith(span) : getCurrentContext();
     }
@@ -222,6 +222,12 @@ public class OpenTelemetryImpl
     }
 
     @Override
+    public void endSpan(TracingSpan span)
+    {
+        span.end();
+    }
+
+    @Override
     public void endSpanOnError(TracingSpan querySpan, Throwable throwable)
     {
         if (TelemetryConfig.getTracingEnabled() && Objects.nonNull(querySpan)) {
@@ -232,18 +238,26 @@ public class OpenTelemetryImpl
     }
 
     @Override
-    public void addEvent(String eventState, TracingSpan querySpan)
+    public void addEvent(TracingSpan span, String eventName)
     {
-        if (TelemetryConfig.getTracingEnabled() && Objects.nonNull(querySpan)) {
-            querySpan.getSpan().addEvent("query_state", Attributes.of(AttributeKey.stringKey("EVENT_STATE"), eventState));
+        if (TelemetryConfig.getTracingEnabled() && Objects.nonNull(span)) {
+            span.getSpan().addEvent(eventName);
         }
     }
 
     @Override
-    public void setAttributeQueryType(TracingSpan querySpan, String queryType)
+    public void addEvent(TracingSpan querySpan, String eventName, String eventState)
     {
         if (TelemetryConfig.getTracingEnabled() && Objects.nonNull(querySpan)) {
-            querySpan.getSpan().setAttribute("QUERY_TYPE", queryType);
+            querySpan.getSpan().addEvent(eventName, Attributes.of(AttributeKey.stringKey("EVENT_STATE"), eventState));
+        }
+    }
+
+    @Override
+    public void setAttributes(TracingSpan span, Map<String, String> attributes)
+    {
+        if (TelemetryConfig.getTracingEnabled() && Objects.nonNull(span)) {
+            attributes.forEach(span::setAttribute);
         }
     }
 

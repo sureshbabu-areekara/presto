@@ -36,7 +36,6 @@ import com.facebook.presto.execution.TaskStatus;
 import com.facebook.presto.metadata.HandleResolver;
 import com.facebook.presto.metadata.MetadataManager;
 import com.facebook.presto.metadata.MetadataUpdates;
-import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.server.RequestErrorTracker;
 import com.facebook.presto.server.SimpleHttpResponseCallback;
 import com.facebook.presto.server.SimpleHttpResponseHandler;
@@ -99,7 +98,7 @@ public class TaskInfoFetcher
     private final RequestErrorTracker errorTracker;
 
     private final boolean summarizeTaskInfo;
-    private final TracingSpan remoteTaskSpan;
+    private final Object remoteTaskSpan;
 
     @GuardedBy("this")
     private final AtomicLong currentRequestStartNanos = new AtomicLong();
@@ -149,7 +148,7 @@ public class TaskInfoFetcher
             HandleResolver handleResolver,
             ConnectorTypeSerdeManager connectorTypeSerdeManager,
             Protocol thriftProtocol,
-            TracingSpan remoteTaskSpan)
+            Object remoteTaskSpan)
     {
         requireNonNull(initialTask, "initialTask is null");
         requireNonNull(errorScheduledExecutor, "errorScheduledExecutor is null");

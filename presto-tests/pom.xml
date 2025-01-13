@@ -323,11 +323,11 @@
             <optional>true</optional>
         </dependency>
 
-        <dependency>
+<!--        <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-sdk-trace</artifactId>
             <version>1.38.0</version>
-        </dependency>
+        </dependency>-->
 
         <dependency>
             <groupId>com.facebook.presto</groupId>

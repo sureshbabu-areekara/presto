@@ -53,7 +53,6 @@ import com.facebook.presto.metadata.HandleResolver;
 import com.facebook.presto.metadata.MetadataManager;
 import com.facebook.presto.metadata.MetadataUpdates;
 import com.facebook.presto.metadata.Split;
-import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.operator.TaskStats;
 import com.facebook.presto.server.RequestErrorTracker;
 import com.facebook.presto.server.SimpleHttpResponseCallback;
@@ -131,6 +130,7 @@ import static com.facebook.presto.server.thrift.ThriftCodecWrapper.unwrapThriftC
 import static com.facebook.presto.spi.StandardErrorCode.EXCEEDED_TASK_UPDATE_SIZE_LIMIT;
 import static com.facebook.presto.spi.StandardErrorCode.GENERIC_INTERNAL_ERROR;
 import static com.facebook.presto.spi.StandardErrorCode.REMOTE_TASK_ERROR;
+import static com.facebook.presto.telemetry.TracingManager.endSpan;
 import static com.facebook.presto.util.Failures.toFailure;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -155,8 +155,8 @@ public final class HttpRemoteTask
     private static final ThreadMXBean THREAD_MX_BEAN = (ThreadMXBean) ManagementFactory.getThreadMXBean();
 
     private final TaskId taskId;
-    private final TracingSpan stageSpan;
-    private final TracingSpan span;
+    private final Object stageSpan;
+    private final Object span;
     private final URI taskLocation;
     private final URI remoteTaskLocation;
 
@@ -278,7 +278,7 @@ public final class HttpRemoteTask
             HandleResolver handleResolver,
             ConnectorTypeSerdeManager connectorTypeSerdeManager,
             SchedulerStatsTracker schedulerStatsTracker,
-            TracingSpan stageSpan)
+            Object stageSpan)
     {
         requireNonNull(session, "session is null");
         requireNonNull(taskId, "taskId is null");
@@ -420,7 +420,7 @@ public final class HttpRemoteTask
                     updateSplitQueueSpace();
                 }
                 if (Objects.nonNull(span) && state.isDone()) {
-                    span.end();
+                    endSpan(span);
                 }
             });
 

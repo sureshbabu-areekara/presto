@@ -11,11 +11,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.facebook.presto.spi.telemetry;
+package com.facebook.presto.plugin.opentelemetry;
 
-public interface TelemetryFactory
+import com.facebook.presto.opentelemetry.tracing.OpenTelemetryFactoryImpl;
+import com.facebook.presto.spi.Plugin;
+import com.facebook.presto.spi.telemetry.TelemetryFactory;
+import com.google.common.collect.ImmutableList;
+
+public class OpenTelemetryPlugin
+        implements Plugin
 {
-    String getName();
-
-    TelemetryTracing create();
+    @Override
+    public Iterable<TelemetryFactory> getTelemetryFactories()
+    {
+        return ImmutableList.of(new OpenTelemetryFactoryImpl());
+    }
 }

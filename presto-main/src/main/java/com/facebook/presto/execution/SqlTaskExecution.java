@@ -21,7 +21,6 @@ import com.facebook.presto.execution.buffer.BufferState;
 import com.facebook.presto.execution.buffer.OutputBuffer;
 import com.facebook.presto.execution.executor.TaskExecutor;
 import com.facebook.presto.execution.executor.TaskHandle;
-import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.operator.Driver;
 import com.facebook.presto.operator.DriverContext;
 import com.facebook.presto.operator.DriverFactory;
@@ -73,6 +72,7 @@ import static com.facebook.presto.execution.SqlTaskExecution.SplitsState.ADDING_
 import static com.facebook.presto.execution.SqlTaskExecution.SplitsState.FINISHED;
 import static com.facebook.presto.execution.SqlTaskExecution.SplitsState.NO_MORE_SPLITS;
 import static com.facebook.presto.operator.PipelineExecutionStrategy.UNGROUPED_EXECUTION;
+import static com.facebook.presto.telemetry.TracingManager.addEvent;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
@@ -133,7 +133,7 @@ public class SqlTaskExecution
     // guarded for update only
     @GuardedBy("this")
     private final ConcurrentMap<PlanNodeId, TaskSource> remoteSources = new ConcurrentHashMap<>();
-    private static TracingSpan taskSpan;
+    private static Object taskSpan;
 
     @GuardedBy("this")
     private long maxAcknowledgedSplit = Long.MIN_VALUE;
@@ -155,7 +155,7 @@ public class SqlTaskExecution
             TaskExecutor taskExecutor,
             Executor notificationExecutor,
             SplitMonitor queryMonitor,
-            TracingSpan taskSpan)
+            Object taskSpan)
     {
         SqlTaskExecution task = new SqlTaskExecution(
                 taskStateMachine,
@@ -186,7 +186,7 @@ public class SqlTaskExecution
             TaskExecutor taskExecutor,
             SplitMonitor splitMonitor,
             Executor notificationExecutor,
-            TracingSpan taskSpan)
+            Object taskSpan)
     {
         this.taskStateMachine = requireNonNull(taskStateMachine, "taskStateMachine is null");
         this.taskId = taskStateMachine.getTaskId();
@@ -568,7 +568,7 @@ public class SqlTaskExecution
 
             // record new driver
             status.incrementRemainingDriver(splitRunner.getLifespan());
-            TracingSpan pipelineSpan = splitRunner.getPipelineSpan();
+            Object pipelineSpan = splitRunner.getPipelineSpan();
 
             Futures.addCallback(finishedFuture, new FutureCallback<Object>()
             {
@@ -931,7 +931,7 @@ public class SqlTaskExecution
         private final DriverFactory driverFactory;
         private final PipelineContext pipelineContext;
         private boolean closed;
-        private final TracingSpan pipelineSpan;
+        private final Object pipelineSpan;
         private final int pipelineId;
 
         private DriverSplitRunnerFactory(DriverFactory driverFactory, boolean partitioned)
@@ -1008,7 +1008,7 @@ public class SqlTaskExecution
                 return;
             }
             driverFactory.noMoreDrivers();
-            TracingSpan.addEvent(pipelineSpan, "driver-factory-closed");
+            addEvent(pipelineSpan, "query_state", "driver-factory-closed");
             closed = true;
         }
 
@@ -1066,7 +1066,7 @@ public class SqlTaskExecution
         }
 
         @Override
-        public TracingSpan getPipelineSpan()
+        public Object getPipelineSpan()
         {
             return driverSplitRunnerFactory.pipelineSpan;
         }

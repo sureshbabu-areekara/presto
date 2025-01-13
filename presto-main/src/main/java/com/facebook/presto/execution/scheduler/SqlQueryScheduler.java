@@ -36,7 +36,6 @@ import com.facebook.presto.execution.buffer.OutputBuffers;
 import com.facebook.presto.execution.buffer.OutputBuffers.OutputBufferId;
 import com.facebook.presto.metadata.FunctionAndTypeManager;
 import com.facebook.presto.metadata.Metadata;
-import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.VariableAllocator;
 import com.facebook.presto.spi.WarningCollector;
@@ -102,6 +101,7 @@ import static com.facebook.presto.spi.StandardErrorCode.GENERIC_INTERNAL_ERROR;
 import static com.facebook.presto.sql.planner.PlanFragmenterUtils.ROOT_FRAGMENT_ID;
 import static com.facebook.presto.sql.planner.SchedulingOrderVisitor.scheduleOrder;
 import static com.facebook.presto.sql.planner.planPrinter.PlanPrinter.jsonFragmentPlan;
+import static com.facebook.presto.telemetry.TracingManager.endSpan;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
@@ -154,7 +154,7 @@ public class SqlQueryScheduler
     private final AtomicBoolean scheduling = new AtomicBoolean();
 
     private final PartialResultQueryTaskTracker partialResultQueryTaskTracker;
-    private TracingSpan schedulerSpan;
+    private Object schedulerSpan;
 
     public static SqlQueryScheduler createSqlQueryScheduler(
             LocationFactory locationFactory,
@@ -248,7 +248,7 @@ public class SqlQueryScheduler
         this.sectionedPlan = extractStreamingSections(plan);
         this.summarizeTaskInfo = summarizeTaskInfo;
 
-        TracingSpan querySpan = queryStateMachine.getSession().getQuerySpan();
+        Object querySpan = queryStateMachine.getSession().getQuerySpan();
         this.schedulerSpan = TracingManager.getSpan(querySpan, TracingEnum.SCHEDULER.getName(), ImmutableMap.of("QUERY_ID", queryStateMachine.getQueryId().toString()));
 
         OutputBufferId rootBufferId = getOnlyElement(rootOutputBuffers.getBuffers().keySet());
@@ -284,7 +284,7 @@ public class SqlQueryScheduler
                 queryStateMachine.transitionToCanceled();
             }
             if (!Objects.isNull(schedulerSpan)) {
-                schedulerSpan.end();
+                endSpan(schedulerSpan);
             }
         });
 
@@ -297,14 +297,14 @@ public class SqlQueryScheduler
                 if (state == FAILED) {
                     queryStateMachine.transitionToFailed(stageExecution.getStageExecutionInfo().getFailureCause().get().toException());
                     if (!Objects.isNull(schedulerSpan)) {
-                        schedulerSpan.end();
+                        endSpan(schedulerSpan);
                     }
                 }
                 else if (state == ABORTED) {
                     // this should never happen, since abort can only be triggered in query clean up after the query is finished
                     queryStateMachine.transitionToFailed(new PrestoException(GENERIC_INTERNAL_ERROR, "Query stage was aborted"));
                     if (!Objects.isNull(schedulerSpan)) {
-                        schedulerSpan.end();
+                        endSpan(schedulerSpan);
                     }
                 }
                 else if (state == FINISHED) {
@@ -559,7 +559,7 @@ public class SqlQueryScheduler
             scheduling.set(false);
             queryStateMachine.transitionToFailed(t);
             if (!Objects.isNull(schedulerSpan)) {
-                schedulerSpan.end();
+                endSpan(schedulerSpan);
             }
             throw t;
         }
@@ -572,7 +572,7 @@ public class SqlQueryScheduler
                 catch (Throwable t) {
                     queryStateMachine.transitionToFailed(t);
                     if (!Objects.isNull(schedulerSpan)) {
-                        schedulerSpan.end();
+                        endSpan(schedulerSpan);
                     }
                     // Self-suppression not permitted
                     if (closeError != t) {
@@ -747,7 +747,7 @@ public class SqlQueryScheduler
                         queryStateMachine.transitionToCanceled();
                     }
                     if (!Objects.isNull(schedulerSpan)) {
-                        schedulerSpan.end();
+                        endSpan(schedulerSpan);
                     }
                 });
             }
@@ -758,14 +758,14 @@ public class SqlQueryScheduler
                 if (state == FAILED) {
                     queryStateMachine.transitionToFailed(stageExecution.getStageExecutionInfo().getFailureCause().get().toException());
                     if (!Objects.isNull(schedulerSpan)) {
-                        schedulerSpan.end();
+                        endSpan(schedulerSpan);
                     }
                 }
                 else if (state == ABORTED) {
                     // this should never happen, since abort can only be triggered in query clean up after the query is finished
                     queryStateMachine.transitionToFailed(new PrestoException(GENERIC_INTERNAL_ERROR, "Query stage was aborted"));
                     if (!Objects.isNull(schedulerSpan)) {
-                        schedulerSpan.end();
+                        endSpan(schedulerSpan);
                     }
                 }
                 else if (state == FINISHED) {

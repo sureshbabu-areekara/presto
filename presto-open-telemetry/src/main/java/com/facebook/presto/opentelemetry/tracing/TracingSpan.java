@@ -54,13 +54,6 @@ public class TracingSpan
         return new TracingSpan(span.setAttribute(key, value));
     }
 
-/*    public static void addEvent(TracingSpan span, String eventName)
-    {
-        if (TelemetryConfig.getTracingEnabled() && Objects.nonNull(span)) {
-            span.getSpan().addEvent(eventName);
-        }
-    }*/
-
     public boolean isRecording()
     {
         return span.isRecording();

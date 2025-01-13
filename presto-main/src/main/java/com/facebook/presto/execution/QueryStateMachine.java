@@ -26,7 +26,6 @@ import com.facebook.presto.execution.QueryExecution.QueryOutputInfo;
 import com.facebook.presto.execution.StateMachine.StateChangeListener;
 import com.facebook.presto.memory.VersionedMemoryPoolId;
 import com.facebook.presto.metadata.Metadata;
-import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.server.BasicQueryInfo;
 import com.facebook.presto.server.BasicQueryStats;
 import com.facebook.presto.spi.PrestoException;
@@ -98,6 +97,8 @@ import static com.facebook.presto.spi.StandardErrorCode.ALREADY_EXISTS;
 import static com.facebook.presto.spi.StandardErrorCode.INVALID_ARGUMENTS;
 import static com.facebook.presto.spi.StandardErrorCode.NOT_FOUND;
 import static com.facebook.presto.spi.StandardErrorCode.USER_CANCELED;
+import static com.facebook.presto.telemetry.TracingManager.addEvent;
+import static com.facebook.presto.telemetry.TracingManager.endSpan;
 import static com.facebook.presto.util.Failures.toFailure;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
@@ -265,10 +266,10 @@ public class QueryStateMachine
             session = session.beginTransactionId(transactionId, transactionManager, accessControl);
         }
 
-        TracingSpan querySpan = session.getQuerySpan();
-        TracingSpan rootSpan = session.getRootSpan();
+        Object querySpan = session.getQuerySpan();
+        Object rootSpan = session.getRootSpan();
 
-        TracingManager.setAttributeQueryType(querySpan, queryType.map(Enum::name).orElse("UNKNOWN"));
+        TracingManager.setAttributes(querySpan, ImmutableMap.of("QUERY_TYPE", queryType.map(Enum::name).orElse("UNKNOWN")));
 
         QueryStateMachine queryStateMachine = new QueryStateMachine(
                 query,
@@ -287,7 +288,7 @@ public class QueryStateMachine
             QUERY_STATE_LOG.debug("Query %s is %s", queryStateMachine.getQueryId(), newState);
             // mark finished or failed transaction as inactive
 
-            TracingManager.addEvent(newState.toString(), querySpan);
+            addEvent(querySpan, "query_state", newState.toString());
             if (newState.isDone()) {
                 try {
                     queryStateMachine.getSession().getTransactionId().ifPresent(transactionManager::trySetInactive);
@@ -306,10 +307,10 @@ public class QueryStateMachine
                 }
                 finally {
                     if (!Objects.isNull(querySpan)) {
-                        querySpan.end();
+                        endSpan(querySpan);
                     }
                     if (!Objects.isNull(rootSpan)) {
-                        rootSpan.end();
+                        endSpan(rootSpan);
                     }
                 }
             }

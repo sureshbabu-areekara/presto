@@ -29,8 +29,6 @@ import com.facebook.presto.execution.QueryExecution.QueryOutputInfo;
 import com.facebook.presto.execution.StateMachine.StateChangeListener;
 import com.facebook.presto.execution.warnings.WarningCollectorFactory;
 import com.facebook.presto.memory.ClusterMemoryManager;
-import com.facebook.presto.opentelemetry.tracing.ScopedSpan;
-import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.resourcemanager.ClusterQueryTrackerService;
 import com.facebook.presto.server.BasicQueryInfo;
 import com.facebook.presto.spi.PrestoException;
@@ -75,9 +73,9 @@ import static com.facebook.presto.execution.QueryLimit.Source.SYSTEM;
 import static com.facebook.presto.execution.QueryLimit.createDurationLimit;
 import static com.facebook.presto.execution.QueryLimit.getMinimum;
 import static com.facebook.presto.execution.QueryState.RUNNING;
-import static com.facebook.presto.opentelemetry.tracing.ScopedSpan.scopedSpan;
 import static com.facebook.presto.spi.StandardErrorCode.EXCEEDED_OUTPUT_POSITIONS_LIMIT;
 import static com.facebook.presto.spi.StandardErrorCode.GENERIC_INTERNAL_ERROR;
+import static com.facebook.presto.telemetry.TracingManager.scopedSpan;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static java.lang.String.format;
@@ -321,10 +319,13 @@ public class SqlQueryManager
         // TODO(pranjalssh): Support plan statistics tracking for other query managers
         historyBasedPlanStatisticsTracker.updateStatistics(queryExecution);
 
-        TracingSpan querySpan = queryExecution.getSession().getQuerySpan();
+        Object querySpan = queryExecution.getSession().getQuerySpan();
         try (SetThreadName ignored = new SetThreadName("Query-%s", queryExecution.getQueryId())) {
-            try (ScopedSpan ignoredStartScope = scopedSpan(querySpan, TracingEnum.QUERY_START.getName())) {
+            try (AutoCloseable ignoredStartScope = scopedSpan(querySpan, TracingEnum.QUERY_START.getName())) {
                 embedVersion.embedVersion(queryExecution::start).run();
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
     }

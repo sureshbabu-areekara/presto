@@ -53,11 +53,6 @@
             <artifactId>jol-core</artifactId>
         </dependency>
 
-        <dependency>
-            <artifactId>error_prone_annotations</artifactId>
-            <groupId>com.google.errorprone</groupId>
-        </dependency>
-
         <!-- for testing -->
         <dependency>
             <groupId>com.facebook.presto</groupId>

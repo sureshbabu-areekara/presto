@@ -14,7 +14,6 @@
 package com.facebook.presto.testing;
 
 import com.facebook.presto.eventlistener.EventListenerManager;
-import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.spi.eventlistener.EventListener;
 import com.facebook.presto.spi.eventlistener.EventListenerFactory;
 import com.facebook.presto.spi.eventlistener.QueryCompletedEvent;
@@ -71,7 +70,7 @@ public class TestingEventListenerManager
     }
 
     @Override
-    public void splitCompleted(SplitCompletedEvent splitCompletedEvent, TracingSpan span)
+    public void splitCompleted(SplitCompletedEvent splitCompletedEvent, Object span)
     {
         if (configuredEventListener.get().isPresent()) {
             configuredEventListener.get().get().splitCompleted(splitCompletedEvent);

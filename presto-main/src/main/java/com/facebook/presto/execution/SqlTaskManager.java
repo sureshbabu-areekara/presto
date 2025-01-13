@@ -37,7 +37,6 @@ import com.facebook.presto.memory.MemoryPoolAssignmentsRequest;
 import com.facebook.presto.memory.NodeMemoryConfig;
 import com.facebook.presto.memory.QueryContext;
 import com.facebook.presto.metadata.MetadataUpdates;
-import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.operator.ExchangeClientSupplier;
 import com.facebook.presto.operator.FragmentResultCacheManager;
 import com.facebook.presto.operator.TaskMemoryReservationSummary;
@@ -401,7 +400,7 @@ public class SqlTaskManager
             List<TaskSource> sources,
             OutputBuffers outputBuffers,
             Optional<TableWriteInfo> tableWriteInfo,
-            TracingSpan span)
+            Object span)
     {
         requireNonNull(session, "session is null");
         requireNonNull(taskId, "taskId is null");

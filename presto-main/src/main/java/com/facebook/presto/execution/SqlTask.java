@@ -30,7 +30,6 @@ import com.facebook.presto.execution.buffer.SpoolingOutputBufferFactory;
 import com.facebook.presto.execution.scheduler.TableWriteInfo;
 import com.facebook.presto.memory.QueryContext;
 import com.facebook.presto.metadata.MetadataUpdates;
-import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.operator.ExchangeClientSupplier;
 import com.facebook.presto.operator.PipelineContext;
 import com.facebook.presto.operator.PipelineStatus;
@@ -67,6 +66,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.facebook.presto.execution.TaskState.ABORTED;
 import static com.facebook.presto.execution.TaskState.FAILED;
+import static com.facebook.presto.telemetry.TracingManager.addEvent;
+import static com.facebook.presto.telemetry.TracingManager.endSpan;
 import static com.facebook.presto.util.Failures.toFailures;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
@@ -95,7 +96,7 @@ public class SqlTask
     private final AtomicReference<TaskHolder> taskHolderReference = new AtomicReference<>(new TaskHolder());
     private final AtomicBoolean needsPlan = new AtomicBoolean(true);
     private final long creationTimeInMillis = System.currentTimeMillis();
-    private TracingSpan taskSpan = TracingSpan.getInvalid();
+    private Object taskSpan = new Object(); //TracingSpan.getInvalid();
 
     public static SqlTask createSqlTask(
             TaskId taskId,
@@ -166,7 +167,7 @@ public class SqlTask
         requireNonNull(failedTasks, "failedTasks is null");
 
         taskStateMachine.addStateChangeListener(newState -> {
-            TracingSpan.addEvent(taskSpan, "task-state " + newState.name());
+            addEvent(taskSpan, "task-state " + newState.name());
             if (!newState.isDone()) {
                 return;
             }
@@ -207,7 +208,7 @@ public class SqlTask
             }
 
             if (newState.isDone()) {
-                taskSpan.end();
+                endSpan(taskSpan);
             }
         });
     }
@@ -442,7 +443,7 @@ public class SqlTask
             List<TaskSource> sources,
             OutputBuffers outputBuffers,
             Optional<TableWriteInfo> tableWriteInfo,
-            TracingSpan span)
+            Object span)
     {
         try {
             // The LazyOutput buffer does not support write methods, so the actual

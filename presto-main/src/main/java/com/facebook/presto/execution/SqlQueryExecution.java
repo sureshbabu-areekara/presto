@@ -32,8 +32,6 @@ import com.facebook.presto.execution.scheduler.SqlQuerySchedulerInterface;
 import com.facebook.presto.memory.VersionedMemoryPoolId;
 import com.facebook.presto.metadata.InternalNodeManager;
 import com.facebook.presto.metadata.Metadata;
-import com.facebook.presto.opentelemetry.tracing.ScopedSpan;
-import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.server.BasicQueryInfo;
 import com.facebook.presto.spi.ConnectorId;
 import com.facebook.presto.spi.PrestoException;
@@ -98,10 +96,10 @@ import static com.facebook.presto.execution.QueryStateMachine.pruneHistogramsFro
 import static com.facebook.presto.execution.buffer.OutputBuffers.BROADCAST_PARTITION_ID;
 import static com.facebook.presto.execution.buffer.OutputBuffers.createInitialEmptyOutputBuffers;
 import static com.facebook.presto.execution.buffer.OutputBuffers.createSpoolingOutputBuffers;
-import static com.facebook.presto.opentelemetry.tracing.ScopedSpan.scopedSpan;
 import static com.facebook.presto.spi.StandardErrorCode.NOT_SUPPORTED;
 import static com.facebook.presto.sql.Optimizer.PlanStage.OPTIMIZED_AND_VALIDATED;
 import static com.facebook.presto.sql.planner.PlanNodeCanonicalInfo.getCanonicalInfo;
+import static com.facebook.presto.telemetry.TracingManager.scopedSpan;
 import static com.facebook.presto.util.AnalyzerUtil.checkAccessPermissions;
 import static com.facebook.presto.util.AnalyzerUtil.getAnalyzerContext;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -205,14 +203,17 @@ public class SqlQueryExecution
             // analyze query
             requireNonNull(preparedQuery, "preparedQuery is null");
 
-            TracingSpan querySpan = getSession().getQuerySpan();
-            try (ScopedSpan spanIgnored = scopedSpan(querySpan, TracingEnum.ANALYZER.getName())) {
+            Object querySpan = getSession().getQuerySpan();
+            try (AutoCloseable spanIgnored = scopedSpan(querySpan, TracingEnum.ANALYZER.getName())) {
                 try (TimeoutThread unused = new TimeoutThread(
                         Thread.currentThread(),
                         timeoutThreadExecutor,
                         getQueryAnalyzerTimeout(getSession()))) {
                     this.queryAnalysis = queryAnalyzer.analyze(analyzerContext, preparedQuery);
                 }
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
             }
 
             stateMachine.beginSemanticAnalyzing();
@@ -562,9 +563,12 @@ public class SqlQueryExecution
                             LOGICAL_PLANNER_TIME_NANOS,
                             () -> queryAnalyzer.plan(this.analyzerContext, queryAnalysis));
 
-            TracingSpan querySpan = getSession().getQuerySpan();
-            try (ScopedSpan ignored = scopedSpan(querySpan, TracingEnum.PLANNER.getName())) {
+            Object querySpan = getSession().getQuerySpan();
+            try (AutoCloseable ignored = scopedSpan(querySpan, TracingEnum.PLANNER.getName())) {
                 return optimizePlan(planNode);
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
         catch (StackOverflowError e) {
@@ -587,10 +591,13 @@ public class SqlQueryExecution
                 false);
 
         Plan plan;
-        try (ScopedSpan ignored = scopedSpan("Plan Optimizer")) {
+        try (AutoCloseable ignored = scopedSpan("Plan Optimizer")) {
             plan = getSession().getRuntimeStats().profileNanos(
                     OPTIMIZER_TIME_NANOS,
                     () -> optimizer.validateAndOptimizePlan(planNode, OPTIMIZED_AND_VALIDATED));
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
         }
 
         queryPlan.set(plan);
@@ -602,13 +609,16 @@ public class SqlQueryExecution
         stateMachine.setPlanCanonicalInfo(canonicalPlanWithInfos);
 
         // extract inputs
-        try (ScopedSpan ignored = scopedSpan("extract-inputs")) {
+        try (AutoCloseable ignored = scopedSpan("extract-inputs")) {
             List<Input> inputs = new InputExtractor(metadata, stateMachine.getSession()).extractInputs(plan.getRoot());
             stateMachine.setInputs(inputs);
         }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
 
         // extract output
-        try (ScopedSpan ignored = scopedSpan("extract-outputs")) {
+        try (AutoCloseable ignored = scopedSpan("extract-outputs")) {
             Optional<Output> output = new OutputExtractor().extractOutput(plan.getRoot());
             stateMachine.setOutput(output);
 
@@ -617,7 +627,7 @@ public class SqlQueryExecution
             variableAllocator.set(new VariableAllocator(plan.getTypes().allVariables()));
             SubPlan fragmentedPlan;
 
-            try (ScopedSpan spanIgnored = scopedSpan("fragment-plan")) {
+            try (AutoCloseable spanIgnored = scopedSpan("fragment-plan")) {
                 fragmentedPlan = getSession().getRuntimeStats().profileNanos(
                         FRAGMENT_PLAN_TIME_NANOS,
                         () -> planFragmenter.createSubPlans(stateMachine.getSession(), plan, false,
@@ -629,6 +639,9 @@ public class SqlQueryExecution
 
             boolean explainAnalyze = queryAnalysis.isExplainAnalyzeQuery();
             return new PlanRoot(fragmentedPlan, !explainAnalyze, queryAnalysis.extractConnectors());
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 

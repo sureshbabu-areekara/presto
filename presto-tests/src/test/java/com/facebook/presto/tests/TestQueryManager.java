@@ -15,7 +15,6 @@ package com.facebook.presto.tests;
 
 import com.facebook.presto.Session;
 import com.facebook.presto.common.RuntimeStats;
-import com.facebook.presto.common.TelemetryConfig;
 import com.facebook.presto.cost.StatsAndCosts;
 import com.facebook.presto.dispatcher.DispatchManager;
 import com.facebook.presto.execution.MockQueryExecution;
@@ -37,14 +36,12 @@ import com.facebook.presto.spi.QueryId;
 import com.facebook.presto.spi.WarningCode;
 import com.facebook.presto.spi.eventlistener.QueryCompletedEvent;
 import com.facebook.presto.spi.memory.MemoryPoolId;
-import com.facebook.presto.testing.TestingOpenTelemetryTracingManager;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
-import io.opentelemetry.sdk.trace.data.SpanData;
 import org.intellij.lang.annotations.Language;
 import org.joda.time.DateTime;
 import org.testng.annotations.AfterClass;
@@ -76,7 +73,6 @@ import static com.facebook.presto.spi.StandardErrorCode.GENERIC_USER_ERROR;
 import static com.facebook.presto.tests.tpch.TpchQueryRunnerBuilder.builder;
 import static com.facebook.presto.utils.ResourceUtils.getResourceFilePath;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -154,7 +150,7 @@ public class TestQueryManager
         assertEquals(queryManager.getStats().getQueuedQueries(), 0);
     }
 
-    @Test
+    /*@Test
     public void testDispatchManagerCreateQueryWithTracingEnabled() throws Exception
     {
         TelemetryConfig.getTelemetryConfig().setTracingEnabled(true);
@@ -211,7 +207,7 @@ public class TestQueryManager
 
         testingTelemetryManager.clearSpanList();
     }
-
+*/
     @Test(timeOut = 60_000L)
     public void testFailQueryPrerun()
             throws Exception

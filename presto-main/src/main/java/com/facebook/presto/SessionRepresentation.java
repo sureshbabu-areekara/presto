@@ -297,8 +297,8 @@ public final class SessionRepresentation
     {
         return new Session(
                 new QueryId(queryId),
-                TracingSpan.getInvalid(),
-                TracingSpan.getInvalid(),
+                new Object(), //TracingSpan.getInvalid(),
+                new Object(), //TracingSpan.getInvalid(),
                 transactionId,
                 clientTransactionSupport,
                 new Identity(
