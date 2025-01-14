@@ -16,6 +16,7 @@ package com.facebook.presto.telemetry;
 import com.facebook.airlift.log.Logger;
 import com.facebook.presto.common.ErrorCode;
 import com.facebook.presto.common.TelemetryConfig;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.facebook.presto.spi.telemetry.TelemetryFactory;
 import com.facebook.presto.spi.telemetry.TelemetryTracing;
 
@@ -168,68 +169,63 @@ public class TracingManager
         return configuredTelemetryTracing.get().isRecording();
     }
 
-    public static Map<String, String> getHeadersMap(Object span)
+    public static Map<String, String> getHeadersMap(BaseSpan span)
     {
         return configuredTelemetryTracing.get().getHeadersMap(span);
     }
 
-    public static void endSpan(Object span)
-    {
-        configuredTelemetryTracing.get().endSpan(span);
-    }
-
-    public static void endSpanOnError(Object querySpan, Throwable throwable)
+    public static void endSpanOnError(BaseSpan querySpan, Throwable throwable)
     {
         configuredTelemetryTracing.get().endSpanOnError(querySpan, throwable);
     }
 
-    public static void addEvent(Object querySpan, String eventName)
+    public static void addEvent(BaseSpan querySpan, String eventName)
     {
         configuredTelemetryTracing.get().addEvent(querySpan, eventName);
     }
 
-    public static void addEvent(Object querySpan, String eventName, String eventState)
+    public static void addEvent(BaseSpan querySpan, String eventName, String eventState)
     {
         configuredTelemetryTracing.get().addEvent(querySpan, eventName, eventState);
     }
 
-    public static void setAttributes(Object span, Map<String, String> attributes)
+    public static void setAttributes(BaseSpan span, Map<String, String> attributes)
     {
         configuredTelemetryTracing.get().setAttributes(span, attributes);
     }
 
-    public static void recordException(Object querySpan, String message, RuntimeException runtimeException, ErrorCode errorCode)
+    public static void recordException(BaseSpan querySpan, String message, RuntimeException runtimeException, ErrorCode errorCode)
     {
         configuredTelemetryTracing.get().recordException(querySpan, message, runtimeException, errorCode);
     }
 
-    public static void setSuccess(Object querySpan)
+    public static void setSuccess(BaseSpan querySpan)
     {
         configuredTelemetryTracing.get().setSuccess(querySpan);
     }
 
     //GetSpans
-    public static Object getRootSpan()
+    public static BaseSpan getRootSpan()
     {
-        return configuredTelemetryTracing.get().getRootSpan();
+        return (BaseSpan) configuredTelemetryTracing.get().getRootSpan();
     }
 
-    public static Object getSpan(String spanName)
+    public static BaseSpan getSpan(String spanName)
     {
-        return configuredTelemetryTracing.get().getSpan(spanName);
+        return (BaseSpan) configuredTelemetryTracing.get().getSpan(spanName);
     }
 
-    public static Object getSpan(String traceParent, String spanName)
+    public static BaseSpan getSpan(String traceParent, String spanName)
     {
-        return configuredTelemetryTracing.get().getSpan(traceParent, spanName);
+        return (BaseSpan) configuredTelemetryTracing.get().getSpan(traceParent, spanName);
     }
 
-    public static Object getSpan(Object parentSpan, String spanName, Map<String, String> attributes)
+    public static BaseSpan getSpan(BaseSpan parentSpan, String spanName, Map<String, String> attributes)
     {
-        return configuredTelemetryTracing.get().getSpan(parentSpan, spanName, attributes);
+        return (BaseSpan) configuredTelemetryTracing.get().getSpan(parentSpan, spanName, attributes);
     }
 
-    public static Optional<String> spanString(Object span)
+    public static Optional<String> spanString(BaseSpan span)
     {
         return configuredTelemetryTracing.get().spanString(span);
     }
@@ -241,9 +237,9 @@ public class TracingManager
      * @param skipSpan optional parameter to implement span sampling by skipping the current span export
      * @return
      */
-    public static AutoCloseable scopedSpan(String name, Boolean... skipSpan)
+    public static BaseSpan scopedSpan(String name, Boolean... skipSpan)
     {
-        return (AutoCloseable) configuredTelemetryTracing.get().scopedSpan(name, skipSpan);
+        return (BaseSpan) configuredTelemetryTracing.get().scopedSpan(name, skipSpan);
     }
 
     /**
@@ -253,23 +249,23 @@ public class TracingManager
      * @param skipSpan optional parameter to implement span sampling by skipping the current span export
      * @return
      */
-    public static AutoCloseable scopedSpan(Object span, Boolean... skipSpan)
+    public static BaseSpan scopedSpan(BaseSpan span, Boolean... skipSpan)
     {
-        return (AutoCloseable) configuredTelemetryTracing.get().scopedSpan(span, skipSpan);
+        return (BaseSpan) configuredTelemetryTracing.get().scopedSpan(span, skipSpan);
     }
 
-    public static AutoCloseable scopedSpan(Object parentSpan, String spanName, Map<String, String> attributes, Boolean... skipSpan)
+    public static BaseSpan scopedSpan(BaseSpan parentSpan, String spanName, Map<String, String> attributes, Boolean... skipSpan)
     {
-        return (AutoCloseable) configuredTelemetryTracing.get().scopedSpan(parentSpan, spanName, attributes, skipSpan);
+        return (BaseSpan) configuredTelemetryTracing.get().scopedSpan(parentSpan, spanName, attributes, skipSpan);
     }
 
-    public static AutoCloseable scopedSpan(Object parentSpan, String spanName, Boolean... skipSpan)
+    public static BaseSpan scopedSpan(BaseSpan parentSpan, String spanName, Boolean... skipSpan)
     {
-        return (AutoCloseable) configuredTelemetryTracing.get().scopedSpan(parentSpan, spanName, skipSpan);
+        return (BaseSpan) configuredTelemetryTracing.get().scopedSpan(parentSpan, spanName, skipSpan);
     }
 
-    public static AutoCloseable scopedSpan(String spanName, Map<String, String> attributes, Boolean... skipSpan)
+    public static BaseSpan scopedSpan(String spanName, Map<String, String> attributes, Boolean... skipSpan)
     {
-        return (AutoCloseable) configuredTelemetryTracing.get().scopedSpan(spanName, attributes, skipSpan);
+        return (BaseSpan) configuredTelemetryTracing.get().scopedSpan(spanName, attributes, skipSpan);
     }
 }

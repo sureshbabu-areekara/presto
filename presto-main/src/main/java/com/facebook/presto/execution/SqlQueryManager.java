@@ -34,6 +34,7 @@ import com.facebook.presto.server.BasicQueryInfo;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.QueryId;
 import com.facebook.presto.spi.resourceGroups.ResourceGroupQueryLimits;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.facebook.presto.sql.planner.Plan;
 import com.facebook.presto.version.EmbedVersion;
 import com.google.common.annotations.VisibleForTesting;
@@ -319,13 +320,10 @@ public class SqlQueryManager
         // TODO(pranjalssh): Support plan statistics tracking for other query managers
         historyBasedPlanStatisticsTracker.updateStatistics(queryExecution);
 
-        Object querySpan = queryExecution.getSession().getQuerySpan();
+        BaseSpan querySpan = queryExecution.getSession().getQuerySpan();
         try (SetThreadName ignored = new SetThreadName("Query-%s", queryExecution.getQueryId())) {
-            try (AutoCloseable ignoredStartScope = scopedSpan(querySpan, TracingEnum.QUERY_START.getName())) {
+            try (BaseSpan ignoredStartScope = scopedSpan(querySpan, TracingEnum.QUERY_START.getName())) {
                 embedVersion.embedVersion(queryExecution::start).run();
-            }
-            catch (Exception e) {
-                throw new RuntimeException(e);
             }
         }
     }

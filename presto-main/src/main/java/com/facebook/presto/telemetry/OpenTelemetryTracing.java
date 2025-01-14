@@ -14,6 +14,7 @@
 package com.facebook.presto.telemetry;
 
 import com.facebook.presto.common.ErrorCode;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.facebook.presto.spi.telemetry.TelemetryFactory;
 import com.facebook.presto.spi.telemetry.TelemetryTracing;
 import com.google.common.collect.ImmutableMap;
@@ -74,12 +75,6 @@ public class OpenTelemetryTracing
     }
 
     @Override
-    public void endSpan(Object span)
-    {
-        return;
-    }
-
-    @Override
     public void endSpanOnError(Object querySpan, Throwable throwable)
     {
         return;
@@ -116,7 +111,7 @@ public class OpenTelemetryTracing
     }
 
     @Override
-    public Object getRootSpan()
+    public BaseSpan getRootSpan()
     {
         return null;
     }

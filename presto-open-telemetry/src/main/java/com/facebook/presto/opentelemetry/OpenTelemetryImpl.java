@@ -17,7 +17,6 @@ import com.facebook.airlift.log.Logger;
 import com.facebook.presto.common.ErrorCode;
 import com.facebook.presto.common.TelemetryConfig;
 import com.facebook.presto.common.telemetry.tracing.TracingEnum;
-import com.facebook.presto.common.util.TextMapGetterImpl;
 import com.facebook.presto.opentelemetry.tracing.ScopedSpan;
 import com.facebook.presto.opentelemetry.tracing.TracingSpan;
 import com.facebook.presto.spi.telemetry.TelemetryTracing;
@@ -200,8 +199,7 @@ public class OpenTelemetryImpl
     private static Context getContext(String traceParent)
     {
         TextMapPropagator propagator = configuredOpenTelemetry.getPropagators().getTextMapPropagator();
-        Context context = propagator.extract(Context.current(), traceParent, new TextMapGetterImpl());
-        return context;
+        return propagator.extract(Context.current(), traceParent, new TextMapGetterImpl());
     }
 
     @Override
@@ -219,12 +217,6 @@ public class OpenTelemetryImpl
         Context currentContext = (TelemetryConfig.getTracingEnabled()) ? context : null;
         propagator.inject(currentContext, headersMap, Map::put);
         return headersMap;
-    }
-
-    @Override
-    public void endSpan(TracingSpan span)
-    {
-        span.end();
     }
 
     @Override

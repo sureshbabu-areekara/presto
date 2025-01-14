@@ -42,6 +42,7 @@ import com.facebook.presto.spi.security.AccessControl;
 import com.facebook.presto.spi.security.SelectedRole;
 import com.facebook.presto.spi.statistics.ColumnStatistics;
 import com.facebook.presto.spi.statistics.TableStatistics;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.facebook.presto.sql.planner.CanonicalPlanWithInfo;
 import com.facebook.presto.sql.planner.PlanFragment;
 import com.facebook.presto.telemetry.TracingManager;
@@ -98,7 +99,6 @@ import static com.facebook.presto.spi.StandardErrorCode.INVALID_ARGUMENTS;
 import static com.facebook.presto.spi.StandardErrorCode.NOT_FOUND;
 import static com.facebook.presto.spi.StandardErrorCode.USER_CANCELED;
 import static com.facebook.presto.telemetry.TracingManager.addEvent;
-import static com.facebook.presto.telemetry.TracingManager.endSpan;
 import static com.facebook.presto.util.Failures.toFailure;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
@@ -266,8 +266,8 @@ public class QueryStateMachine
             session = session.beginTransactionId(transactionId, transactionManager, accessControl);
         }
 
-        Object querySpan = session.getQuerySpan();
-        Object rootSpan = session.getRootSpan();
+        BaseSpan querySpan = session.getQuerySpan();
+        BaseSpan rootSpan = session.getRootSpan();
 
         TracingManager.setAttributes(querySpan, ImmutableMap.of("QUERY_TYPE", queryType.map(Enum::name).orElse("UNKNOWN")));
 
@@ -307,10 +307,10 @@ public class QueryStateMachine
                 }
                 finally {
                     if (!Objects.isNull(querySpan)) {
-                        endSpan(querySpan);
+                        querySpan.end();
                     }
                     if (!Objects.isNull(rootSpan)) {
-                        endSpan(rootSpan);
+                        rootSpan.end();
                     }
                 }
             }

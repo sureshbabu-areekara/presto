@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.facebook.presto.common.util;
+package com.facebook.presto.opentelemetry;
 
 import io.opentelemetry.context.propagation.TextMapGetter;
 

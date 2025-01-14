@@ -25,6 +25,7 @@ import com.facebook.presto.spi.analyzer.QueryAnalyzer;
 import com.facebook.presto.spi.plan.PlanNode;
 import com.facebook.presto.spi.plan.PlanNodeIdAllocator;
 import com.facebook.presto.spi.security.AccessControl;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.facebook.presto.sql.parser.SqlParser;
 import com.facebook.presto.sql.planner.LogicalPlanner;
 import com.google.inject.Inject;
@@ -92,12 +93,9 @@ public class BuiltInQueryAnalyzer
                 session.getWarningCollector(),
                 Optional.of(metadataExtractorExecutor));
 
-        try (AutoCloseable ignored = scopedSpan(TracingEnum.ANALYZE.getName())) {
+        try (BaseSpan ignored = scopedSpan(TracingEnum.ANALYZE.getName())) {
             Analysis analysis = analyzer.analyzeSemantic(((BuiltInQueryPreparer.BuiltInPreparedQuery) preparedQuery).getStatement(), false);
             return new BuiltInQueryAnalysis(analysis);
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
         }
     }
 

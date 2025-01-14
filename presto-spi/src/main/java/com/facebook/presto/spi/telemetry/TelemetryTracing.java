@@ -28,8 +28,6 @@ public interface TelemetryTracing<T, U>
 
     Map<String, String> getHeadersMap(T span);
 
-    void endSpan(T span);
-
     void endSpanOnError(T querySpan, Throwable throwable);
 
     void addEvent(T span, String eventName);

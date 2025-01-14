@@ -47,6 +47,7 @@ import com.facebook.presto.operator.ForScheduler;
 import com.facebook.presto.server.InternalCommunicationConfig;
 import com.facebook.presto.server.TaskUpdateRequest;
 import com.facebook.presto.spi.plan.PlanNodeId;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.facebook.presto.sql.planner.PlanFragment;
 import com.google.common.collect.Multimap;
 import io.airlift.units.Duration;
@@ -219,7 +220,7 @@ public class HttpRemoteTaskFactory
             boolean summarizeTaskInfo,
             TableWriteInfo tableWriteInfo,
             SchedulerStatsTracker schedulerStatsTracker,
-            Object stageSpan)
+            BaseSpan stageSpan)
     {
         return new HttpRemoteTask(
                 session,

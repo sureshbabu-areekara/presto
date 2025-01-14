@@ -31,6 +31,7 @@ import com.facebook.presto.operator.TaskContext;
 import com.facebook.presto.spi.SplitWeight;
 import com.facebook.presto.spi.plan.PlanNodeId;
 import com.facebook.presto.spi.plan.StageExecutionDescriptor;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.facebook.presto.sql.planner.LocalExecutionPlanner.LocalExecutionPlan;
 import com.facebook.presto.telemetry.TracingManager;
 import com.google.common.collect.AbstractIterator;
@@ -133,7 +134,7 @@ public class SqlTaskExecution
     // guarded for update only
     @GuardedBy("this")
     private final ConcurrentMap<PlanNodeId, TaskSource> remoteSources = new ConcurrentHashMap<>();
-    private static Object taskSpan;
+    private static BaseSpan taskSpan;
 
     @GuardedBy("this")
     private long maxAcknowledgedSplit = Long.MIN_VALUE;
@@ -155,7 +156,7 @@ public class SqlTaskExecution
             TaskExecutor taskExecutor,
             Executor notificationExecutor,
             SplitMonitor queryMonitor,
-            Object taskSpan)
+            BaseSpan taskSpan)
     {
         SqlTaskExecution task = new SqlTaskExecution(
                 taskStateMachine,
@@ -186,7 +187,7 @@ public class SqlTaskExecution
             TaskExecutor taskExecutor,
             SplitMonitor splitMonitor,
             Executor notificationExecutor,
-            Object taskSpan)
+            BaseSpan taskSpan)
     {
         this.taskStateMachine = requireNonNull(taskStateMachine, "taskStateMachine is null");
         this.taskId = taskStateMachine.getTaskId();
@@ -568,7 +569,7 @@ public class SqlTaskExecution
 
             // record new driver
             status.incrementRemainingDriver(splitRunner.getLifespan());
-            Object pipelineSpan = splitRunner.getPipelineSpan();
+            BaseSpan pipelineSpan = splitRunner.getPipelineSpan();
 
             Futures.addCallback(finishedFuture, new FutureCallback<Object>()
             {
@@ -931,7 +932,7 @@ public class SqlTaskExecution
         private final DriverFactory driverFactory;
         private final PipelineContext pipelineContext;
         private boolean closed;
-        private final Object pipelineSpan;
+        private final BaseSpan pipelineSpan;
         private final int pipelineId;
 
         private DriverSplitRunnerFactory(DriverFactory driverFactory, boolean partitioned)
@@ -1066,7 +1067,7 @@ public class SqlTaskExecution
         }
 
         @Override
-        public Object getPipelineSpan()
+        public BaseSpan getPipelineSpan()
         {
             return driverSplitRunnerFactory.pipelineSpan;
         }

@@ -23,6 +23,7 @@ import com.facebook.presto.spi.eventlistener.QueryCreatedEvent;
 import com.facebook.presto.spi.eventlistener.QueryProgressEvent;
 import com.facebook.presto.spi.eventlistener.QueryUpdatedEvent;
 import com.facebook.presto.spi.eventlistener.SplitCompletedEvent;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 
@@ -124,14 +125,11 @@ public class EventListenerManager
                 .ifPresent(eventListener -> eventListener.publishQueryProgress(queryProgressEvent));
     }
 
-    public void splitCompleted(SplitCompletedEvent splitCompletedEvent, Object pipelineSpan)
+    public void splitCompleted(SplitCompletedEvent splitCompletedEvent, BaseSpan pipelineSpan)
     {
-        try (AutoCloseable ignored = scopedSpan(pipelineSpan, TracingEnum.SPLIT.getName(), ImmutableMap.of("QUERY_ID", splitCompletedEvent.getQueryId(), "STAGE_ID", splitCompletedEvent.getStageId(), "TASK_ID", splitCompletedEvent.getTaskId(), "START_TIME", splitCompletedEvent.getStartTime().map(String::valueOf).orElse(""), "END_TIME", splitCompletedEvent.getEndTime().map(String::valueOf).orElse(""), "PAYLOAD", splitCompletedEvent.getPayload(), "FAILURE_INFO", splitCompletedEvent.getFailureInfo().map(String::valueOf).orElse("")))) {
+        try (BaseSpan ignored = scopedSpan(pipelineSpan, TracingEnum.SPLIT.getName(), ImmutableMap.of("QUERY_ID", splitCompletedEvent.getQueryId(), "STAGE_ID", splitCompletedEvent.getStageId(), "TASK_ID", splitCompletedEvent.getTaskId(), "START_TIME", splitCompletedEvent.getStartTime().map(String::valueOf).orElse(""), "END_TIME", splitCompletedEvent.getEndTime().map(String::valueOf).orElse(""), "PAYLOAD", splitCompletedEvent.getPayload(), "FAILURE_INFO", splitCompletedEvent.getFailureInfo().map(String::valueOf).orElse("")))) {
             configuredEventListener.get()
                     .ifPresent(eventListener -> eventListener.splitCompleted(splitCompletedEvent));
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
         }
     }
 }

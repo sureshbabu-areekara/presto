@@ -21,6 +21,7 @@ import com.facebook.presto.execution.scheduler.TableWriteInfo;
 import com.facebook.presto.metadata.InternalNode;
 import com.facebook.presto.metadata.Split;
 import com.facebook.presto.spi.plan.PlanNodeId;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.facebook.presto.sql.planner.PlanFragment;
 import com.google.common.collect.Multimap;
 
@@ -51,7 +52,7 @@ public class TrackingRemoteTaskFactory
             boolean summarizeTaskInfo,
             TableWriteInfo tableWriteInfo,
             SchedulerStatsTracker schedulerStatsTracker,
-            Object stageSpan)
+            BaseSpan stageSpan)
     {
         RemoteTask task = remoteTaskFactory.createRemoteTask(session,
                 taskId,

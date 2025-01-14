@@ -43,6 +43,7 @@ import com.facebook.presto.operator.TaskMemoryReservationSummary;
 import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.QueryId;
 import com.facebook.presto.spi.connector.ConnectorMetadataUpdater;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.facebook.presto.spiller.LocalSpillManager;
 import com.facebook.presto.spiller.NodeSpillConfig;
 import com.facebook.presto.sql.gen.OrderingCompiler;
@@ -400,7 +401,7 @@ public class SqlTaskManager
             List<TaskSource> sources,
             OutputBuffers outputBuffers,
             Optional<TableWriteInfo> tableWriteInfo,
-            Object span)
+            BaseSpan span)
     {
         requireNonNull(session, "session is null");
         requireNonNull(taskId, "taskId is null");

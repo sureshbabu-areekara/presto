@@ -34,6 +34,7 @@ import com.facebook.presto.server.smile.BaseResponse;
 import com.facebook.presto.server.thrift.ThriftHttpResponseHandler;
 import com.facebook.presto.spi.HostAddress;
 import com.facebook.presto.spi.PrestoException;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.facebook.presto.telemetry.TracingManager;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -84,7 +85,7 @@ class ContinuousTaskStatusFetcher
     private final boolean binaryTransportEnabled;
     private final boolean thriftTransportEnabled;
     private final Protocol thriftProtocol;
-    private final Object remoteTaskSpan;
+    private final BaseSpan remoteTaskSpan;
 
     private final AtomicLong currentRequestStartNanos = new AtomicLong();
 
@@ -108,7 +109,7 @@ class ContinuousTaskStatusFetcher
             boolean binaryTransportEnabled,
             boolean thriftTransportEnabled,
             Protocol thriftProtocol,
-            Object remoteTaskSpan)
+            BaseSpan remoteTaskSpan)
     {
         requireNonNull(initialTaskStatus, "initialTaskStatus is null");
 

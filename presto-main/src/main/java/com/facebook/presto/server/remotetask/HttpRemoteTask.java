@@ -63,6 +63,7 @@ import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.spi.SplitWeight;
 import com.facebook.presto.spi.plan.PlanNode;
 import com.facebook.presto.spi.plan.PlanNodeId;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.facebook.presto.sql.planner.PlanFragment;
 import com.facebook.presto.telemetry.TracingManager;
 import com.google.common.base.Ticker;
@@ -130,7 +131,6 @@ import static com.facebook.presto.server.thrift.ThriftCodecWrapper.unwrapThriftC
 import static com.facebook.presto.spi.StandardErrorCode.EXCEEDED_TASK_UPDATE_SIZE_LIMIT;
 import static com.facebook.presto.spi.StandardErrorCode.GENERIC_INTERNAL_ERROR;
 import static com.facebook.presto.spi.StandardErrorCode.REMOTE_TASK_ERROR;
-import static com.facebook.presto.telemetry.TracingManager.endSpan;
 import static com.facebook.presto.util.Failures.toFailure;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -155,8 +155,8 @@ public final class HttpRemoteTask
     private static final ThreadMXBean THREAD_MX_BEAN = (ThreadMXBean) ManagementFactory.getThreadMXBean();
 
     private final TaskId taskId;
-    private final Object stageSpan;
-    private final Object span;
+    private final BaseSpan stageSpan;
+    private final BaseSpan span;
     private final URI taskLocation;
     private final URI remoteTaskLocation;
 
@@ -278,7 +278,7 @@ public final class HttpRemoteTask
             HandleResolver handleResolver,
             ConnectorTypeSerdeManager connectorTypeSerdeManager,
             SchedulerStatsTracker schedulerStatsTracker,
-            Object stageSpan)
+            BaseSpan stageSpan)
     {
         requireNonNull(session, "session is null");
         requireNonNull(taskId, "taskId is null");
@@ -420,7 +420,7 @@ public final class HttpRemoteTask
                     updateSplitQueueSpace();
                 }
                 if (Objects.nonNull(span) && state.isDone()) {
-                    endSpan(span);
+                    span.end();
                 }
             });
 

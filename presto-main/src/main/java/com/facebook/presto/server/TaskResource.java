@@ -29,6 +29,7 @@ import com.facebook.presto.metadata.HandleResolver;
 import com.facebook.presto.metadata.MetadataUpdates;
 import com.facebook.presto.metadata.SessionPropertyManager;
 import com.facebook.presto.operator.TaskStats;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.facebook.presto.sql.planner.PlanFragment;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -74,7 +75,6 @@ import static com.facebook.presto.client.PrestoHeaders.PRESTO_MAX_WAIT;
 import static com.facebook.presto.server.TaskResourceUtils.convertToThriftTaskInfo;
 import static com.facebook.presto.server.TaskResourceUtils.isThriftRequest;
 import static com.facebook.presto.server.security.RoleType.INTERNAL;
-import static com.facebook.presto.telemetry.TracingManager.endSpan;
 import static com.facebook.presto.telemetry.TracingManager.getSpan;
 import static com.facebook.presto.telemetry.TracingManager.scopedSpan;
 import static com.facebook.presto.telemetry.TracingManager.setAttributes;
@@ -142,11 +142,11 @@ public class TaskResource
     {
         requireNonNull(taskUpdateRequest, "taskUpdateRequest is null");
 
-        Object span = getSpan(traceParent, "POST /v1/task/{taskId}"); // Recheck if working without context.makeCurrent();
+        BaseSpan span = getSpan(traceParent, "POST /v1/task/{taskId}"); // Recheck if working without context.makeCurrent();
 
         TaskInfo taskInfo;
 
-        try (AutoCloseable ignored = scopedSpan(span)) {
+        try (BaseSpan ignored = scopedSpan(span)) {
             Session session = taskUpdateRequest.getSession().toSession(sessionPropertyManager, taskUpdateRequest.getExtraCredentials());
             taskInfo = taskManager.updateTask(session,
                     taskId,
@@ -159,9 +159,6 @@ public class TaskResource
             if (shouldSummarize(uriInfo)) {
                 taskInfo = taskInfo.summarize();
             }
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
         }
 
         return Response.ok().entity(taskInfo).build();
@@ -182,7 +179,7 @@ public class TaskResource
     {
         requireNonNull(taskId, "taskId is null");
 
-        Object span = getSpan(traceParent, "GET /v1/task/{taskId}"); // Recheck if working
+        BaseSpan span = getSpan(traceParent, "GET /v1/task/{taskId}"); // Recheck if working
 
         boolean isThriftRequest = isThriftRequest(httpHeaders);
 
@@ -223,7 +220,7 @@ public class TaskResource
                 .withTimeout(timeout);
 
         if (!Objects.isNull(span)) {
-            endSpan(span);
+            span.end();
         }
     }
 
@@ -241,7 +238,7 @@ public class TaskResource
     {
         requireNonNull(taskId, "taskId is null");
 
-        Object span = getSpan(traceParent, "GET /v1/task/{taskId}/status");
+        BaseSpan span = getSpan(traceParent, "GET /v1/task/{taskId}/status");
 
         if (currentState == null || maxWait == null) {
             TaskStatus taskStatus = taskManager.getTaskStatus(taskId);
@@ -265,7 +262,7 @@ public class TaskResource
                 .withTimeout(timeout);
 
         if (!Objects.isNull(span)) {
-            endSpan(span);
+            span.end();
         }
     }
 
@@ -276,12 +273,12 @@ public class TaskResource
     {
         requireNonNull(metadataUpdates, "metadataUpdates is null");
 
-        Object span = getSpan(traceParent, "POST /v1/task/{taskId}/metadataresults");
+        BaseSpan span = getSpan(traceParent, "POST /v1/task/{taskId}/metadataresults");
 
         taskManager.updateMetadataResults(taskId, metadataUpdates);
 
         if (!Objects.isNull(span)) {
-            endSpan(span);
+            span.end();
         }
         return Response.ok().build();
     }
@@ -300,7 +297,7 @@ public class TaskResource
         requireNonNull(taskId, "taskId is null");
         TaskInfo taskInfo;
 
-        Object span = getSpan(traceParent, "DELETE /v1/task/{taskId}");
+        BaseSpan span = getSpan(traceParent, "DELETE /v1/task/{taskId}");
 
         if (abort) {
             taskInfo = taskManager.abortTask(taskId);
@@ -335,7 +332,7 @@ public class TaskResource
 
         if (Objects.nonNull(span)) {
             setAttributes(span, ImmutableMap.of("task status", taskStatus, "taskId", tskId, "node id", nodeId, "create time", createTime, "end time", endTime, "no. of splits", noOfSplits, "last heartbeat", lastHeartbeat, "output buffer state", outputBufferInfo));
-            endSpan(span);
+            span.end();
         }
         return taskInfo;
     }
@@ -351,12 +348,12 @@ public class TaskResource
         requireNonNull(taskId, "taskId is null");
         requireNonNull(bufferId, "bufferId is null");
 
-        Object span = getSpan(traceParent, "GET /v1/task/{taskId}/results/{bufferId}/{token}/acknowledge");
+        BaseSpan span = getSpan(traceParent, "GET /v1/task/{taskId}/results/{bufferId}/{token}/acknowledge");
 
         taskManager.acknowledgeTaskResults(taskId, bufferId, token);
 
         if (!Objects.isNull(span)) {
-            endSpan(span);
+            span.end();
         }
     }
 
@@ -370,10 +367,10 @@ public class TaskResource
         requireNonNull(taskId, "taskId is null");
         requireNonNull(bufferId, "bufferId is null");
 
-        Object span = getSpan(traceParent, "HEAD /v1/task/{taskId}/results/{bufferId}");
+        BaseSpan span = getSpan(traceParent, "HEAD /v1/task/{taskId}/results/{bufferId}");
 
         if (!Objects.isNull(span)) {
-            endSpan(span);
+            span.end();
         }
 
         OutputBufferInfo outputBufferInfo = taskManager.getOutputBufferInfo(taskId);
@@ -400,10 +397,10 @@ public class TaskResource
             @PathParam("token") final long token,
             @HeaderParam("traceparent") String traceParent)
     {
-        Object span = getSpan(traceParent, "HEAD /v1/task/{taskId}/results/{bufferId}/{token}");
+        BaseSpan span = getSpan(traceParent, "HEAD /v1/task/{taskId}/results/{bufferId}/{token}");
 
         if (!Objects.isNull(span)) {
-            endSpan(span);
+            span.end();
         }
 
         taskManager.acknowledgeTaskResults(taskId, bufferId, token);
@@ -418,12 +415,12 @@ public class TaskResource
         requireNonNull(taskId, "taskId is null");
         requireNonNull(bufferId, "bufferId is null");
 
-        Object span = getSpan(traceParent, "DELETE v1/task/{taskId}/results/{bufferId}");
+        BaseSpan span = getSpan(traceParent, "DELETE v1/task/{taskId}/results/{bufferId}");
 
         taskManager.abortTaskResults(taskId, bufferId);
 
         if (!Objects.isNull(span)) {
-            endSpan(span);
+            span.end();
         }
     }
 
@@ -434,12 +431,12 @@ public class TaskResource
         requireNonNull(taskId, "taskId is null");
         requireNonNull(remoteSourceTaskId, "remoteSourceTaskId is null");
 
-        Object span = getSpan(traceParent, "DELETE /v1/task/{taskId}/remote-source/{remoteSourceTaskId}");
+        BaseSpan span = getSpan(traceParent, "DELETE /v1/task/{taskId}/remote-source/{remoteSourceTaskId}");
 
         taskManager.removeRemoteSource(taskId, remoteSourceTaskId);
 
         if (!Objects.isNull(span)) {
-            endSpan(span);
+            span.end();
         }
     }
 

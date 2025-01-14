@@ -41,6 +41,7 @@ import com.facebook.presto.server.SimpleHttpResponseCallback;
 import com.facebook.presto.server.SimpleHttpResponseHandler;
 import com.facebook.presto.server.smile.BaseResponse;
 import com.facebook.presto.server.thrift.ThriftHttpResponseHandler;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.facebook.presto.telemetry.TracingManager;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -98,7 +99,7 @@ public class TaskInfoFetcher
     private final RequestErrorTracker errorTracker;
 
     private final boolean summarizeTaskInfo;
-    private final Object remoteTaskSpan;
+    private final BaseSpan remoteTaskSpan;
 
     @GuardedBy("this")
     private final AtomicLong currentRequestStartNanos = new AtomicLong();
@@ -148,7 +149,7 @@ public class TaskInfoFetcher
             HandleResolver handleResolver,
             ConnectorTypeSerdeManager connectorTypeSerdeManager,
             Protocol thriftProtocol,
-            Object remoteTaskSpan)
+            BaseSpan remoteTaskSpan)
     {
         requireNonNull(initialTask, "initialTask is null");
         requireNonNull(errorScheduledExecutor, "errorScheduledExecutor is null");

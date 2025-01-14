@@ -23,6 +23,7 @@ import com.facebook.presto.execution.scheduler.TableWriteInfo;
 import com.facebook.presto.memory.QueryContext;
 import com.facebook.presto.operator.TaskContext;
 import com.facebook.presto.operator.TaskExchangeClientManager;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.facebook.presto.sql.gen.OrderingCompiler;
 import com.facebook.presto.sql.planner.HttpRemoteSourceFactory;
 import com.facebook.presto.sql.planner.LocalExecutionPlanner;
@@ -86,7 +87,7 @@ public class SqlTaskExecutionFactory
             PlanFragment fragment,
             List<TaskSource> sources,
             TableWriteInfo tableWriteInfo,
-            Object taskSpan)
+            BaseSpan taskSpan)
     {
         TaskContext taskContext = queryContext.addTaskContext(
                 taskStateMachine,

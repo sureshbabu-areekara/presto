@@ -38,6 +38,7 @@ import com.facebook.presto.spi.analyzer.QueryPreparerProvider;
 import com.facebook.presto.spi.resourceGroups.SelectionContext;
 import com.facebook.presto.spi.resourceGroups.SelectionCriteria;
 import com.facebook.presto.spi.security.AccessControl;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.facebook.presto.sql.analyzer.QueryPreparerProviderManager;
 import com.facebook.presto.telemetry.TracingManager;
 import com.facebook.presto.transaction.TransactionManager;
@@ -236,7 +237,7 @@ public class DispatchManager
      * @return the listenable future
      * @see ResourceGroupManager <a href="https://prestodb.io/docs/current/admin/resource-groups.html">Resource Groups</a>
      */
-    public ListenableFuture<?> createQuery(QueryId queryId, Object querySpan, Object rootSpan, String slug, int retryCount, SessionContext sessionContext, String query)
+    public ListenableFuture<?> createQuery(QueryId queryId, BaseSpan querySpan, BaseSpan rootSpan, String slug, int retryCount, SessionContext sessionContext, String query)
     {
         requireNonNull(queryId, "queryId is null");
         requireNonNull(sessionContext, "sessionFactory is null");
@@ -247,11 +248,8 @@ public class DispatchManager
         DispatchQueryCreationFuture queryCreationFuture = new DispatchQueryCreationFuture();
 
         boundedQueryExecutor.execute(TracingManager.getCurrentContextWrap(() -> {
-            try (AutoCloseable ignored = scopedSpan(querySpan, TracingEnum.DISPATCH.getName())) {
+            try (BaseSpan ignored = scopedSpan(querySpan, TracingEnum.DISPATCH.getName())) {
                 createQueryInternal(queryId, querySpan, rootSpan, slug, retryCount, sessionContext, query, resourceGroupManager);
-            }
-            catch (Exception e) {
-                throw new RuntimeException(e);
             }
             finally {
                 queryCreationFuture.set(null);
@@ -264,7 +262,7 @@ public class DispatchManager
      * Creates and registers a dispatch query with the query tracker.  This method will never fail to register a query with the query
      * tracker. If an error occurs while creating a dispatch query, a failed dispatch will be created and registered.
      */
-    private <C> void createQueryInternal(QueryId queryId, Object querySpan, Object rootSpan, String slug, int retryCount, SessionContext sessionContext, String query, ResourceGroupManager<C> resourceGroupManager)
+    private <C> void createQueryInternal(QueryId queryId, BaseSpan querySpan, BaseSpan rootSpan, String slug, int retryCount, SessionContext sessionContext, String query, ResourceGroupManager<C> resourceGroupManager)
     {
         Session session = null;
         SessionBuilder sessionBuilder = null;

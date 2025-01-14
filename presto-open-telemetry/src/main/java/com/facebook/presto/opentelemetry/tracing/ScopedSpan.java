@@ -14,13 +14,14 @@
 package com.facebook.presto.opentelemetry.tracing;
 
 import com.facebook.presto.common.TelemetryConfig;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Scope;
 
 import java.util.Objects;
 
 public final class ScopedSpan
-        implements AutoCloseable
+        implements BaseSpan
 {
     private final Span span;
     private final Scope scope;
@@ -46,5 +47,11 @@ public final class ScopedSpan
                 span.end();
             }
         }
+    }
+
+    @Override
+    public void end()
+    {
+        span.end();
     }
 }

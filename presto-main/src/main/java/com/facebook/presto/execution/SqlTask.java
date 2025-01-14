@@ -40,6 +40,7 @@ import com.facebook.presto.spi.ConnectorId;
 import com.facebook.presto.spi.ConnectorMetadataUpdateHandle;
 import com.facebook.presto.spi.connector.ConnectorMetadataUpdater;
 import com.facebook.presto.spi.plan.PlanNodeId;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.facebook.presto.sql.planner.PlanFragment;
 import com.facebook.presto.telemetry.TracingManager;
 import com.google.common.base.Function;
@@ -67,7 +68,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.facebook.presto.execution.TaskState.ABORTED;
 import static com.facebook.presto.execution.TaskState.FAILED;
 import static com.facebook.presto.telemetry.TracingManager.addEvent;
-import static com.facebook.presto.telemetry.TracingManager.endSpan;
 import static com.facebook.presto.util.Failures.toFailures;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
@@ -96,7 +96,19 @@ public class SqlTask
     private final AtomicReference<TaskHolder> taskHolderReference = new AtomicReference<>(new TaskHolder());
     private final AtomicBoolean needsPlan = new AtomicBoolean(true);
     private final long creationTimeInMillis = System.currentTimeMillis();
-    private Object taskSpan = new Object(); //TracingSpan.getInvalid();
+    private BaseSpan taskSpan = new BaseSpan() {
+        @Override
+        public void close()
+        {
+            BaseSpan.super.close();
+        }
+
+        @Override
+        public void end()
+        {
+            return;
+        }
+    }; //TracingSpan.getInvalid();
 
     public static SqlTask createSqlTask(
             TaskId taskId,
@@ -208,7 +220,7 @@ public class SqlTask
             }
 
             if (newState.isDone()) {
-                endSpan(taskSpan);
+                taskSpan.end();
             }
         });
     }
@@ -443,7 +455,7 @@ public class SqlTask
             List<TaskSource> sources,
             OutputBuffers outputBuffers,
             Optional<TableWriteInfo> tableWriteInfo,
-            Object span)
+            BaseSpan span)
     {
         try {
             // The LazyOutput buffer does not support write methods, so the actual

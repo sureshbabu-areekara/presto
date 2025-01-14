@@ -11,28 +11,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.facebook.presto.execution;
+package com.facebook.presto.spi.telemetry;
 
-import com.facebook.presto.spi.telemetry.BaseSpan;
-import com.google.common.util.concurrent.ListenableFuture;
-import io.airlift.units.Duration;
-
-import java.io.Closeable;
-
-public interface SplitRunner
-        extends Closeable
+public interface BaseSpan
+        extends AutoCloseable
 {
-    boolean isFinished();
-
-    ListenableFuture<?> processFor(Duration duration);
-
-    String getInfo();
-
     @Override
-    void close();
-
-    default BaseSpan getPipelineSpan()
+    public default void close()
     {
-        return null;
+        return;
     }
+
+    void end();
 }

@@ -31,6 +31,7 @@ import com.facebook.presto.operator.TaskMemoryReservationSummary;
 import com.facebook.presto.spi.QueryId;
 import com.facebook.presto.spi.memory.MemoryPoolId;
 import com.facebook.presto.spi.page.SerializedPage;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.facebook.presto.spiller.SpillSpaceTracker;
 import com.facebook.presto.sql.analyzer.FeaturesConfig;
 import com.facebook.presto.sql.gen.OrderingCompiler;
@@ -126,7 +127,13 @@ public class TestSqlTask
                 createInitialEmptyOutputBuffers(PARTITIONED)
                         .withNoMoreBufferIds(),
                 Optional.of(new TableWriteInfo(Optional.empty(), Optional.empty(), Optional.empty())),
-                new Object());
+                new BaseSpan() {
+                    @Override
+                    public void end()
+                    {
+                        BaseSpan.super.close();
+                    }
+                });
         assertEquals(taskInfo.getTaskStatus().getState(), TaskState.RUNNING);
 
         taskInfo = sqlTask.getTaskInfo();
@@ -138,7 +145,13 @@ public class TestSqlTask
                 createInitialEmptyOutputBuffers(PARTITIONED)
                         .withNoMoreBufferIds(),
                 Optional.of(new TableWriteInfo(Optional.empty(), Optional.empty(), Optional.empty())),
-                new Object());
+                new BaseSpan() {
+                    @Override
+                    public void end()
+                    {
+                        BaseSpan.super.close();
+                    }
+                });
         assertEquals(taskInfo.getTaskStatus().getState(), TaskState.FINISHED);
 
         taskInfo = sqlTask.getTaskInfo();
@@ -159,7 +172,12 @@ public class TestSqlTask
                 createInitialEmptyOutputBuffers(PARTITIONED)
                         .withNoMoreBufferIds(),
                 Optional.of(new TableWriteInfo(Optional.empty(), Optional.empty(), Optional.empty())),
-                new Object());
+                new BaseSpan() {
+                    @Override
+                    public void end() {
+                        BaseSpan.super.close();
+                    }
+                });
 
         Thread.sleep(5000);
         assertFalse(testingTelemetryManager.isSpansEmpty());
@@ -202,7 +220,13 @@ public class TestSqlTask
                 ImmutableList.of(new TaskSource(TABLE_SCAN_NODE_ID, ImmutableSet.of(SPLIT), true)),
                 createInitialEmptyOutputBuffers(PARTITIONED).withBuffer(OUT, 0).withNoMoreBufferIds(),
                 Optional.of(new TableWriteInfo(Optional.empty(), Optional.empty(), Optional.empty())),
-                new Object());
+                new BaseSpan() {
+                    @Override
+                    public void end()
+                    {
+                        BaseSpan.super.close();
+                    }
+                });
         assertEquals(taskInfo.getTaskStatus().getState(), TaskState.RUNNING);
 
         taskInfo = sqlTask.getTaskInfo();
@@ -253,7 +277,13 @@ public class TestSqlTask
                         .withBuffer(OUT, 0)
                         .withNoMoreBufferIds(),
                 Optional.of(new TableWriteInfo(Optional.empty(), Optional.empty(), Optional.empty())),
-                new Object());
+                new BaseSpan() {
+                    @Override
+                    public void end()
+                    {
+                        BaseSpan.super.close();
+                    }
+                });
         assertEquals(taskInfo.getTaskStatus().getState(), TaskState.RUNNING);
         assertNull(taskInfo.getStats().getEndTime());
 
@@ -281,7 +311,13 @@ public class TestSqlTask
                 ImmutableList.of(new TaskSource(TABLE_SCAN_NODE_ID, ImmutableSet.of(SPLIT), true)),
                 createInitialEmptyOutputBuffers(PARTITIONED).withBuffer(OUT, 0).withNoMoreBufferIds(),
                 Optional.of(new TableWriteInfo(Optional.empty(), Optional.empty(), Optional.empty())),
-                new Object());
+                new BaseSpan() {
+                    @Override
+                    public void end()
+                    {
+                        BaseSpan.super.close();
+                    }
+                });
         assertEquals(taskInfo.getTaskStatus().getState(), TaskState.RUNNING);
 
         taskInfo = sqlTask.getTaskInfo();

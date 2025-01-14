@@ -20,6 +20,7 @@ import com.facebook.presto.operator.DriverStats;
 import com.facebook.presto.spi.eventlistener.SplitCompletedEvent;
 import com.facebook.presto.spi.eventlistener.SplitFailureInfo;
 import com.facebook.presto.spi.eventlistener.SplitStatistics;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -30,7 +31,6 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
 
-import static com.facebook.presto.telemetry.TracingManager.endSpan;
 import static java.time.Duration.ofMillis;
 import static java.util.Objects.requireNonNull;
 
@@ -48,17 +48,17 @@ public class SplitMonitor
         this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
     }
 
-    public void splitCompletedEvent(TaskId taskId, DriverStats driverStats, Object pipelineSpan)
+    public void splitCompletedEvent(TaskId taskId, DriverStats driverStats, BaseSpan pipelineSpan)
     {
         splitCompletedEvent(taskId, driverStats, null, null, pipelineSpan);
     }
 
-    public void splitFailedEvent(TaskId taskId, DriverStats driverStats, Throwable cause, Object pipelineSpan)
+    public void splitFailedEvent(TaskId taskId, DriverStats driverStats, Throwable cause, BaseSpan pipelineSpan)
     {
         splitCompletedEvent(taskId, driverStats, cause.getClass().getName(), cause.getMessage(), pipelineSpan);
     }
 
-    private void splitCompletedEvent(TaskId taskId, DriverStats driverStats, @Nullable String failureType, @Nullable String failureMessage, Object pipelineSpan)
+    private void splitCompletedEvent(TaskId taskId, DriverStats driverStats, @Nullable String failureType, @Nullable String failureMessage, BaseSpan pipelineSpan)
     {
         Optional<Duration> timeToStart = Optional.empty();
         if (driverStats.getStartTime() != null) {
@@ -102,7 +102,7 @@ public class SplitMonitor
             log.error(e, "Error processing split completion event for task %s", taskId);
         }
         if (!Objects.isNull(pipelineSpan)) {
-            endSpan(pipelineSpan);
+            pipelineSpan.end();
         }
     }
 }

@@ -22,6 +22,7 @@ import com.facebook.presto.execution.buffer.OutputBuffers.OutputBufferId;
 import com.facebook.presto.execution.scheduler.TableWriteInfo;
 import com.facebook.presto.memory.MemoryPoolAssignmentsRequest;
 import com.facebook.presto.metadata.MetadataUpdates;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.facebook.presto.sql.planner.PlanFragment;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.units.DataSize;
@@ -92,7 +93,7 @@ public interface TaskManager
             List<TaskSource> sources,
             OutputBuffers outputBuffers,
             Optional<TableWriteInfo> tableWriteInfo,
-            Object span);
+            BaseSpan span);
 
     /**
      * Cancels a task.  If the task does not already exist, is is created and then

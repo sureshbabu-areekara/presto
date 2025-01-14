@@ -13,9 +13,11 @@
  */
 package com.facebook.presto.opentelemetry.tracing;
 
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import io.opentelemetry.api.trace.Span;
 
 public class TracingSpan
+        implements BaseSpan
 {
     private final Span span;
 
@@ -59,6 +61,7 @@ public class TracingSpan
         return span.isRecording();
     }
 
+    @Override
     public void end()
     {
         span.end();

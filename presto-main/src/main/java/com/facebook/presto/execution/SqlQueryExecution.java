@@ -48,6 +48,7 @@ import com.facebook.presto.spi.plan.PartitioningHandle;
 import com.facebook.presto.spi.plan.PlanNode;
 import com.facebook.presto.spi.plan.PlanNodeIdAllocator;
 import com.facebook.presto.spi.resourceGroups.ResourceGroupQueryLimits;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.facebook.presto.split.CloseableSplitSourceProvider;
 import com.facebook.presto.split.SplitManager;
 import com.facebook.presto.sql.Optimizer;
@@ -203,17 +204,14 @@ public class SqlQueryExecution
             // analyze query
             requireNonNull(preparedQuery, "preparedQuery is null");
 
-            Object querySpan = getSession().getQuerySpan();
-            try (AutoCloseable spanIgnored = scopedSpan(querySpan, TracingEnum.ANALYZER.getName())) {
+            BaseSpan querySpan = getSession().getQuerySpan();
+            try (BaseSpan spanIgnored = scopedSpan(querySpan, TracingEnum.ANALYZER.getName())) {
                 try (TimeoutThread unused = new TimeoutThread(
                         Thread.currentThread(),
                         timeoutThreadExecutor,
                         getQueryAnalyzerTimeout(getSession()))) {
                     this.queryAnalysis = queryAnalyzer.analyze(analyzerContext, preparedQuery);
                 }
-            }
-            catch (Exception e) {
-                throw new RuntimeException(e);
             }
 
             stateMachine.beginSemanticAnalyzing();
@@ -563,12 +561,9 @@ public class SqlQueryExecution
                             LOGICAL_PLANNER_TIME_NANOS,
                             () -> queryAnalyzer.plan(this.analyzerContext, queryAnalysis));
 
-            Object querySpan = getSession().getQuerySpan();
-            try (AutoCloseable ignored = scopedSpan(querySpan, TracingEnum.PLANNER.getName())) {
+            BaseSpan querySpan = getSession().getQuerySpan();
+            try (BaseSpan ignored = scopedSpan(querySpan, TracingEnum.PLANNER.getName())) {
                 return optimizePlan(planNode);
-            }
-            catch (Exception e) {
-                throw new RuntimeException(e);
             }
         }
         catch (StackOverflowError e) {
@@ -591,13 +586,10 @@ public class SqlQueryExecution
                 false);
 
         Plan plan;
-        try (AutoCloseable ignored = scopedSpan("Plan Optimizer")) {
+        try (BaseSpan ignored = scopedSpan("Plan Optimizer")) {
             plan = getSession().getRuntimeStats().profileNanos(
                     OPTIMIZER_TIME_NANOS,
                     () -> optimizer.validateAndOptimizePlan(planNode, OPTIMIZED_AND_VALIDATED));
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
         }
 
         queryPlan.set(plan);
@@ -609,16 +601,13 @@ public class SqlQueryExecution
         stateMachine.setPlanCanonicalInfo(canonicalPlanWithInfos);
 
         // extract inputs
-        try (AutoCloseable ignored = scopedSpan("extract-inputs")) {
+        try (BaseSpan ignored = scopedSpan("extract-inputs")) {
             List<Input> inputs = new InputExtractor(metadata, stateMachine.getSession()).extractInputs(plan.getRoot());
             stateMachine.setInputs(inputs);
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
 
         // extract output
-        try (AutoCloseable ignored = scopedSpan("extract-outputs")) {
+        try (BaseSpan ignored = scopedSpan("extract-outputs")) {
             Optional<Output> output = new OutputExtractor().extractOutput(plan.getRoot());
             stateMachine.setOutput(output);
 
@@ -627,7 +616,7 @@ public class SqlQueryExecution
             variableAllocator.set(new VariableAllocator(plan.getTypes().allVariables()));
             SubPlan fragmentedPlan;
 
-            try (AutoCloseable spanIgnored = scopedSpan("fragment-plan")) {
+            try (BaseSpan spanIgnored = scopedSpan("fragment-plan")) {
                 fragmentedPlan = getSession().getRuntimeStats().profileNanos(
                         FRAGMENT_PLAN_TIME_NANOS,
                         () -> planFragmenter.createSubPlans(stateMachine.getSession(), plan, false,
@@ -639,9 +628,6 @@ public class SqlQueryExecution
 
             boolean explainAnalyze = queryAnalysis.isExplainAnalyzeQuery();
             return new PlanRoot(fragmentedPlan, !explainAnalyze, queryAnalysis.extractConnectors());
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
         }
     }
 

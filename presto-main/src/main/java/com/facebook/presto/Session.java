@@ -35,6 +35,7 @@ import com.facebook.presto.spi.security.Identity;
 import com.facebook.presto.spi.security.SelectedRole;
 import com.facebook.presto.spi.session.ResourceEstimates;
 import com.facebook.presto.spi.session.SessionPropertyConfigurationManager.SystemSessionPropertyConfiguration;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.facebook.presto.sql.analyzer.CTEInformationCollector;
 import com.facebook.presto.sql.planner.optimizations.OptimizerInformationCollector;
 import com.facebook.presto.sql.planner.optimizations.OptimizerResultCollector;
@@ -75,8 +76,8 @@ import static java.util.Objects.requireNonNull;
 public final class Session
 {
     private final QueryId queryId;
-    private final Object querySpan;
-    private final Object rootSpan;
+    private final BaseSpan querySpan;
+    private final BaseSpan rootSpan;
     private final Optional<TransactionId> transactionId;
     private final boolean clientTransactionSupport;
     private final Identity identity;
@@ -110,8 +111,8 @@ public final class Session
 
     public Session(
             QueryId queryId,
-            Object querySpan,
-            Object rootSpan,
+            BaseSpan querySpan,
+            BaseSpan rootSpan,
             Optional<TransactionId> transactionId,
             boolean clientTransactionSupport,
             Identity identity,
@@ -184,12 +185,12 @@ public final class Session
         return queryId;
     }
 
-    public Object getQuerySpan()
+    public BaseSpan getQuerySpan()
     {
         return querySpan;
     }
 
-    public Object getRootSpan()
+    public BaseSpan getRootSpan()
     {
         return rootSpan;
     }
@@ -562,8 +563,8 @@ public final class Session
     public static class SessionBuilder
     {
         private QueryId queryId;
-        private Object querySpan = new Object(); //TracingSpan.getInvalid();     //do not initialize with null
-        private Object rootSpan = new Object(); //TracingSpan.getInvalid();      //do not initialize with null
+        private BaseSpan querySpan; //TracingSpan.getInvalid();     //do not initialize with null
+        private BaseSpan rootSpan; //TracingSpan.getInvalid();      //do not initialize with null
         private TransactionId transactionId;
         private boolean clientTransactionSupport;
         private Identity identity;
@@ -728,13 +729,13 @@ public final class Session
             return this;
         }
 
-        public SessionBuilder setQuerySpan(Object querySpan)
+        public SessionBuilder setQuerySpan(BaseSpan querySpan)
         {
             this.querySpan = querySpan;
             return this;
         }
 
-        public SessionBuilder setRootSpan(Object rootSpan)
+        public SessionBuilder setRootSpan(BaseSpan rootSpan)
         {
             this.rootSpan = rootSpan;
             return this;

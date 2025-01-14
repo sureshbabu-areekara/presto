@@ -35,6 +35,7 @@ import com.facebook.presto.spi.security.PrestoPrincipal;
 import com.facebook.presto.spi.security.Privilege;
 import com.facebook.presto.spi.security.SystemAccessControl;
 import com.facebook.presto.spi.security.SystemAccessControlFactory;
+import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.facebook.presto.transaction.TransactionManager;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
@@ -99,45 +100,36 @@ public class AccessControlManager
 
     public void addSystemAccessControlFactory(SystemAccessControlFactory accessControlFactory)
     {
-        try (AutoCloseable ignored = scopedSpan(TracingEnum.ADD_SYSTEM_ACCESS_CONTROL_FACTORY.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan(TracingEnum.ADD_SYSTEM_ACCESS_CONTROL_FACTORY.getName(), skipSpan)) {
             requireNonNull(accessControlFactory, "accessControlFactory is null");
 
             if (systemAccessControlFactories.putIfAbsent(accessControlFactory.getName(), accessControlFactory) != null) {
                 throw new IllegalArgumentException(format("Access control '%s' is already registered", accessControlFactory.getName()));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     public void addCatalogAccessControl(ConnectorId connectorId, ConnectorAccessControl accessControl)
     {
-        try (AutoCloseable ignored = scopedSpan(TracingEnum.ADD_CATALOG_ACCESS_CONTROL.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan(TracingEnum.ADD_CATALOG_ACCESS_CONTROL.getName(), skipSpan)) {
             requireNonNull(connectorId, "connectorId is null");
             requireNonNull(accessControl, "accessControl is null");
             checkState(connectorAccessControl.putIfAbsent(connectorId, new CatalogAccessControlEntry(connectorId, accessControl)) == null,
                     "Access control for connector '%s' is already registered", connectorId);
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     public void removeCatalogAccessControl(ConnectorId connectorId)
     {
-        try (AutoCloseable ignored = scopedSpan(TracingEnum.REMOVE_CATALOG_ACCESS_CONTROL.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan(TracingEnum.REMOVE_CATALOG_ACCESS_CONTROL.getName(), skipSpan)) {
             connectorAccessControl.remove(connectorId);
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
         }
     }
 
     public void loadSystemAccessControl()
             throws Exception
     {
-        try (AutoCloseable ignored = scopedSpan(TracingEnum.LOAD_CATALOG_ACCESS_CONTROL.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan(TracingEnum.LOAD_CATALOG_ACCESS_CONTROL.getName(), skipSpan)) {
             if (ACCESS_CONTROL_CONFIGURATION.exists()) {
                 Map<String, String> properties = loadProperties(ACCESS_CONTROL_CONFIGURATION);
                 checkArgument(!isNullOrEmpty(properties.get(ACCESS_CONTROL_PROPERTY_NAME)),
@@ -155,22 +147,19 @@ public class AccessControlManager
 
     public void loadSystemAccessControl(Map<String, String> properties)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.LOAD_SYSTEM_ACCESS_CONTROL.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.LOAD_SYSTEM_ACCESS_CONTROL.getName(), skipSpan)) {
             properties = new HashMap<>(properties);
             String accessControlName = properties.remove(ACCESS_CONTROL_PROPERTY_NAME);
             checkArgument(!isNullOrEmpty(accessControlName), "%s property must be present", ACCESS_CONTROL_PROPERTY_NAME);
 
             setSystemAccessControl(accessControlName, properties);
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @VisibleForTesting
     protected void setSystemAccessControl(String name, Map<String, String> properties)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.SET_SYSTEM_ACCESS_CONTROL.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.SET_SYSTEM_ACCESS_CONTROL.getName(), skipSpan)) {
             requireNonNull(name, "name is null");
             requireNonNull(properties, "properties is null");
 
@@ -186,85 +175,67 @@ public class AccessControlManager
 
             log.info("-- Loaded system access control %s --", name);
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanSetUser(Identity identity, AccessControlContext context, Optional<Principal> principal, String userName)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_SET_USER.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_SET_USER.getName(), skipSpan)) {
             requireNonNull(principal, "principal is null");
             requireNonNull(userName, "userName is null");
 
             authenticationCheck(() -> systemAccessControl.get().checkCanSetUser(identity, context, principal, userName));
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
         }
     }
 
     @Override
     public AuthorizedIdentity selectAuthorizedIdentity(Identity identity, AccessControlContext context, String userName, List<X509Certificate> certificates)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.SELECT_AUTHORIZED_IDENTITY.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.SELECT_AUTHORIZED_IDENTITY.getName(), skipSpan)) {
             requireNonNull(userName, "userName is null");
             requireNonNull(certificates, "certificates is null");
 
             return systemAccessControl.get().selectAuthorizedIdentity(identity, context, userName, certificates);
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
         }
     }
 
     @Override
     public void checkQueryIntegrity(Identity identity, AccessControlContext context, String query)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_QUERY_INTEGRITY.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_QUERY_INTEGRITY.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(query, "query is null");
 
             authenticationCheck(() -> systemAccessControl.get().checkQueryIntegrity(identity, context, query));
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
         }
     }
 
     @Override
     public Set<String> filterCatalogs(Identity identity, AccessControlContext context, Set<String> catalogs)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.FILTER_CATALOGS.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.FILTER_CATALOGS.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(catalogs, "catalogs is null");
 
             return systemAccessControl.get().filterCatalogs(identity, context, catalogs);
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
         }
     }
 
     @Override
     public void checkCanAccessCatalog(Identity identity, AccessControlContext context, String catalogName)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_ACCESS_CATALOG.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_ACCESS_CATALOG.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(catalogName, "catalog is null");
 
             authenticationCheck(() -> systemAccessControl.get().checkCanAccessCatalog(identity, context, catalogName));
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
         }
     }
 
     @Override
     public void checkCanCreateSchema(TransactionId transactionId, Identity identity, AccessControlContext context, CatalogSchemaName schemaName)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_CREATE_SCHEMA.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_CREATE_SCHEMA.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(schemaName, "schemaName is null");
 
@@ -277,15 +248,12 @@ public class AccessControlManager
                 authorizationCheck(() -> entry.getAccessControl().checkCanCreateSchema(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(schemaName.getCatalogName()), context, schemaName.getSchemaName()));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanDropSchema(TransactionId transactionId, Identity identity, AccessControlContext context, CatalogSchemaName schemaName)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_DROP_SCHEMA.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_DROP_SCHEMA.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(schemaName, "schemaName is null");
 
@@ -298,15 +266,12 @@ public class AccessControlManager
                 authorizationCheck(() -> entry.getAccessControl().checkCanDropSchema(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(schemaName.getCatalogName()), context, schemaName.getSchemaName()));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanRenameSchema(TransactionId transactionId, Identity identity, AccessControlContext context, CatalogSchemaName schemaName, String newSchemaName)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_RENAME_SCHEMA.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_RENAME_SCHEMA.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(schemaName, "schemaName is null");
 
@@ -319,15 +284,12 @@ public class AccessControlManager
                 authorizationCheck(() -> entry.getAccessControl().checkCanRenameSchema(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(schemaName.getCatalogName()), context, schemaName.getSchemaName(), newSchemaName));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanShowSchemas(TransactionId transactionId, Identity identity, AccessControlContext context, String catalogName)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_SHOW_SCHEMAS.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_SHOW_SCHEMAS.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(catalogName, "catalogName is null");
 
@@ -340,15 +302,12 @@ public class AccessControlManager
                 authorizationCheck(() -> entry.getAccessControl().checkCanShowSchemas(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(catalogName), context));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public Set<String> filterSchemas(TransactionId transactionId, Identity identity, AccessControlContext context, String catalogName, Set<String> schemaNames)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.FILTER_SCHEMAS.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.FILTER_SCHEMAS.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(catalogName, "catalogName is null");
             requireNonNull(schemaNames, "schemaNames is null");
@@ -365,15 +324,12 @@ public class AccessControlManager
             }
             return schemaNames;
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanCreateTable(TransactionId transactionId, Identity identity, AccessControlContext context, QualifiedObjectName tableName)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_CREATE_TABLE.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_CREATE_TABLE.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(tableName, "tableName is null");
 
@@ -386,15 +342,12 @@ public class AccessControlManager
                 authorizationCheck(() -> entry.getAccessControl().checkCanCreateTable(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(tableName.getCatalogName()), context, toSchemaTableName(tableName)));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanDropTable(TransactionId transactionId, Identity identity, AccessControlContext context, QualifiedObjectName tableName)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_DROP_TABLE.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_DROP_TABLE.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(tableName, "tableName is null");
 
@@ -407,15 +360,12 @@ public class AccessControlManager
                 authorizationCheck(() -> entry.getAccessControl().checkCanDropTable(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(tableName.getCatalogName()), context, toSchemaTableName(tableName)));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanRenameTable(TransactionId transactionId, Identity identity, AccessControlContext context, QualifiedObjectName tableName, QualifiedObjectName newTableName)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_RENAME_TABLE.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_RENAME_TABLE.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(tableName, "tableName is null");
             requireNonNull(newTableName, "newTableName is null");
@@ -428,9 +378,6 @@ public class AccessControlManager
             if (entry != null) {
                 authorizationCheck(() -> entry.getAccessControl().checkCanRenameTable(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(tableName.getCatalogName()), context, toSchemaTableName(tableName), toSchemaTableName(newTableName)));
             }
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
         }
     }
 
@@ -450,7 +397,7 @@ public class AccessControlManager
     @Override
     public void checkCanShowTablesMetadata(TransactionId transactionId, Identity identity, AccessControlContext context, CatalogSchemaName schema)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_SHOW_TABLES_METADATA.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_SHOW_TABLES_METADATA.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(schema, "schema is null");
 
@@ -463,15 +410,12 @@ public class AccessControlManager
                 authorizationCheck(() -> entry.getAccessControl().checkCanShowTablesMetadata(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(), context, schema.getSchemaName()));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public Set<SchemaTableName> filterTables(TransactionId transactionId, Identity identity, AccessControlContext context, String catalogName, Set<SchemaTableName> tableNames)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.FILTER_TABLES.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.FILTER_TABLES.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(catalogName, "catalogName is null");
             requireNonNull(tableNames, "tableNames is null");
@@ -488,15 +432,12 @@ public class AccessControlManager
             }
             return tableNames;
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanAddColumns(TransactionId transactionId, Identity identity, AccessControlContext context, QualifiedObjectName tableName)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_ADD_COLUMNS.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_ADD_COLUMNS.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(tableName, "tableName is null");
 
@@ -509,15 +450,12 @@ public class AccessControlManager
                 authorizationCheck(() -> entry.getAccessControl().checkCanAddColumn(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(tableName.getCatalogName()), context, toSchemaTableName(tableName)));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanDropColumn(TransactionId transactionId, Identity identity, AccessControlContext context, QualifiedObjectName tableName)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_DROP_COLUMN.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_DROP_COLUMN.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(tableName, "tableName is null");
 
@@ -530,15 +468,12 @@ public class AccessControlManager
                 authorizationCheck(() -> entry.getAccessControl().checkCanDropColumn(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(tableName.getCatalogName()), context, toSchemaTableName(tableName)));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanRenameColumn(TransactionId transactionId, Identity identity, AccessControlContext context, QualifiedObjectName tableName)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_RENAME_COLUMN.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_RENAME_COLUMN.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(tableName, "tableName is null");
 
@@ -551,15 +486,12 @@ public class AccessControlManager
                 authorizationCheck(() -> entry.getAccessControl().checkCanRenameColumn(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(tableName.getCatalogName()), context, toSchemaTableName(tableName)));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanInsertIntoTable(TransactionId transactionId, Identity identity, AccessControlContext context, QualifiedObjectName tableName)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_INSERT_INTO_TABLE.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_INSERT_INTO_TABLE.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(tableName, "tableName is null");
 
@@ -572,15 +504,12 @@ public class AccessControlManager
                 authorizationCheck(() -> entry.getAccessControl().checkCanInsertIntoTable(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(tableName.getCatalogName()), context, toSchemaTableName(tableName)));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanDeleteFromTable(TransactionId transactionId, Identity identity, AccessControlContext context, QualifiedObjectName tableName)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_DELETE_FROM_TABLE.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_DELETE_FROM_TABLE.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(tableName, "tableName is null");
 
@@ -593,15 +522,12 @@ public class AccessControlManager
                 authorizationCheck(() -> entry.getAccessControl().checkCanDeleteFromTable(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(tableName.getCatalogName()), context, toSchemaTableName(tableName)));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanTruncateTable(TransactionId transactionId, Identity identity, AccessControlContext context, QualifiedObjectName tableName)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_TRUNCATE_TABLE.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_TRUNCATE_TABLE.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(tableName, "tableName is null");
 
@@ -614,15 +540,12 @@ public class AccessControlManager
                 authorizationCheck(() -> entry.getAccessControl().checkCanTruncateTable(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(tableName.getCatalogName()), context, toSchemaTableName(tableName)));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanUpdateTableColumns(TransactionId transactionId, Identity identity, AccessControlContext context, QualifiedObjectName tableName, Set<String> updatedColumnNames)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_UPDATE_TABLE_COLUMNS.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_UPDATE_TABLE_COLUMNS.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(tableName, "tableName is null");
 
@@ -635,15 +558,12 @@ public class AccessControlManager
                 authorizationCheck(() -> entry.getAccessControl().checkCanUpdateTableColumns(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(tableName.getCatalogName()), context, toSchemaTableName(tableName), updatedColumnNames));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanCreateView(TransactionId transactionId, Identity identity, AccessControlContext context, QualifiedObjectName viewName)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_CREATE_VIEW.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_CREATE_VIEW.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(viewName, "viewName is null");
 
@@ -656,15 +576,12 @@ public class AccessControlManager
                 authorizationCheck(() -> entry.getAccessControl().checkCanCreateView(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(viewName.getCatalogName()), context, toSchemaTableName(viewName)));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanDropView(TransactionId transactionId, Identity identity, AccessControlContext context, QualifiedObjectName viewName)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_DROP_VIEW.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_DROP_VIEW.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(viewName, "viewName is null");
 
@@ -677,15 +594,12 @@ public class AccessControlManager
                 authorizationCheck(() -> entry.getAccessControl().checkCanDropView(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(viewName.getCatalogName()), context, toSchemaTableName(viewName)));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanCreateViewWithSelectFromColumns(TransactionId transactionId, Identity identity, AccessControlContext context, QualifiedObjectName tableName, Set<String> columnNames)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_CREATE_VIEW_WITH_SELECT_FROM_COLUMNS.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_CREATE_VIEW_WITH_SELECT_FROM_COLUMNS.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(tableName, "tableName is null");
 
@@ -698,15 +612,12 @@ public class AccessControlManager
                 authorizationCheck(() -> entry.getAccessControl().checkCanCreateViewWithSelectFromColumns(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(tableName.getCatalogName()), context, toSchemaTableName(tableName), columnNames));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanGrantTablePrivilege(TransactionId transactionId, Identity identity, AccessControlContext context, Privilege privilege, QualifiedObjectName tableName, PrestoPrincipal grantee, boolean withGrantOption)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_GRANT_TABLE_PRIVILEGE.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_GRANT_TABLE_PRIVILEGE.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(tableName, "tableName is null");
             requireNonNull(privilege, "privilege is null");
@@ -720,15 +631,12 @@ public class AccessControlManager
                 authorizationCheck(() -> entry.getAccessControl().checkCanGrantTablePrivilege(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(tableName.getCatalogName()), context, privilege, toSchemaTableName(tableName), grantee, withGrantOption));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanRevokeTablePrivilege(TransactionId transactionId, Identity identity, AccessControlContext context, Privilege privilege, QualifiedObjectName tableName, PrestoPrincipal revokee, boolean grantOptionFor)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_REVOKE_TABLE_PRIVILEGE.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_REVOKE_TABLE_PRIVILEGE.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(tableName, "tableName is null");
             requireNonNull(privilege, "privilege is null");
@@ -742,29 +650,23 @@ public class AccessControlManager
                 authorizationCheck(() -> entry.getAccessControl().checkCanRevokeTablePrivilege(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(tableName.getCatalogName()), context, privilege, toSchemaTableName(tableName), revokee, grantOptionFor));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanSetSystemSessionProperty(Identity identity, AccessControlContext context, String propertyName)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_SET_SYSTEM_SESSION_PROPERTY.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_SET_SYSTEM_SESSION_PROPERTY.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(propertyName, "propertyName is null");
 
             authorizationCheck(() -> systemAccessControl.get().checkCanSetSystemSessionProperty(identity, context, propertyName));
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
         }
     }
 
     @Override
     public void checkCanSetCatalogSessionProperty(TransactionId transactionId, Identity identity, AccessControlContext context, String catalogName, String propertyName)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_SET_CATALOG_SESSION_PROPERTY.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_SET_CATALOG_SESSION_PROPERTY.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(catalogName, "catalogName is null");
             requireNonNull(propertyName, "propertyName is null");
@@ -778,15 +680,12 @@ public class AccessControlManager
                 authorizationCheck(() -> entry.getAccessControl().checkCanSetCatalogSessionProperty(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(catalogName), context, propertyName));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanSelectFromColumns(TransactionId transactionId, Identity identity, AccessControlContext context, QualifiedObjectName tableName, Set<Subfield> columnOrSubfieldNames)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_SELECT_FROM_COLUMNS.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_SELECT_FROM_COLUMNS.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(tableName, "tableName is null");
             requireNonNull(columnOrSubfieldNames, "columnOrSubfieldNames is null");
@@ -804,15 +703,12 @@ public class AccessControlManager
                 authorizationCheck(() -> entry.getAccessControl().checkCanSelectFromColumns(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(tableName.getCatalogName()), context, toSchemaTableName(tableName), columnOrSubfieldNames));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanCreateRole(TransactionId transactionId, Identity identity, AccessControlContext context, String role, Optional<PrestoPrincipal> grantor, String catalogName)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_CREATE_ROLE.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_CREATE_ROLE.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(role, "role is null");
             requireNonNull(grantor, "grantor is null");
@@ -825,15 +721,12 @@ public class AccessControlManager
                 authorizationCheck(() -> entry.getAccessControl().checkCanCreateRole(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(catalogName), context, role, grantor));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanDropRole(TransactionId transactionId, Identity identity, AccessControlContext context, String role, String catalogName)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_DROP_ROLE.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_DROP_ROLE.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(role, "role is null");
             requireNonNull(catalogName, "catalogName is null");
@@ -845,15 +738,12 @@ public class AccessControlManager
                 authorizationCheck(() -> entry.getAccessControl().checkCanDropRole(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(catalogName), context, role));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanGrantRoles(TransactionId transactionId, Identity identity, AccessControlContext context, Set<String> roles, Set<PrestoPrincipal> grantees, boolean withAdminOption, Optional<PrestoPrincipal> grantor, String catalogName)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_GRANT_ROLES.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_GRANT_ROLES.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(roles, "roles is null");
             requireNonNull(grantees, "grantees is null");
@@ -867,15 +757,12 @@ public class AccessControlManager
                 authorizationCheck(() -> entry.getAccessControl().checkCanGrantRoles(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(catalogName), context, roles, grantees, withAdminOption, grantor, catalogName));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanRevokeRoles(TransactionId transactionId, Identity identity, AccessControlContext context, Set<String> roles, Set<PrestoPrincipal> grantees, boolean adminOptionFor, Optional<PrestoPrincipal> grantor, String catalogName)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_REVOKE_ROLES.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_REVOKE_ROLES.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(roles, "roles is null");
             requireNonNull(grantees, "grantees is null");
@@ -889,15 +776,12 @@ public class AccessControlManager
                 authorizationCheck(() -> entry.getAccessControl().checkCanRevokeRoles(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(catalogName), context, roles, grantees, adminOptionFor, grantor, catalogName));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanSetRole(TransactionId transactionId, Identity identity, AccessControlContext context, String role, String catalogName)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_SET_ROLE.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_SET_ROLE.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(role, "role is null");
             requireNonNull(catalogName, "catalog is null");
@@ -909,15 +793,12 @@ public class AccessControlManager
                 authorizationCheck(() -> entry.getAccessControl().checkCanSetRole(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(catalogName), context, role, catalogName));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanShowRoles(TransactionId transactionId, Identity identity, AccessControlContext context, String catalogName)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_SHOW_ROLES.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_SHOW_ROLES.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(catalogName, "catalogName is null");
 
@@ -928,15 +809,12 @@ public class AccessControlManager
                 authenticationCheck(() -> entry.getAccessControl().checkCanShowRoles(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(catalogName), context, catalogName));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanShowCurrentRoles(TransactionId transactionId, Identity identity, AccessControlContext context, String catalogName)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_SHOW_CURRENT_ROLES.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_SHOW_CURRENT_ROLES.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(catalogName, "catalogName is null");
 
@@ -947,15 +825,12 @@ public class AccessControlManager
                 authenticationCheck(() -> entry.getAccessControl().checkCanShowCurrentRoles(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(catalogName), context, catalogName));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanShowRoleGrants(TransactionId transactionId, Identity identity, AccessControlContext context, String catalogName)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_SHOW_ROLE_GRANTS.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_SHOW_ROLE_GRANTS.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(catalogName, "catalogName is null");
 
@@ -966,15 +841,12 @@ public class AccessControlManager
                 authenticationCheck(() -> entry.getAccessControl().checkCanShowRoleGrants(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(catalogName), context, catalogName));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanDropConstraint(TransactionId transactionId, Identity identity, AccessControlContext context, QualifiedObjectName tableName)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_DROP_CONSTRAINT.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_DROP_CONSTRAINT.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(tableName, "tableName is null");
 
@@ -987,15 +859,12 @@ public class AccessControlManager
                 authorizationCheck(() -> entry.getAccessControl().checkCanDropConstraint(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(tableName.getCatalogName()), context, toSchemaTableName(tableName)));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
     public void checkCanAddConstraints(TransactionId transactionId, Identity identity, AccessControlContext context, QualifiedObjectName tableName)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_ADD_CONSTRAINTS.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.CHECK_CAN_ADD_CONSTRAINTS.getName(), skipSpan)) {
             requireNonNull(identity, "identity is null");
             requireNonNull(tableName, "tableName is null");
 
@@ -1008,20 +877,14 @@ public class AccessControlManager
                 authorizationCheck(() -> entry.getAccessControl().checkCanAddConstraint(entry.getTransactionHandle(transactionId), identity.toConnectorIdentity(tableName.getCatalogName()), context, toSchemaTableName(tableName)));
             }
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private CatalogAccessControlEntry getConnectorAccessControl(TransactionId transactionId, String catalogName)
     {
-        try (AutoCloseable ignored = scopedSpan("AccessControl." + TracingEnum.GET_CONNECTOR_ACCESS_CONTROL.getName(), skipSpan)) {
+        try (BaseSpan ignored = scopedSpan("AccessControl." + TracingEnum.GET_CONNECTOR_ACCESS_CONTROL.getName(), skipSpan)) {
             return transactionManager.getOptionalCatalogMetadata(transactionId, catalogName)
                     .map(metadata -> connectorAccessControl.get(metadata.getConnectorId()))
                     .orElse(null);
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
         }
     }
 
