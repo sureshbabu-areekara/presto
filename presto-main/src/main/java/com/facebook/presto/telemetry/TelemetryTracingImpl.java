@@ -22,15 +22,12 @@ import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import java.util.Optional;
 
-/*import static com.google.common.base.Preconditions.checkArgument;
-import static java.util.Objects.requireNonNull;*/
-
-public class OpenTelemetryTracing
-        implements TelemetryTracing
+public class TelemetryTracingImpl
+        implements TelemetryTracing<BaseSpan, BaseSpan>
 {
     public static final String NAME = "otel";
 
-    private static final OpenTelemetryTracing INSTANCE = new OpenTelemetryTracing();
+    private static final TelemetryTracingImpl INSTANCE = new TelemetryTracingImpl();
 
     public static class Factory
             implements TelemetryFactory
@@ -44,8 +41,6 @@ public class OpenTelemetryTracing
         @Override
         public TelemetryTracing create()
         {
-            //requireNonNull(config, "config is null");
-            //checkArgument(config.isEmpty(), "This access controller does not support any configuration properties");
             return INSTANCE;
         }
     }
@@ -69,45 +64,51 @@ public class OpenTelemetryTracing
     }
 
     @Override
-    public Map<String, String> getHeadersMap(Object span)
+    public Map<String, String> getHeadersMap(BaseSpan span)
     {
         return ImmutableMap.of();
     }
 
     @Override
-    public void endSpanOnError(Object querySpan, Throwable throwable)
+    public void endSpanOnError(BaseSpan querySpan, Throwable throwable)
     {
         return;
     }
 
     @Override
-    public void addEvent(Object span, String eventName)
+    public void addEvent(BaseSpan span, String eventName)
     {
         return;
     }
 
     @Override
-    public void addEvent(Object querySpan, String eventName, String eventState)
+    public void addEvent(BaseSpan querySpan, String eventName, String eventState)
     {
         return;
     }
 
     @Override
-    public void setAttributes(Object span, Map attributes)
+    public void setAttributes(BaseSpan span, Map attributes)
     {
         return;
     }
 
     @Override
-    public void recordException(Object querySpan, String message, RuntimeException runtimeException, ErrorCode errorCode)
+    public void recordException(BaseSpan querySpan, String message, RuntimeException runtimeException, ErrorCode errorCode)
     {
         return;
     }
 
     @Override
-    public void setSuccess(Object querySpan)
+    public void setSuccess(BaseSpan querySpan)
     {
         return;
+    }
+
+    @Override
+    public BaseSpan getInvalidSpan()
+    {
+        return null;
     }
 
     @Override
@@ -117,55 +118,55 @@ public class OpenTelemetryTracing
     }
 
     @Override
-    public Object getSpan(String spanName)
+    public BaseSpan getSpan(String spanName)
     {
         return null;
     }
 
     @Override
-    public Object getSpan(String traceParent, String spanName)
+    public BaseSpan getSpan(String traceParent, String spanName)
     {
         return null;
     }
 
     @Override
-    public Optional<String> spanString(Object span)
+    public Optional<String> spanString(BaseSpan span)
     {
         return Optional.empty();
     }
 
     @Override
-    public Object scopedSpan(String name, Boolean... skipSpan)
+    public BaseSpan scopedSpan(String name, Boolean... skipSpan)
     {
         return null;
     }
 
     @Override
-    public Object scopedSpan(Object span, Boolean... skipSpan)
+    public BaseSpan scopedSpan(BaseSpan span, Boolean... skipSpan)
     {
         return null;
     }
 
     @Override
-    public Object scopedSpan(Object parentSpan, String spanName, Boolean... skipSpan)
+    public BaseSpan scopedSpan(BaseSpan parentSpan, String spanName, Boolean... skipSpan)
     {
         return null;
     }
 
     @Override
-    public Object scopedSpan(String spanName, Map attributes, Boolean... skipSpan)
+    public BaseSpan scopedSpan(String spanName, Map attributes, Boolean... skipSpan)
     {
         return null;
     }
 
     @Override
-    public Object scopedSpan(Object parentSpan, String spanName, Map attributes, Boolean... skipSpan)
+    public BaseSpan scopedSpan(BaseSpan parentSpan, String spanName, Map attributes, Boolean... skipSpan)
     {
         return null;
     }
 
     @Override
-    public Object getSpan(Object parentSpan, String spanName, Map attributes)
+    public BaseSpan getSpan(BaseSpan parentSpan, String spanName, Map attributes)
     {
         return null;
     }

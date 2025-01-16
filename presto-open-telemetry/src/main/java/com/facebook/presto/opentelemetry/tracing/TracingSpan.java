@@ -41,11 +41,6 @@ public class TracingSpan
         return new TracingSpan(Span.current());
     }
 
-/*    public static TracingSpan fromContext(Context context)
-    {
-        return new TracingSpan(Span.fromContext(context));
-    }*/
-
     public TracingSpan setAttribute(String key, String value)
     {
         return new TracingSpan(span.setAttribute(key, value));

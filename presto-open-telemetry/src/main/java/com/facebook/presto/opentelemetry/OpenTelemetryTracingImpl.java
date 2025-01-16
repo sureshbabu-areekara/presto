@@ -52,23 +52,12 @@ import java.util.concurrent.TimeUnit;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Strings.nullToEmpty;
 
-public class OpenTelemetryImpl
+public class OpenTelemetryTracingImpl
         implements TelemetryTracing<TracingSpan, ScopedSpan>
 {
-    private static final Logger log = Logger.get(OpenTelemetryImpl.class);
+    private static final Logger log = Logger.get(OpenTelemetryTracingImpl.class);
     private static OpenTelemetry configuredOpenTelemetry;
     private static Tracer tracer = OpenTelemetry.noop().getTracer("no-op"); //default tracer
-
-    /**
-     * uniquely identify all OpenTelemetryFactory implementations. This property is checked against the one passed in
-     * telemetry.properties file during registration
-     * @return
-     */
-/*    @Override
-    public String getName()
-    {
-        return "otel";
-    }*/
 
     /**
      * called from PrestoServer for loading the properties after OpenTelemetryManager is bound and injected
@@ -142,38 +131,6 @@ public class OpenTelemetryImpl
 
         return openTelemetry;
     }
-
-/*    @Override
-    public Tracer getTracer()
-    {
-        return tracer;
-    }
-
-    @Override
-    public void setTracer(Tracer tracer)
-    {
-        this.tracer = tracer;
-    }
-
-    public OpenTelemetry getOpenTelemetry()
-    {
-        return this.configuredOpenTelemetry;
-    }
-
-    public static void setOpenTelemetry(OpenTelemetry configuredOpenTelemetry)
-    {
-        TracingManager.configuredOpenTelemetry = configuredOpenTelemetry;
-    }*/
-
-/*    public static Map<String, String> loadProperties(File file)
-            throws IOException
-    {
-        Properties properties = new Properties();
-        try (InputStream in = Files.newInputStream(file.toPath())) {
-            properties.load(in);
-        }
-        return fromProperties(properties);
-    }*/
 
     @Override
     public Runnable getCurrentContextWrap(Runnable runnable)
@@ -274,6 +231,12 @@ public class OpenTelemetryImpl
     }
 
     //GetSpans
+    @Override
+    public TracingSpan getInvalidSpan()
+    {
+        return new TracingSpan(Span.getInvalid());
+    }
+
     @Override
     public TracingSpan getRootSpan()
     {

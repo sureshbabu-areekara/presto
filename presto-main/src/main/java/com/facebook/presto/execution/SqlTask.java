@@ -96,19 +96,7 @@ public class SqlTask
     private final AtomicReference<TaskHolder> taskHolderReference = new AtomicReference<>(new TaskHolder());
     private final AtomicBoolean needsPlan = new AtomicBoolean(true);
     private final long creationTimeInMillis = System.currentTimeMillis();
-    private BaseSpan taskSpan = new BaseSpan() {
-        @Override
-        public void close()
-        {
-            BaseSpan.super.close();
-        }
-
-        @Override
-        public void end()
-        {
-            return;
-        }
-    }; //TracingSpan.getInvalid();
+    private BaseSpan taskSpan = TracingManager.getInvalidSpan();
 
     public static SqlTask createSqlTask(
             TaskId taskId,

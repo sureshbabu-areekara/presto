@@ -18,7 +18,7 @@ import com.facebook.presto.common.ErrorCode;
 import java.util.Map;
 import java.util.Optional;
 
-public interface TelemetryTracing<T, U>
+public interface TelemetryTracing<T extends BaseSpan, U extends BaseSpan>
 {
     void loadConfiguredOpenTelemetry();
 
@@ -39,6 +39,9 @@ public interface TelemetryTracing<T, U>
     void recordException(T querySpan, String message, RuntimeException runtimeException, ErrorCode errorCode);
 
     void setSuccess(T querySpan);
+
+    //GetSpans
+    T getInvalidSpan();
 
     //GetSpans
     T getRootSpan();

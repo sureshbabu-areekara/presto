@@ -48,7 +48,7 @@ public class TracingManager
     private static final String TRACING_FACTORY_NAME = "tracing-factory.name";
 
     private final Map<String, TelemetryFactory> openTelemetryFactories = new ConcurrentHashMap<>();
-    private static AtomicReference<TelemetryTracing> configuredTelemetryTracing = new AtomicReference<>(new OpenTelemetryTracing());
+    private static AtomicReference<TelemetryTracing> configuredTelemetryTracing = new AtomicReference<>(new TelemetryTracingImpl());
 
     public TracingManager()
     {
@@ -107,26 +107,6 @@ public class TracingManager
         }
     }
 
-/*    public static Tracer getTracer()
-    {
-        return tracer;
-    }
-
-    public static void setTracer(Tracer tracer)
-    {
-        TracingManager.tracer = tracer;
-    }
-
-    public OpenTelemetry getOpenTelemetry()
-    {
-        return this.configuredOpenTelemetry;
-    }
-
-    public static void setOpenTelemetry(OpenTelemetry configuredOpenTelemetry)
-    {
-        TracingManager.configuredOpenTelemetry = configuredOpenTelemetry;
-    }*/
-
     private static Map<String, String> loadProperties(File file)
             throws IOException
     {
@@ -141,28 +121,6 @@ public class TracingManager
     {
         return configuredTelemetryTracing.get().getCurrentContextWrap(runnable);
     }
-
-    /*private static Context getCurrentContext()
-    {
-        return Context.current();
-    }
-
-    private static Context getCurrentContextWith(TracingSpan tracingSpan)
-    {
-        return Context.current().with(tracingSpan.getSpan());
-    }
-
-    private static Context getContext(TracingSpan span)
-    {
-        return span != null ? getCurrentContextWith(span) : getCurrentContext();
-    }*/
-
-/*    private static Context getContext(String traceParent)
-    {
-        TextMapPropagator propagator = configuredOpenTelemetry.getPropagators().getTextMapPropagator();
-        Context context = propagator.extract(Context.current(), traceParent, new TextMapGetterImpl());
-        return context;
-    }*/
 
     public static boolean isRecording()
     {
@@ -205,24 +163,29 @@ public class TracingManager
     }
 
     //GetSpans
+    public static BaseSpan getInvalidSpan()
+    {
+        return configuredTelemetryTracing.get().getInvalidSpan();
+    }
+
     public static BaseSpan getRootSpan()
     {
-        return (BaseSpan) configuredTelemetryTracing.get().getRootSpan();
+        return configuredTelemetryTracing.get().getRootSpan();
     }
 
     public static BaseSpan getSpan(String spanName)
     {
-        return (BaseSpan) configuredTelemetryTracing.get().getSpan(spanName);
+        return configuredTelemetryTracing.get().getSpan(spanName);
     }
 
     public static BaseSpan getSpan(String traceParent, String spanName)
     {
-        return (BaseSpan) configuredTelemetryTracing.get().getSpan(traceParent, spanName);
+        return configuredTelemetryTracing.get().getSpan(traceParent, spanName);
     }
 
     public static BaseSpan getSpan(BaseSpan parentSpan, String spanName, Map<String, String> attributes)
     {
-        return (BaseSpan) configuredTelemetryTracing.get().getSpan(parentSpan, spanName, attributes);
+        return configuredTelemetryTracing.get().getSpan(parentSpan, spanName, attributes);
     }
 
     public static Optional<String> spanString(BaseSpan span)
@@ -239,7 +202,7 @@ public class TracingManager
      */
     public static BaseSpan scopedSpan(String name, Boolean... skipSpan)
     {
-        return (BaseSpan) configuredTelemetryTracing.get().scopedSpan(name, skipSpan);
+        return configuredTelemetryTracing.get().scopedSpan(name, skipSpan);
     }
 
     /**
@@ -251,21 +214,21 @@ public class TracingManager
      */
     public static BaseSpan scopedSpan(BaseSpan span, Boolean... skipSpan)
     {
-        return (BaseSpan) configuredTelemetryTracing.get().scopedSpan(span, skipSpan);
+        return configuredTelemetryTracing.get().scopedSpan(span, skipSpan);
     }
 
     public static BaseSpan scopedSpan(BaseSpan parentSpan, String spanName, Map<String, String> attributes, Boolean... skipSpan)
     {
-        return (BaseSpan) configuredTelemetryTracing.get().scopedSpan(parentSpan, spanName, attributes, skipSpan);
+        return configuredTelemetryTracing.get().scopedSpan(parentSpan, spanName, attributes, skipSpan);
     }
 
     public static BaseSpan scopedSpan(BaseSpan parentSpan, String spanName, Boolean... skipSpan)
     {
-        return (BaseSpan) configuredTelemetryTracing.get().scopedSpan(parentSpan, spanName, skipSpan);
+        return configuredTelemetryTracing.get().scopedSpan(parentSpan, spanName, skipSpan);
     }
 
     public static BaseSpan scopedSpan(String spanName, Map<String, String> attributes, Boolean... skipSpan)
     {
-        return (BaseSpan) configuredTelemetryTracing.get().scopedSpan(spanName, attributes, skipSpan);
+        return configuredTelemetryTracing.get().scopedSpan(spanName, attributes, skipSpan);
     }
 }

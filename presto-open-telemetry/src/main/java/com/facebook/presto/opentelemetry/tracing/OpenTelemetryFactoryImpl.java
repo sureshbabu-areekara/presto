@@ -14,7 +14,7 @@
  */
 package com.facebook.presto.opentelemetry.tracing;
 
-import com.facebook.presto.opentelemetry.OpenTelemetryImpl;
+import com.facebook.presto.opentelemetry.OpenTelemetryTracingImpl;
 import com.facebook.presto.spi.telemetry.TelemetryFactory;
 
 public class OpenTelemetryFactoryImpl
@@ -34,11 +34,11 @@ public class OpenTelemetryFactoryImpl
     /**
      * Create OpentelemetryImpl instance
      *
-     * @return {@link OpenTelemetryImpl}
+     * @return {@link OpenTelemetryTracingImpl}
      */
     @Override
-    public OpenTelemetryImpl create()
+    public OpenTelemetryTracingImpl create()
     {
-        return new OpenTelemetryImpl();
+        return new OpenTelemetryTracingImpl();
     }
 }

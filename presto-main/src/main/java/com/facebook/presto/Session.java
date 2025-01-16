@@ -563,8 +563,8 @@ public final class Session
     public static class SessionBuilder
     {
         private QueryId queryId;
-        private BaseSpan querySpan; //TracingSpan.getInvalid();     //do not initialize with null
-        private BaseSpan rootSpan; //TracingSpan.getInvalid();      //do not initialize with null
+        private BaseSpan querySpan = TracingManager.getInvalidSpan(); //do not initialize with null
+        private BaseSpan rootSpan = TracingManager.getInvalidSpan();  //do not initialize with null
         private TransactionId transactionId;
         private boolean clientTransactionSupport;
         private Identity identity;

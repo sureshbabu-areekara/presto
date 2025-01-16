@@ -13,7 +13,7 @@
  */
 package com.facebook.presto.opentelemetry;
 
-/*import com.facebook.presto.common.TelemetryConfig;
+import com.facebook.presto.common.TelemetryConfig;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import org.testng.annotations.BeforeMethod;
@@ -25,20 +25,18 @@ import java.util.Map;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;*/
+import static org.testng.Assert.assertTrue;
 
-public class TestOpenTelemetryImpl
+public class TestOpenTelemetryTracingImpl
 {
-/*    private OpenTelemetryImpl openTelemetryImpl;
+    private OpenTelemetryTracingImpl openTelemetryTracingImpl;
     Map<String, String> properties = new HashMap<>();
 
     @BeforeMethod
     public void setUp() throws Exception
     {
-        properties.put("span-exporter.name", "otlpgrpc");
-        properties.put("span-processor.name", "batch");
         properties.put("tracing-enabled", "true");
-        properties.put("exporter-endpoint", "http://localhost:4317");
+        properties.put("tracing-backend-url", "http://localhost:4317");
         properties.put("max-exporter-batch-size", "256");
         properties.put("max-queue-size", "1024");
         properties.put("exporter-timeout", "5000");
@@ -46,21 +44,21 @@ public class TestOpenTelemetryImpl
         properties.put("trace-sampling-ratio", "1.0");
         properties.put("span-sampling", "true");
 
-        openTelemetryImpl = new OpenTelemetryImpl();
+        openTelemetryTracingImpl = new OpenTelemetryTracingImpl();
         resetTelemetryConfigSingleton();
     }
 
-    @Test
+/*    @Test
     public void testGetName()
     {
-        assertEquals(openTelemetryImpl.getName(), "otel");
-    }
+        assertEquals(openTelemetryTracingImpl.getName(), "otel");
+    }*/
 
     @Test
     public void testCreateWithTracingEnabled()
     {
         TelemetryConfig.getTelemetryConfig().setTelemetryProperties(properties);
-        OpenTelemetry openTelemetry = openTelemetryImpl.create();
+        OpenTelemetry openTelemetry = openTelemetryTracingImpl.createOpenTelemetry();
 
         assertNotNull(openTelemetry);
         assertTrue(openTelemetry instanceof OpenTelemetrySdk, "sdk instance");
@@ -72,7 +70,7 @@ public class TestOpenTelemetryImpl
         properties.put("tracing-enabled", "false");
 
         TelemetryConfig.getTelemetryConfig().setTelemetryProperties(properties);
-        OpenTelemetry openTelemetry = openTelemetryImpl.create();
+        OpenTelemetry openTelemetry = openTelemetryTracingImpl.createOpenTelemetry();
 
         assertNotNull(openTelemetry);
         assertEquals(openTelemetry, OpenTelemetry.noop(), "no-op instance");
@@ -83,5 +81,5 @@ public class TestOpenTelemetryImpl
         Field instanceField = TelemetryConfig.class.getDeclaredField("telemetryConfig");
         instanceField.setAccessible(true);
         instanceField.set(null, null);
-    }*/
+    }
 }
