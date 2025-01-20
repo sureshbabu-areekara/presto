@@ -11,21 +11,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.facebook.presto.opentelemetry.tracing;
+package com.facebook.presto.spi.testing;
 
-/*import com.facebook.presto.common.TelemetryConfig;
-import org.testng.annotations.Test;
+import java.util.List;
 
-import static org.testng.Assert.assertNotNull;*/
-
-public class TestScopedSpan
+public interface TestingTelemetryTracing
 {
-/*    @Test
-    public void testScopedSpan()
-    {
-        assertNotNull(ScopedSpan.scopedSpan("no-op"));
+    void loadConfiguredOpenTelemetry();
 
-        TelemetryConfig.getTelemetryConfig().setTracingEnabled(true);
-        assertNotNull(ScopedSpan.scopedSpan("no-op"));
-    }*/
+    List<?> getFinishedSpanItems();
+
+    boolean isSpansEmpty();
+
+    boolean spansAnyMatch(String spanName);
+
+    void clearSpanList();
+
+    //OpenTelemetry getOpenTelemetry();
 }

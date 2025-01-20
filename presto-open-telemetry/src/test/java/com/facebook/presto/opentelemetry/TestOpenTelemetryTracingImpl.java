@@ -48,12 +48,6 @@ public class TestOpenTelemetryTracingImpl
         resetTelemetryConfigSingleton();
     }
 
-/*    @Test
-    public void testGetName()
-    {
-        assertEquals(openTelemetryTracingImpl.getName(), "otel");
-    }*/
-
     @Test
     public void testCreateWithTracingEnabled()
     {

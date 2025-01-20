@@ -32,11 +32,11 @@ import com.facebook.presto.operator.TaskContext;
 import com.facebook.presto.operator.TaskMemoryReservationSummary;
 import com.facebook.presto.spi.QueryId;
 import com.facebook.presto.spi.memory.MemoryPoolId;
-import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.facebook.presto.spiller.SpillSpaceTracker;
 import com.facebook.presto.sql.analyzer.FeaturesConfig;
 import com.facebook.presto.sql.gen.OrderingCompiler;
 import com.facebook.presto.sql.planner.LocalExecutionPlanner;
+import com.facebook.presto.telemetry.TracingManager;
 import com.google.common.base.Functions;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
@@ -130,13 +130,7 @@ public class TestHighMemoryTaskKiller
                 createInitialEmptyOutputBuffers(PARTITIONED)
                         .withNoMoreBufferIds(),
                 Optional.of(new TableWriteInfo(Optional.empty(), Optional.empty(), Optional.empty())),
-                new BaseSpan() {
-                    @Override
-                    public void end()
-                    {
-                        BaseSpan.super.close();
-                    }
-                });
+                TracingManager.getRootSpan());
         assertEquals(taskInfo.getTaskStatus().getState(), TaskState.RUNNING);
 
         TaskContext taskContext = sqlTask.getTaskContext().get();

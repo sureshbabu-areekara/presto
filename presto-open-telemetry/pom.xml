@@ -70,10 +70,10 @@
             <artifactId>opentelemetry-sdk-trace</artifactId>
         </dependency>
 
-<!--        <dependency>
+        <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-sdk-testing</artifactId>
-        </dependency>-->
+        </dependency>
 
         <!-- Presto SPI -->
         <dependency>

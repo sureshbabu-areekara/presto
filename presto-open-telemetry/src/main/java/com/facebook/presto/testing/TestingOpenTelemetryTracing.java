@@ -12,8 +12,10 @@
  * limitations under the License.
  */
 package com.facebook.presto.testing;
-/*import com.facebook.presto.common.TelemetryConfig;
-import com.facebook.presto.telemetry.TracingManager;
+
+import com.facebook.presto.common.TelemetryConfig;
+import com.facebook.presto.opentelemetry.OpenTelemetryTracingImpl;
+import com.facebook.presto.spi.testing.TestingTelemetryTracing;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.baggage.propagation.W3CBaggagePropagator;
 import io.opentelemetry.api.common.AttributeKey;
@@ -29,18 +31,19 @@ import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 
-import java.util.List;*/
+import java.util.List;
 
-public class TestingOpenTelemetryTracingManager
-        /*extends TracingManager*/
+public class TestingOpenTelemetryTracing
+        extends OpenTelemetryTracingImpl implements TestingTelemetryTracing
 {
-    /*private static OpenTelemetry openTelemetry = OpenTelemetry.noop();
+    private static OpenTelemetry openTelemetry = OpenTelemetry.noop();
 
     private static Tracer tracer = openTelemetry.getTracer("no-op");
 
     private static InMemorySpanExporter inMemorySpanExporter;
 
-    public void createInstances()
+    @Override
+    public void loadConfiguredOpenTelemetry()
     {
         inMemorySpanExporter = InMemorySpanExporter.create();
 
@@ -55,47 +58,35 @@ public class TestingOpenTelemetryTracingManager
                 .setPropagators(ContextPropagators.create(
                         TextMapPropagator.composite(W3CTraceContextPropagator.getInstance(), W3CBaggagePropagator.getInstance())))
                 .build();
-        TracingManager.setOpenTelemetry(openTelemetry);
 
         if (TelemetryConfig.getTracingEnabled()) {
             tracer = openTelemetry.getTracer("sdk in mem tracer");
-            TracingManager.setTracer(tracer);
+            OpenTelemetryTracingImpl.setOpenTelemetry(openTelemetry);
+            OpenTelemetryTracingImpl.setTracer(tracer);
         }
     }
 
+    @Override
     public List<SpanData> getFinishedSpanItems()
     {
         return inMemorySpanExporter.getFinishedSpanItems();
     }
 
+    @Override
     public boolean isSpansEmpty()
     {
         return getFinishedSpanItems().isEmpty();
     }
 
+    @Override
     public boolean spansAnyMatch(String spanName)
     {
         return getFinishedSpanItems().stream().anyMatch(sn -> spanName.equals(sn.getName()));
     }
 
+    @Override
     public void clearSpanList()
     {
         inMemorySpanExporter.reset();
     }
-
-    @Override
-    public OpenTelemetry getOpenTelemetry()
-    {
-        return openTelemetry;
-    }
-
-    public static Tracer getTracer()
-    {
-        return tracer;
-    }
-
-    public static void setTracer(Tracer tracer)
-    {
-        TestingOpenTelemetryTracingManager.tracer = tracer;
-    }*/
 }

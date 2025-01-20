@@ -14,11 +14,13 @@
 package com.facebook.presto.tests;
 
 import com.facebook.presto.Session;
+import com.facebook.presto.common.TelemetryConfig;
 import com.facebook.presto.connector.MockConnectorFactory;
 import com.facebook.presto.dispatcher.DispatchManager;
 import com.facebook.presto.execution.TestingSessionContext;
 import com.facebook.presto.metadata.MetadataManager;
 import com.facebook.presto.server.BasicQueryInfo;
+import com.facebook.presto.server.testing.TestingPrestoServer;
 import com.facebook.presto.spi.ConnectorId;
 import com.facebook.presto.spi.ConnectorTableHandle;
 import com.facebook.presto.spi.Plugin;
@@ -26,7 +28,8 @@ import com.facebook.presto.spi.QueryId;
 import com.facebook.presto.spi.TableHandle;
 import com.facebook.presto.spi.connector.ConnectorFactory;
 import com.facebook.presto.spi.statistics.TableStatistics;
-import com.facebook.presto.testing.TestingOpenTelemetryTracingManager;
+import com.facebook.presto.sql.parser.SqlParserOptions;
+import com.facebook.presto.testing.TestingTracingManager;
 import com.facebook.presto.testing.TestingTransactionHandle;
 import com.facebook.presto.tests.tpch.TpchQueryRunnerBuilder;
 import com.facebook.presto.transaction.TransactionBuilder;
@@ -35,9 +38,12 @@ import com.google.common.collect.ImmutableMap;
 import org.intellij.lang.annotations.Language;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.facebook.presto.SessionTestUtils.TEST_SESSION;
@@ -47,6 +53,8 @@ import static com.facebook.presto.execution.QueryState.RUNNING;
 import static com.facebook.presto.spi.Constraint.alwaysTrue;
 import static com.facebook.presto.testing.TestingSession.testSessionBuilder;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 /**
@@ -60,7 +68,7 @@ public class TestMetadataManager
 {
     private DistributedQueryRunner queryRunner;
     private MetadataManager metadataManager;
-    private static TestingOpenTelemetryTracingManager testingTelemetryManager;
+    private TestingTracingManager testingTracingManager;
 
     @BeforeClass
     public void setUp()
@@ -98,6 +106,30 @@ public class TestMetadataManager
         queryRunner.close();
         queryRunner = null;
         metadataManager = null;
+    }
+
+    @BeforeMethod
+    public void setup() throws Exception
+    {
+        Map<String, String> properties = new HashMap<>();
+        properties.put("tracing-enabled", "true");
+        properties.put("tracing-backend-url", "http://localhost:4317");
+        properties.put("max-exporter-batch-size", "256");
+        properties.put("max-queue-size", "1024");
+        properties.put("exporter-timeout", "5000");
+        properties.put("schedule-delay", "1000");
+        properties.put("trace-sampling-ratio", "1.0");
+        properties.put("span-sampling", "true");
+        TelemetryConfig.getTelemetryConfig().setTelemetryProperties(properties);
+
+        TestingPrestoServer testingPrestoServer = new TestingPrestoServer(
+                ImmutableMap.<String, String>builder()
+                        .put("plugin.bundles", "../presto-open-telemetry/pom.xml")
+                        .build(), new SqlParserOptions());
+        testingPrestoServer.getPluginManager().loadPlugins();
+
+        testingTracingManager = testingPrestoServer.getTestingTracingManager();
+        testingTracingManager.loadConfiguredOpenTelemetry();
     }
 
     @Test
@@ -204,14 +236,12 @@ public class TestMetadataManager
                         });
     }
 
-    /*@Test
+    @Test
     public void testMetadataGetCatalogsByQueryIdTraceEnabledWithSampling() throws InterruptedException
     {
         //With sampling
         TelemetryConfig.getTelemetryConfig().setTracingEnabled(true);
         TelemetryConfig.getTelemetryConfig().setSpanSampling(true);
-        TestingOpenTelemetryTracingManager testingTelemetryManager = new TestingOpenTelemetryTracingManager();
-        testingTelemetryManager.createInstances();
 
         @Language("SQL") String sql = "SELECT * FROM nation";
         queryRunner.execute(sql);
@@ -219,13 +249,12 @@ public class TestMetadataManager
 
         Thread.sleep(5000);
 
-        List<SpanData> spans = testingTelemetryManager.getFinishedSpanItems();
-        assertTrue(!spans.isEmpty());
-        assertTrue(spans.stream().anyMatch(s -> "query".equals(s.getName())));
-        assertTrue(spans.stream().anyMatch(s -> "dispatch".equals(s.getName())));
-        assertFalse(spans.stream().anyMatch(s -> "getCatalogsByQueryId".equals(s.getName())));
+        assertFalse(testingTracingManager.isSpansEmpty());
+        assertTrue(testingTracingManager.spansAnyMatch("query"));
+        assertTrue(testingTracingManager.spansAnyMatch("dispatch"));
+        assertFalse(testingTracingManager.spansAnyMatch("getCatalogsByQueryId"));
 
-        testingTelemetryManager.clearSpanList();
+        testingTracingManager.clearSpanList();
     }
 
     @Test
@@ -234,8 +263,6 @@ public class TestMetadataManager
         //Without sampling
         TelemetryConfig.getTelemetryConfig().setTracingEnabled(true);
         TelemetryConfig.getTelemetryConfig().setSpanSampling(false);
-        TestingOpenTelemetryTracingManager testingTelemetryManager = new TestingOpenTelemetryTracingManager();
-        testingTelemetryManager.createInstances();
 
         @Language("SQL") String sql = "SELECT * FROM nation";
         queryRunner.execute(sql);
@@ -243,15 +270,12 @@ public class TestMetadataManager
 
         Thread.sleep(5000);
 
-        List<SpanData> spans = testingTelemetryManager.getFinishedSpanItems();
-//        spans.forEach(spanData -> System.out.println(spanData.getName()));
+        assertFalse(testingTracingManager.isSpansEmpty());
+        assertTrue(testingTracingManager.spansAnyMatch("query"));
+        assertTrue(testingTracingManager.spansAnyMatch("dispatch"));
+        assertTrue(testingTracingManager.spansAnyMatch("getCatalogsByQueryId"));
 
-        assertTrue(!spans.isEmpty());
-        assertTrue(spans.stream().anyMatch(s -> "query".equals(s.getName())));
-        assertTrue(spans.stream().anyMatch(s -> "dispatch".equals(s.getName())));
-        assertTrue(spans.stream().anyMatch(s -> "getCatalogsByQueryId".equals(s.getName())));
-
-        testingTelemetryManager.clearSpanList();
+        testingTracingManager.clearSpanList();
     }
 
     @Test
@@ -259,8 +283,6 @@ public class TestMetadataManager
     {
         TelemetryConfig.getTelemetryConfig().setTracingEnabled(false);
         TelemetryConfig.getTelemetryConfig().setSpanSampling(false);
-        TestingOpenTelemetryTracingManager testingTelemetryManager = new TestingOpenTelemetryTracingManager();
-        testingTelemetryManager.createInstances();
 
         @Language("SQL") String sql = "SELECT * FROM nation";
         queryRunner.execute(sql);
@@ -268,10 +290,9 @@ public class TestMetadataManager
 
         Thread.sleep(5000);
 
-        List<SpanData> spans = testingTelemetryManager.getFinishedSpanItems();
-        assertEquals(spans.size(), 0);
+        assertTrue(testingTracingManager.isSpansEmpty());
 
-        testingTelemetryManager.clearSpanList();
+        testingTracingManager.clearSpanList();
     }
 
     @Test
@@ -279,8 +300,6 @@ public class TestMetadataManager
     {
         TelemetryConfig.getTelemetryConfig().setTracingEnabled(true);
         TelemetryConfig.getTelemetryConfig().setSpanSampling(true);
-        TestingOpenTelemetryTracingManager testingTelemetryManager = new TestingOpenTelemetryTracingManager();
-        testingTelemetryManager.createInstances();
 
         @Language("SQL") String sql = "SELECT * FROM dummy";
         try {
@@ -293,11 +312,10 @@ public class TestMetadataManager
 
         Thread.sleep(5000);
 
-        List<SpanData> spans = testingTelemetryManager.getFinishedSpanItems();
-        assertTrue(!spans.isEmpty());
-        assertTrue(spans.stream().anyMatch(s -> "query".equals(s.getName())));
-        assertTrue(spans.stream().anyMatch(s -> "dispatch".equals(s.getName())));
+        assertFalse(testingTracingManager.isSpansEmpty());
+        assertTrue(testingTracingManager.spansAnyMatch("query"));
+        assertTrue(testingTracingManager.spansAnyMatch("dispatch"));
 
-        testingTelemetryManager.clearSpanList();
-    }*/
+        testingTracingManager.clearSpanList();
+    }
 }

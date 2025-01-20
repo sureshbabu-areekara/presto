@@ -18,12 +18,14 @@ import com.facebook.presto.common.CatalogSchemaName;
 import com.facebook.presto.common.QualifiedObjectName;
 import com.facebook.presto.common.RuntimeStats;
 import com.facebook.presto.common.Subfield;
+import com.facebook.presto.common.TelemetryConfig;
 import com.facebook.presto.connector.informationSchema.InformationSchemaConnector;
 import com.facebook.presto.connector.system.SystemConnector;
 import com.facebook.presto.metadata.Catalog;
 import com.facebook.presto.metadata.CatalogManager;
 import com.facebook.presto.metadata.InMemoryNodeManager;
 import com.facebook.presto.metadata.MetadataManager;
+import com.facebook.presto.server.testing.TestingPrestoServer;
 import com.facebook.presto.spi.CatalogSchemaTableName;
 import com.facebook.presto.spi.ConnectorId;
 import com.facebook.presto.spi.PrestoException;
@@ -42,16 +44,20 @@ import com.facebook.presto.spi.security.PrestoPrincipal;
 import com.facebook.presto.spi.security.Privilege;
 import com.facebook.presto.spi.security.SystemAccessControl;
 import com.facebook.presto.spi.security.SystemAccessControlFactory;
+import com.facebook.presto.sql.parser.SqlParserOptions;
 import com.facebook.presto.testing.TestingConnectorContext;
+import com.facebook.presto.testing.TestingTracingManager;
 import com.facebook.presto.tpch.TpchConnectorFactory;
 import com.facebook.presto.transaction.TransactionManager;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.security.Principal;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -66,7 +72,9 @@ import static com.facebook.presto.transaction.TransactionBuilder.transaction;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.util.Objects.requireNonNull;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertThrows;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class TestAccessControlManager
@@ -75,6 +83,31 @@ public class TestAccessControlManager
     private static final String USER_NAME = "user_name";
     private static final String QUERY_TOKEN_FIELD = "query_token";
     private static final String QUERY_ID = "query_id";
+    private TestingTracingManager testingTracingManager;
+
+    @BeforeMethod
+    public void setup() throws Exception
+    {
+        Map<String, String> properties = new HashMap<>();
+        properties.put("tracing-enabled", "true");
+        properties.put("tracing-backend-url", "http://localhost:4317");
+        properties.put("max-exporter-batch-size", "256");
+        properties.put("max-queue-size", "1024");
+        properties.put("exporter-timeout", "5000");
+        properties.put("schedule-delay", "1000");
+        properties.put("trace-sampling-ratio", "1.0");
+        properties.put("span-sampling", "true");
+        TelemetryConfig.getTelemetryConfig().setTelemetryProperties(properties);
+
+        TestingPrestoServer testingPrestoServer = new TestingPrestoServer(
+                ImmutableMap.<String, String>builder()
+                        .put("plugin.bundles", "../presto-open-telemetry/pom.xml")
+                        .build(), new SqlParserOptions());
+        testingPrestoServer.getPluginManager().loadPlugins();
+
+        testingTracingManager = testingPrestoServer.getTestingTracingManager();
+        testingTracingManager.loadConfiguredOpenTelemetry();
+    }
 
     @Test(expectedExceptions = PrestoException.class, expectedExceptionsMessageRegExp = "Presto server is still initializing")
     public void testInitializing()
@@ -138,13 +171,11 @@ public class TestAccessControlManager
         }
     }
 
-    /*@Test
+    @Test
     public void testSetSystemAccessControlTracingEnabled() throws InterruptedException
     {
         TelemetryConfig.getTelemetryConfig().setTracingEnabled(true);
         TelemetryConfig.getTelemetryConfig().setSpanSampling(false);
-        TestingOpenTelemetryTracingManager testingTelemetryManager = new TestingOpenTelemetryTracingManager();
-        testingTelemetryManager.createInstances();
 
         AccessControlManager accessControlManager = new AccessControlManager(createTestTransactionManager());
 
@@ -153,17 +184,15 @@ public class TestAccessControlManager
         accessControlManager.setSystemAccessControl("test", ImmutableMap.of());
 
         Thread.sleep(5000);
-        assertTrue(!testingTelemetryManager.isSpansEmpty());
-        assertTrue(testingTelemetryManager.spansAnyMatch("AccessControl.setSystemAccessControl"));
+        assertFalse(testingTracingManager.isSpansEmpty());
+        assertTrue(testingTracingManager.spansAnyMatch("AccessControl.setSystemAccessControl"));
 
-        testingTelemetryManager.clearSpanList();
+        testingTracingManager.clearSpanList();
     }
 
     @Test
     public void testSetSystemAccessControlTracingDisabled() throws InterruptedException
     {
-        TestingOpenTelemetryTracingManager testingTelemetryManager = new TestingOpenTelemetryTracingManager();
-        testingTelemetryManager.createInstances();
         TelemetryConfig.getTelemetryConfig().setTracingEnabled(false);
 
         AccessControlManager accessControlManager = new AccessControlManager(createTestTransactionManager());
@@ -173,10 +202,10 @@ public class TestAccessControlManager
         accessControlManager.setSystemAccessControl("test", ImmutableMap.of());
 
         Thread.sleep(5000);
-        assertTrue(testingTelemetryManager.isSpansEmpty());
+        assertTrue(testingTracingManager.isSpansEmpty());
 
-        testingTelemetryManager.clearSpanList();
-    }*/
+        testingTracingManager.clearSpanList();
+    }
 
     @Test
     public void testSetAccessControl()

@@ -35,11 +35,11 @@ import com.facebook.presto.operator.ExchangeClientSupplier;
 import com.facebook.presto.operator.NoOpFragmentResultCacheManager;
 import com.facebook.presto.operator.TaskMemoryReservationSummary;
 import com.facebook.presto.spi.QueryId;
-import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.facebook.presto.spiller.LocalSpillManager;
 import com.facebook.presto.spiller.NodeSpillConfig;
 import com.facebook.presto.sql.analyzer.FeaturesConfig;
 import com.facebook.presto.sql.gen.OrderingCompiler;
+import com.facebook.presto.telemetry.TracingManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
@@ -353,13 +353,7 @@ public class TestSqlTaskManager
                 ImmutableList.of(new TaskSource(TABLE_SCAN_NODE_ID, splits, true)),
                 outputBuffers,
                 Optional.of(new TableWriteInfo(Optional.empty(), Optional.empty(), Optional.empty())),
-                new BaseSpan() {
-                    @Override
-                    public void end()
-                    {
-                        BaseSpan.super.close();
-                    }
-                });
+                TracingManager.getRootSpan());
     }
 
     private TaskInfo createTask(SqlTaskManager sqlTaskManager, TaskId taskId, OutputBuffers outputBuffers)
@@ -381,13 +375,7 @@ public class TestSqlTaskManager
                 ImmutableList.of(),
                 outputBuffers,
                 Optional.of(new TableWriteInfo(Optional.empty(), Optional.empty(), Optional.empty())),
-                new BaseSpan() {
-                    @Override
-                    public void end()
-                    {
-                        BaseSpan.super.close();
-                    }
-                });
+                TracingManager.getRootSpan());
     }
 
     public static class MockExchangeClientSupplier

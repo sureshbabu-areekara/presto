@@ -16,6 +16,7 @@ package com.facebook.presto.plugin.opentelemetry;
 import com.facebook.presto.opentelemetry.tracing.OpenTelemetryFactoryImpl;
 import com.facebook.presto.spi.Plugin;
 import com.facebook.presto.spi.telemetry.TelemetryFactory;
+import com.facebook.presto.testing.TestingOpenTelemetryFactoryImpl;
 import com.google.common.collect.ImmutableList;
 
 public class OpenTelemetryPlugin
@@ -24,6 +25,6 @@ public class OpenTelemetryPlugin
     @Override
     public Iterable<TelemetryFactory> getTelemetryFactories()
     {
-        return ImmutableList.of(new OpenTelemetryFactoryImpl());
+        return ImmutableList.of(new OpenTelemetryFactoryImpl(), new TestingOpenTelemetryFactoryImpl());
     }
 }
