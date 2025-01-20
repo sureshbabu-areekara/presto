@@ -99,7 +99,7 @@ public class TracingManager
 
             TelemetryFactory openTelemetryFactory = openTelemetryFactories.get(openTelemetryFactoryName);
             checkState(openTelemetryFactory != null, "Opentelemetry factory %s is not registered", openTelemetryFactoryName);
-            this.configuredTelemetryTracing.set(openTelemetryFactory.create());
+            this.configuredTelemetryTracing.set((TelemetryTracing) openTelemetryFactory.create());
 
             log.debug("setting telemetry properties");
             TelemetryConfig.getTelemetryConfig().setTelemetryProperties(properties);
@@ -115,6 +115,11 @@ public class TracingManager
             properties.load(in);
         }
         return fromProperties(properties);
+    }
+
+    public static void setConfiguredTelemetryTracing(TelemetryTracing telemetryTracing)
+    {
+        TracingManager.configuredTelemetryTracing.set(telemetryTracing);
     }
 
     public static Runnable getCurrentContextWrap(Runnable runnable)

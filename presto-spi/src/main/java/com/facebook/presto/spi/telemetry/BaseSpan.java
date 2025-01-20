@@ -17,10 +17,13 @@ public interface BaseSpan
         extends AutoCloseable
 {
     @Override
-    public default void close()
+    default void close()
     {
         return;
     }
 
-    void end();
+    default void end()
+    {
+        return;
+    }
 }

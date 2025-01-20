@@ -13,9 +13,9 @@
  */
 package com.facebook.presto.spi.telemetry;
 
-public interface TelemetryFactory
+public interface TelemetryFactory<T>
 {
     String getName();
 
-    TelemetryTracing create();
+    T create();
 }

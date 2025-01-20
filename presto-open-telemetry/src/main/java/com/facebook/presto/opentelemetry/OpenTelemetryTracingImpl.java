@@ -132,6 +132,16 @@ public class OpenTelemetryTracingImpl
         return openTelemetry;
     }
 
+    public static void setOpenTelemetry(OpenTelemetry configuredOpenTelemetry)
+    {
+        OpenTelemetryTracingImpl.configuredOpenTelemetry = configuredOpenTelemetry;
+    }
+
+    public static void setTracer(Tracer tracer)
+    {
+        OpenTelemetryTracingImpl.tracer = tracer;
+    }
+
     @Override
     public Runnable getCurrentContextWrap(Runnable runnable)
     {
@@ -254,7 +264,7 @@ public class OpenTelemetryTracingImpl
     @Override
     public TracingSpan getSpan(String traceParent, String spanName)
     {
-        TracingSpan span = !TelemetryConfig.getTracingEnabled() && traceParent != null ? null : new TracingSpan(tracer.spanBuilder(spanName)
+        TracingSpan span = !TelemetryConfig.getTracingEnabled() || traceParent == null ? null : new TracingSpan(tracer.spanBuilder(spanName)
                 .setParent(getContext(traceParent))
                 .startSpan());
         //context.makeCurrent();

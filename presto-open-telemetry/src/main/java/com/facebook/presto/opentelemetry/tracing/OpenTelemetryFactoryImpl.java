@@ -16,9 +16,10 @@ package com.facebook.presto.opentelemetry.tracing;
 
 import com.facebook.presto.opentelemetry.OpenTelemetryTracingImpl;
 import com.facebook.presto.spi.telemetry.TelemetryFactory;
+import com.facebook.presto.spi.telemetry.TelemetryTracing;
 
 public class OpenTelemetryFactoryImpl
-        implements TelemetryFactory
+        implements TelemetryFactory<TelemetryTracing<TracingSpan, ScopedSpan>>
 {
     /**
      * uniquely identify all OpenTelemetryFactory implementations. This property is checked against the one passed in
