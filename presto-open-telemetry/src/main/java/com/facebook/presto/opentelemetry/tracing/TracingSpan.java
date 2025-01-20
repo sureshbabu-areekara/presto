@@ -31,29 +31,9 @@ public class TracingSpan
         return span;
     }
 
-    public static TracingSpan getInvalid()
+    public void setAttribute(String key, String value)
     {
-        return new TracingSpan(Span.getInvalid());
-    }
-
-    public static TracingSpan current()
-    {
-        return new TracingSpan(Span.current());
-    }
-
-    public TracingSpan setAttribute(String key, String value)
-    {
-        return new TracingSpan(span.setAttribute(key, value));
-    }
-
-    public TracingSpan setAttribute(String key, long value)
-    {
-        return new TracingSpan(span.setAttribute(key, value));
-    }
-
-    public boolean isRecording()
-    {
-        return span.isRecording();
+        span.setAttribute(key, value);
     }
 
     @Override

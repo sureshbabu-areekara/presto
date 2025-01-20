@@ -33,7 +33,7 @@ public class TestingOpenTelemetryFactoryImpl
     }
 
     /**
-     * Create OpentelemetryImpl instance
+     * Create OpenTelemetryImpl instance
      *
      * @return {@link OpenTelemetryTracingImpl}
      */

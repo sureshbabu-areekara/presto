@@ -61,13 +61,12 @@ public class OpenTelemetryTracingImpl
 
     /**
      * called from PrestoServer for loading the properties after OpenTelemetryManager is bound and injected
-     * @throws Exception
      */
     @Override
     public void loadConfiguredOpenTelemetry()
     {
         log.debug("creating opentelemetry instance");
-        this.configuredOpenTelemetry = createOpenTelemetry();
+        configuredOpenTelemetry = createOpenTelemetry();
 
         log.debug("creating telemetry tracer");
         createTracer();
@@ -315,7 +314,7 @@ public class OpenTelemetryTracingImpl
 
     /**
      * creates a ScopedSpan with the current span. This method is used when we manually create spans in the classes and
-     * set attributes to them before passing to the Scopedspan.
+     * set attributes to them before passing to the ScopedSpan.
      * @param span created span instance
      * @param skipSpan optional parameter to implement span sampling by skipping the current span export
      * @return
