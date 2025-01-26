@@ -36,7 +36,6 @@ import com.facebook.presto.spi.page.SerializedPage;
 import com.facebook.presto.spiller.SpillSpaceTracker;
 import com.facebook.presto.sql.analyzer.FeaturesConfig;
 import com.facebook.presto.sql.gen.OrderingCompiler;
-import com.facebook.presto.sql.parser.SqlParserOptions;
 import com.facebook.presto.sql.planner.LocalExecutionPlanner;
 import com.facebook.presto.telemetry.TracingManager;
 import com.facebook.presto.testing.TestingTracingManager;
@@ -114,7 +113,7 @@ public class TestSqlTask
         TestingPrestoServer testingPrestoServer = new TestingPrestoServer(
                 ImmutableMap.<String, String>builder()
                         .put("plugin.bundles", "../presto-open-telemetry/pom.xml")
-                        .build(), new SqlParserOptions());
+                        .build());
         testingPrestoServer.getPluginManager().loadPlugins();
 
         testingTracingManager = testingPrestoServer.getTestingTracingManager();

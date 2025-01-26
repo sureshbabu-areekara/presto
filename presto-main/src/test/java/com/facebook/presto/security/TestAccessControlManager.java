@@ -44,7 +44,6 @@ import com.facebook.presto.spi.security.PrestoPrincipal;
 import com.facebook.presto.spi.security.Privilege;
 import com.facebook.presto.spi.security.SystemAccessControl;
 import com.facebook.presto.spi.security.SystemAccessControlFactory;
-import com.facebook.presto.sql.parser.SqlParserOptions;
 import com.facebook.presto.testing.TestingConnectorContext;
 import com.facebook.presto.testing.TestingTracingManager;
 import com.facebook.presto.tpch.TpchConnectorFactory;
@@ -102,7 +101,7 @@ public class TestAccessControlManager
         TestingPrestoServer testingPrestoServer = new TestingPrestoServer(
                 ImmutableMap.<String, String>builder()
                         .put("plugin.bundles", "../presto-open-telemetry/pom.xml")
-                        .build(), new SqlParserOptions());
+                        .build());
         testingPrestoServer.getPluginManager().loadPlugins();
 
         testingTracingManager = testingPrestoServer.getTestingTracingManager();

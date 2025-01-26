@@ -28,7 +28,6 @@ import com.facebook.presto.spi.QueryId;
 import com.facebook.presto.spi.TableHandle;
 import com.facebook.presto.spi.connector.ConnectorFactory;
 import com.facebook.presto.spi.statistics.TableStatistics;
-import com.facebook.presto.sql.parser.SqlParserOptions;
 import com.facebook.presto.testing.TestingTracingManager;
 import com.facebook.presto.testing.TestingTransactionHandle;
 import com.facebook.presto.tests.tpch.TpchQueryRunnerBuilder;
@@ -125,7 +124,7 @@ public class TestMetadataManager
         TestingPrestoServer testingPrestoServer = new TestingPrestoServer(
                 ImmutableMap.<String, String>builder()
                         .put("plugin.bundles", "../presto-open-telemetry/pom.xml")
-                        .build(), new SqlParserOptions());
+                        .build());
         testingPrestoServer.getPluginManager().loadPlugins();
 
         testingTracingManager = testingPrestoServer.getTestingTracingManager();

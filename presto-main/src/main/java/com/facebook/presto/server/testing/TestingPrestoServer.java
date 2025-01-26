@@ -209,26 +209,10 @@ public class TestingPrestoServer
         }
     }
 
-    public TestingPrestoServer(
-            Map<String, String> properties,
-            SqlParserOptions parserOptions)
+    public TestingPrestoServer(Map<String, String> properties)
             throws Exception
     {
-        this(
-                false,
-                false,
-                false,
-                false,
-                false,
-                false,
-                true,
-                false,
-                properties,
-                null,
-                null,
-                parserOptions,
-                ImmutableList.of(),
-                Optional.empty());
+        this(true, properties, null, null, new SqlParserOptions(), ImmutableList.of());
     }
 
     public TestingPrestoServer()

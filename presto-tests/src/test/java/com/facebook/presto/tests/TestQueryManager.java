@@ -37,7 +37,6 @@ import com.facebook.presto.spi.QueryId;
 import com.facebook.presto.spi.WarningCode;
 import com.facebook.presto.spi.eventlistener.QueryCompletedEvent;
 import com.facebook.presto.spi.memory.MemoryPoolId;
-import com.facebook.presto.sql.parser.SqlParserOptions;
 import com.facebook.presto.testing.TestingTracingManager;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
@@ -108,7 +107,7 @@ public class TestQueryManager
         TestingPrestoServer testingPrestoServer = new TestingPrestoServer(
                 ImmutableMap.<String, String>builder()
                         .put("plugin.bundles", "../presto-open-telemetry/pom.xml")
-                        .build(), new SqlParserOptions());
+                        .build());
         testingPrestoServer.getPluginManager().loadPlugins();
 
         testingTracingManager = testingPrestoServer.getTestingTracingManager();
