@@ -130,6 +130,8 @@ public class TestMetadataManager
         QueryId queryId = dispatchManager.createQueryId();
         dispatchManager.createQuery(
                 queryId,
+                null,
+                null,
                 "slug",
                 0,
                 new TestingSessionContext(TEST_SESSION),
