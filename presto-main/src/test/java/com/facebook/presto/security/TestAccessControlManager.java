@@ -102,6 +102,7 @@ public class TestAccessControlManager
     @Test
     public void testReadOnlySystemAccessControl()
     {
+        //To Check if master working.
         Identity identity = new Identity(USER_NAME, Optional.of(PRINCIPAL));
         QualifiedObjectName tableName = new QualifiedObjectName("catalog", "schema", "table");
         TransactionManager transactionManager = createTestTransactionManager();
