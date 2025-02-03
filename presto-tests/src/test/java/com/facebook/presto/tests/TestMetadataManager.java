@@ -19,6 +19,7 @@ import com.facebook.presto.connector.MockConnectorFactory;
 import com.facebook.presto.dispatcher.DispatchManager;
 import com.facebook.presto.execution.TestingSessionContext;
 import com.facebook.presto.metadata.MetadataManager;
+import com.facebook.presto.plugin.opentelemetry.OpenTelemetryPlugin;
 import com.facebook.presto.server.BasicQueryInfo;
 import com.facebook.presto.server.testing.TestingPrestoServer;
 import com.facebook.presto.spi.ConnectorId;
@@ -124,7 +125,7 @@ public class TestMetadataManager
                 ImmutableMap.<String, String>builder()
                         .put("plugin.bundles", "../presto-open-telemetry/pom.xml")
                         .build());
-        testingPrestoServer.getPluginManager().loadPlugins();
+        testingPrestoServer.installPlugin(new OpenTelemetryPlugin());
 
         testingTracingManager = testingPrestoServer.getTestingTracingManager();
         testingTracingManager.loadConfiguredOpenTelemetry();
@@ -188,8 +189,7 @@ public class TestMetadataManager
         assertEquals(metadataManager.getCatalogsByQueryId().size(), 0);
     }
 
-    //    No longer valid
-//    @Test
+    @Test
     public void testUpperCaseSchemaIsChangedToLowerCase()
     {
         TransactionBuilder.transaction(queryRunner.getTransactionManager(), queryRunner.getAccessControl())

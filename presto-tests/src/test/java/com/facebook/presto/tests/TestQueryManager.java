@@ -28,6 +28,7 @@ import com.facebook.presto.execution.TestEventListener.EventsBuilder;
 import com.facebook.presto.execution.TestEventListenerPlugin.TestingEventListenerPlugin;
 import com.facebook.presto.execution.TestingSessionContext;
 import com.facebook.presto.plugin.blackhole.BlackHolePlugin;
+import com.facebook.presto.plugin.opentelemetry.OpenTelemetryPlugin;
 import com.facebook.presto.resourceGroups.FileResourceGroupConfigurationManagerFactory;
 import com.facebook.presto.server.BasicQueryInfo;
 import com.facebook.presto.server.testing.TestingPrestoServer;
@@ -108,7 +109,7 @@ public class TestQueryManager
                 ImmutableMap.<String, String>builder()
                         .put("plugin.bundles", "../presto-open-telemetry/pom.xml")
                         .build());
-        testingPrestoServer.getPluginManager().loadPlugins();
+        testingPrestoServer.installPlugin(new OpenTelemetryPlugin());
 
         testingTracingManager = testingPrestoServer.getTestingTracingManager();
         testingTracingManager.loadConfiguredOpenTelemetry();
