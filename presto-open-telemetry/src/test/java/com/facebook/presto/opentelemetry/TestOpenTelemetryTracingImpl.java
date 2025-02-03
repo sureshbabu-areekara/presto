@@ -35,6 +35,13 @@ public class TestOpenTelemetryTracingImpl
     @BeforeMethod
     public void setUp() throws Exception
     {
+        openTelemetryTracingImpl = new OpenTelemetryTracingImpl();
+        resetTelemetryConfigSingleton();
+    }
+
+    @Test
+    public void testCreateWithTracingEnabled()
+    {
         properties.put("tracing-enabled", "true");
         properties.put("tracing-backend-url", "http://localhost:4317");
         properties.put("max-exporter-batch-size", "256");
@@ -44,13 +51,6 @@ public class TestOpenTelemetryTracingImpl
         properties.put("trace-sampling-ratio", "1.0");
         properties.put("span-sampling", "true");
 
-        openTelemetryTracingImpl = new OpenTelemetryTracingImpl();
-        resetTelemetryConfigSingleton();
-    }
-
-    @Test
-    public void testCreateWithTracingEnabled()
-    {
         TelemetryConfig.getTelemetryConfig().setTelemetryProperties(properties);
         OpenTelemetry openTelemetry = openTelemetryTracingImpl.createOpenTelemetry();
 
