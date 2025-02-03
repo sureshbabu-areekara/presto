@@ -30,7 +30,6 @@
         <dependency>
             <groupId>io.opentelemetry.instrumentation</groupId>
             <artifactId>opentelemetry-okhttp-3.0</artifactId>
-            <version>2.4.0-alpha</version>
             <scope>runtime</scope>
         </dependency>
 
