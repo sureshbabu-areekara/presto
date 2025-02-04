@@ -52,7 +52,9 @@ import java.util.concurrent.TimeUnit;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Strings.nullToEmpty;
 
-//Dummy commits.
+/**
+ * Open Telemetry implementation of tracing.
+ */
 public class OpenTelemetryTracingImpl
         implements TelemetryTracing<TracingSpan, ScopedSpan>
 {
@@ -61,7 +63,7 @@ public class OpenTelemetryTracingImpl
     private static Tracer tracer = OpenTelemetry.noop().getTracer("no-op"); //default tracer
 
     /**
-     * called from PrestoServer for loading the properties after OpenTelemetryManager is bound and injected
+     * called from TracingManager for setting the open telemetry sdk and tracer.
      */
     @Override
     public void loadConfiguredOpenTelemetry()
@@ -132,49 +134,99 @@ public class OpenTelemetryTracingImpl
         return openTelemetry;
     }
 
+    /**
+     * Sets open telemetry.
+     *
+     * @param configuredOpenTelemetry the configured open telemetry
+     */
     public static void setOpenTelemetry(OpenTelemetry configuredOpenTelemetry)
     {
         OpenTelemetryTracingImpl.configuredOpenTelemetry = configuredOpenTelemetry;
     }
 
+    /**
+     * Sets tracer.
+     *
+     * @param tracer the tracer
+     */
     public static void setTracer(Tracer tracer)
     {
         OpenTelemetryTracingImpl.tracer = tracer;
     }
 
+    /**
+     * get current context wrapped .
+     *
+     * @param runnable runnable
+     * @return Runnable
+     */
     @Override
     public Runnable getCurrentContextWrap(Runnable runnable)
     {
         return Context.current().wrap(runnable);
     }
 
+    /**
+     * get current context .
+     *
+     * @return Context
+     */
     private static Context getCurrentContext()
     {
         return Context.current();
     }
 
+    /**
+     * get context from the span.
+     *
+     * @param tracingSpan runnable
+     * @return Context
+     */
     private static Context getCurrentContextWith(TracingSpan tracingSpan)
     {
         return Context.current().with(tracingSpan.getSpan());
     }
 
+    /**
+     * get the context from the span or current context.
+     *
+     * @param span span
+     * @return Context
+     */
     private static Context getContext(TracingSpan span)
     {
         return span != null ? getCurrentContextWith(span) : getCurrentContext();
     }
 
+    /**
+     * get the context from the traceParent string.
+     *
+     * @param traceParent traceParent
+     * @return Context
+     */
     private static Context getContext(String traceParent)
     {
         TextMapPropagator propagator = configuredOpenTelemetry.getPropagators().getTextMapPropagator();
         return propagator.extract(Context.current(), traceParent, new TextMapGetterImpl());
     }
 
+    /**
+     * returns true if the span records tracing events.
+     *
+     * @return boolean
+     */
     @Override
     public boolean isRecording()
     {
         return Span.fromContext(getCurrentContext()).isRecording();
     }
 
+    /**
+     * returns headers map from the input span.
+     *
+     * @param span span
+     * @return Map<String, String>
+     */
     @Override
     public Map<String, String> getHeadersMap(TracingSpan span)
     {
@@ -186,16 +238,29 @@ public class OpenTelemetryTracingImpl
         return headersMap;
     }
 
+    /**
+     * ends span on error with recorded exceptions.
+     *
+     * @param span querySpan
+     * @param throwable throwable
+     * @return Map<String, String>
+     */
     @Override
-    public void endSpanOnError(TracingSpan querySpan, Throwable throwable)
+    public void endSpanOnError(TracingSpan span, Throwable throwable)
     {
-        if (TelemetryConfig.getTracingEnabled() && Objects.nonNull(querySpan)) {
-            querySpan.getSpan().setStatus(StatusCode.ERROR, throwable.getMessage())
+        if (TelemetryConfig.getTracingEnabled() && Objects.nonNull(span)) {
+            span.getSpan().setStatus(StatusCode.ERROR, throwable.getMessage())
                     .recordException(throwable)
                     .end();
         }
     }
 
+    /**
+     * add event to the span.
+     *
+     * @param span span
+     * @param eventName eventName
+     */
     @Override
     public void addEvent(TracingSpan span, String eventName)
     {
@@ -204,14 +269,27 @@ public class OpenTelemetryTracingImpl
         }
     }
 
+    /**
+     * add event to the span.
+     *
+     * @param span span
+     * @param eventName eventName
+     * @param eventState eventState
+     */
     @Override
-    public void addEvent(TracingSpan querySpan, String eventName, String eventState)
+    public void addEvent(TracingSpan span, String eventName, String eventState)
     {
-        if (TelemetryConfig.getTracingEnabled() && Objects.nonNull(querySpan)) {
-            querySpan.getSpan().addEvent(eventName, Attributes.of(AttributeKey.stringKey("EVENT_STATE"), eventState));
+        if (TelemetryConfig.getTracingEnabled() && Objects.nonNull(span)) {
+            span.getSpan().addEvent(eventName, Attributes.of(AttributeKey.stringKey("EVENT_STATE"), eventState));
         }
     }
 
+    /**
+     * set attributes to the span.
+     *
+     * @param span span
+     * @param attributes attributes
+     */
     @Override
     public void setAttributes(TracingSpan span, Map<String, String> attributes)
     {
@@ -220,11 +298,19 @@ public class OpenTelemetryTracingImpl
         }
     }
 
+    /**
+     * record exception to the span.
+     *
+     * @param span span
+     * @param message message
+     * @param runtimeException runtimeException
+     * @param errorCode errorCode
+     */
     @Override
-    public void recordException(TracingSpan querySpan, String message, RuntimeException runtimeException, ErrorCode errorCode)
+    public void recordException(TracingSpan span, String message, RuntimeException runtimeException, ErrorCode errorCode)
     {
-        if (TelemetryConfig.getTracingEnabled() && Objects.nonNull(querySpan)) {
-            querySpan.getSpan().setStatus(StatusCode.ERROR, nullToEmpty(message))
+        if (TelemetryConfig.getTracingEnabled() && Objects.nonNull(span)) {
+            span.getSpan().setStatus(StatusCode.ERROR, nullToEmpty(message))
                     .recordException(runtimeException)
                     .setAttribute("ERROR_CODE", errorCode.getCode())
                     .setAttribute("ERROR_NAME", errorCode.getName())
@@ -232,21 +318,34 @@ public class OpenTelemetryTracingImpl
         }
     }
 
+    /**
+     * mark success to span.
+     *
+     * @param span span
+     */
     @Override
-    public void setSuccess(TracingSpan querySpan)
+    public void setSuccess(TracingSpan span)
     {
-        if (TelemetryConfig.getTracingEnabled() && Objects.nonNull(querySpan)) {
-            querySpan.getSpan().setStatus(StatusCode.OK);
+        if (TelemetryConfig.getTracingEnabled() && Objects.nonNull(span)) {
+            span.getSpan().setStatus(StatusCode.OK);
         }
     }
 
-    //GetSpans
+    //Tracing spans
+    /**
+     * To get an invalid span.
+     * @return TracingSpan
+     */
     @Override
     public TracingSpan getInvalidSpan()
     {
         return new TracingSpan(Span.getInvalid());
     }
 
+    /**
+     * To get root span.
+     * @return TracingSpan
+     */
     @Override
     public TracingSpan getRootSpan()
     {
@@ -254,6 +353,11 @@ public class OpenTelemetryTracingImpl
                 .startSpan());
     }
 
+    /**
+     * To get span with name.
+     * @param spanName name of span to be created
+     * @return TracingSpan
+     */
     @Override
     public TracingSpan getSpan(String spanName)
     {
@@ -261,16 +365,27 @@ public class OpenTelemetryTracingImpl
                 .startSpan());
     }
 
+    /**
+     * To get a new span with name from the trace parent string.
+     * @param traceParent trace parent string.
+     * @param spanName name of the span to be created.
+     * @return TracingSpan
+     */
     @Override
     public TracingSpan getSpan(String traceParent, String spanName)
     {
-        TracingSpan span = !TelemetryConfig.getTracingEnabled() || traceParent == null ? null : new TracingSpan(tracer.spanBuilder(spanName)
+        return !TelemetryConfig.getTracingEnabled() || traceParent == null ? null : new TracingSpan(tracer.spanBuilder(spanName)
                 .setParent(getContext(traceParent))
                 .startSpan());
-        //context.makeCurrent();
-        return span;
     }
 
+    /**
+     * To get a new span with name from the parent span.
+     * @param parentSpan parent span.
+     * @param spanName name of the span to be created.
+     * @param attributes input attributes to set in span.
+     * @return TracingSpan
+     */
     @Override
     public TracingSpan getSpan(TracingSpan parentSpan, String spanName, Map<String, String> attributes)
     {
@@ -279,12 +394,23 @@ public class OpenTelemetryTracingImpl
                 .startSpan());
     }
 
+    /**
+     * To set the input attributes in span builder.
+     * @param spanBuilder span builder.
+     * @param attributes input attributes to set in span builder.
+     * @return SpanBuilder
+     */
     private static SpanBuilder setAttributes(SpanBuilder spanBuilder, Map<String, String> attributes)
     {
         attributes.forEach(spanBuilder::setAttribute);
         return spanBuilder;
     }
 
+    /**
+     * To get the string value of the input span.
+     * @param span input span.
+     * @return Optional<String>
+     */
     @Override
     public Optional<String> spanString(TracingSpan span)
     {
@@ -296,40 +422,45 @@ public class OpenTelemetryTracingImpl
                         .toString());
     }
 
-    //Scoped Span
+    //Scoped Spans
     /**
-     * starts a basic span and passes it to overloaded method. This method is used for creating basic spans with no attributes.
-     * @param name name of span to be created
+     * To get ScopedSpan with name.
+     * @param spanName name of span to be created
      * @param skipSpan optional parameter to implement span sampling by skipping the current span export
-     * @return
+     * @return ScopedSpan
      */
     @MustBeClosed
     @Override
-    public ScopedSpan scopedSpan(String name, Boolean... skipSpan)
+    public ScopedSpan scopedSpan(String spanName, Boolean... skipSpan)
     {
         if (!TelemetryConfig.getTracingEnabled() || (skipSpan.length > 0 && TelemetryConfig.getSpanSampling())) {
             return null;
         }
-        return scopedSpan(new TracingSpan(tracer.spanBuilder(name).startSpan()));
+        return scopedSpan(new TracingSpan(tracer.spanBuilder(spanName).startSpan()));
     }
 
     /**
-     * creates a ScopedSpan with the current span. This method is used when we manually create spans in the classes and
-     * set attributes to them before passing to the ScopedSpan.
-     * @param span created span instance
+     * To get ScopedSpan from the parent span instance.
+     * @param parentSpan parent span
      * @param skipSpan optional parameter to implement span sampling by skipping the current span export
-     * @return
+     * @return ScopedSpan
      */
     @MustBeClosed
     @Override
-    public ScopedSpan scopedSpan(TracingSpan span, Boolean... skipSpan)
+    public ScopedSpan scopedSpan(TracingSpan parentSpan, Boolean... skipSpan)
     {
-        if ((!TelemetryConfig.getTracingEnabled() || Objects.isNull(span)) || (skipSpan.length > 0 && TelemetryConfig.getSpanSampling())) {
+        if ((!TelemetryConfig.getTracingEnabled() || Objects.isNull(parentSpan)) || (skipSpan.length > 0 && TelemetryConfig.getSpanSampling())) {
             return null;
         }
-        return new ScopedSpan(span.getSpan());
+        return new ScopedSpan(parentSpan.getSpan());
     }
 
+    /**
+     * To get ScopedSpan from the parent span instance with name and also setting the input attributes.
+     * @param parentSpan parent span
+     * @param skipSpan optional parameter to implement span sampling by skipping the current span export
+     * @return ScopedSpan
+     */
     @MustBeClosed
     @Override
     public ScopedSpan scopedSpan(TracingSpan parentSpan, String spanName, Map<String, String> attributes, Boolean... skipSpan)
@@ -344,6 +475,12 @@ public class OpenTelemetryTracingImpl
         return new ScopedSpan(span);
     }
 
+    /**
+     * To get ScopedSpan from the parent span instance with name and also setting the input attributes.
+     * @param parentSpan parent span
+     * @param skipSpan optional parameter to implement span sampling by skipping the current span export
+     * @return ScopedSpan
+     */
     @MustBeClosed
     @Override
     public ScopedSpan scopedSpan(TracingSpan parentSpan, String spanName, Boolean... skipSpan)
@@ -357,6 +494,12 @@ public class OpenTelemetryTracingImpl
         return new ScopedSpan(span);
     }
 
+    /**
+     * To get ScopedSpan with name and also setting the input attributes.
+     * @param spanName span name
+     * @param skipSpan optional parameter to implement span sampling by skipping the current span export
+     * @return ScopedSpan
+     */
     @MustBeClosed
     @Override
     public ScopedSpan scopedSpan(String spanName, Map<String, String> attributes, Boolean... skipSpan)
