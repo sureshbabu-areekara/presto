@@ -18,11 +18,19 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import javax.annotation.concurrent.Immutable;
 
+/**
+ * The type Tracing config.
+ */
 @Immutable
 public class TracingConfig
 {
     private boolean tracingEnabled;
 
+    /**
+     * Instantiates a new Tracing config.
+     *
+     * @param tracingEnabled the tracing enabled
+     */
     @JsonCreator
     public TracingConfig(
             @JsonProperty("tracingEnabled") boolean tracingEnabled)
@@ -30,6 +38,11 @@ public class TracingConfig
         this.tracingEnabled = tracingEnabled;
     }
 
+    /**
+     * Is tracing enabled boolean.
+     *
+     * @return the boolean
+     */
     @JsonProperty
     public boolean isTracingEnabled()
     {
