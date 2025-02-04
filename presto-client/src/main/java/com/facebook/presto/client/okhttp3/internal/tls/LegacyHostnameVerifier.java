@@ -13,7 +13,6 @@
  */
 package com.facebook.presto.client.okhttp3.internal.tls;
 
-import com.google.common.collect.ImmutableList;
 import okhttp3.internal.tls.OkHostnameVerifier;
 
 import javax.net.ssl.HostnameVerifier;
@@ -24,7 +23,9 @@ import javax.security.auth.x500.X500Principal;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
@@ -39,7 +40,9 @@ public class LegacyHostnameVerifier
 
     public static final HostnameVerifier INSTANCE = new LegacyHostnameVerifier();
 
-    private LegacyHostnameVerifier() {}
+    private LegacyHostnameVerifier()
+    {
+    }
 
     @Override
     public boolean verify(String host, SSLSession session)
@@ -67,7 +70,7 @@ public class LegacyHostnameVerifier
             // RFC 2818 advises using the most specific name for matching.
             String cn = new DistinguishedNameParser(principal).findMostSpecific("cn");
             if (cn != null) {
-                return verifyHostname(host, cn);
+                return verifyHostName(host, cn);
             }
 
             return false;
@@ -77,20 +80,108 @@ public class LegacyHostnameVerifier
         }
     }
 
-    private boolean verifyAsIpAddress(String host)
+    static boolean verifyAsIpAddress(String host)
     {
         return VERIFY_AS_IP_ADDRESS.matcher(host).matches();
     }
 
-    private boolean verifyHostname(String hostName, String pattern)
+    /**
+     * Returns true if {@code certificate} matches {@code ipAddress}.
+     */
+    private boolean verifyIpAddress(String ipAddress, X509Certificate certificate)
+    {
+        List<String> altNames = getSubjectAltNames(certificate, ALT_IPA_NAME);
+        for (int i = 0, size = altNames.size(); i < size; i++) {
+            if (ipAddress.equalsIgnoreCase(altNames.get(i))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean verifyHostName(String hostName, X509Certificate certificate)
+    {
+        hostName = hostName.toLowerCase(Locale.US);
+        boolean hasDns = false;
+        List<String> altNames = getSubjectAltNames(certificate, ALT_DNS_NAME);
+        for (int i = 0, size = altNames.size(); i < size; i++) {
+            hasDns = true;
+            if (verifyHostName(hostName, altNames.get(i))) {
+                return true;
+            }
+        }
+
+        if (!hasDns) {
+            X500Principal principal = certificate.getSubjectX500Principal();
+            // RFC 2818 advises using the most specific name for matching.
+            String cn = new DistinguishedNameParser(principal).findMostSpecific("cn");
+            if (cn != null) {
+                return verifyHostName(hostName, cn);
+            }
+        }
+
+        return false;
+    }
+
+    public static List<String> allSubjectAltNames(X509Certificate certificate)
+    {
+        List<String> altIpaNames = getSubjectAltNames(certificate, ALT_IPA_NAME);
+        List<String> altDnsNames = getSubjectAltNames(certificate, ALT_DNS_NAME);
+        List<String> result = new ArrayList<>(altIpaNames.size() + altDnsNames.size());
+        result.addAll(altIpaNames);
+        result.addAll(altDnsNames);
+        return result;
+    }
+
+    private static List<String> getSubjectAltNames(X509Certificate certificate, int type)
+    {
+        List<String> result = new ArrayList<>();
+        try {
+            Collection<?> subjectAltNames = certificate.getSubjectAlternativeNames();
+            if (subjectAltNames == null) {
+                return Collections.emptyList();
+            }
+            for (Object subjectAltName : subjectAltNames) {
+                List<?> entry = (List<?>) subjectAltName;
+                if (entry == null || entry.size() < 2) {
+                    continue;
+                }
+                Integer altNameType = (Integer) entry.get(0);
+                if (altNameType == null) {
+                    continue;
+                }
+                if (altNameType == type) {
+                    String altName = (String) entry.get(1);
+                    if (altName != null) {
+                        result.add(altName);
+                    }
+                }
+            }
+            return result;
+        }
+        catch (CertificateParsingException e) {
+            return Collections.emptyList();
+        }
+    }
+
+    /**
+     * Returns {@code true} iff {@code hostName} matches the domain name {@code pattern}.
+     *
+     * @param hostName lower-case host name.
+     * @param pattern  domain name pattern from certificate. May be a wildcard pattern such as
+     *                 {@code *.android.com}.
+     */
+    private boolean verifyHostName(String hostName, String pattern)
     {
         // Basic sanity checks
         // Check length == 0 instead of .isEmpty() to support Java 5.
-        if ((hostName == null) || hostName.isEmpty() || hostName.startsWith(".") || hostName.endsWith("..")) {
+        if ((hostName == null) || (hostName.length() == 0) || (hostName.startsWith("."))
+                || (hostName.endsWith(".."))) {
             // Invalid domain name
             return false;
         }
-        if ((pattern == null) || pattern.isEmpty() || pattern.startsWith(".") || pattern.endsWith("..")) {
+        if ((pattern == null) || (pattern.length() == 0) || (pattern.startsWith("."))
+                || (pattern.endsWith(".."))) {
             // Invalid pattern/domain name
             return false;
         }
@@ -131,7 +222,7 @@ public class LegacyHostnameVerifier
         //    sub.test.example.com.
         // 3. Wildcard patterns for single-label domain names are not permitted.
 
-        if (!pattern.startsWith("*.") || (pattern.indexOf('*', 1) != -1)) {
+        if ((!pattern.startsWith("*.")) || (pattern.indexOf('*', 1) != -1)) {
             // Asterisk (*) is only permitted in the left-most domain name label and must be the only
             // character in that label
             return false;
@@ -159,46 +250,13 @@ public class LegacyHostnameVerifier
 
         // Check that asterisk did not match across domain name labels.
         int suffixStartIndexInHostName = hostName.length() - suffix.length();
-        // Asterisk is matching across domain name labels -- not permitted.
-        return (suffixStartIndexInHostName <= 0) || (hostName.lastIndexOf('.', suffixStartIndexInHostName - 1) == -1);
-    }
-
-    private List<String> allSubjectAltNames(X509Certificate certificate)
-    {
-        return ImmutableList.<String>builder()
-                .addAll(allSubjectAltNames(certificate, ALT_IPA_NAME))
-                .addAll(allSubjectAltNames(certificate, ALT_DNS_NAME))
-                .build();
-    }
-
-    private List<String> allSubjectAltNames(X509Certificate certificate, int type)
-    {
-        ImmutableList.Builder<String> result = ImmutableList.builder();
-        try {
-            Collection<?> subjectAltNames = certificate.getSubjectAlternativeNames();
-            if (subjectAltNames == null) {
-                return ImmutableList.of();
-            }
-            for (Object subjectAltName : subjectAltNames) {
-                List<?> entry = (List<?>) subjectAltName;
-                if (entry == null || entry.size() < 2) {
-                    continue;
-                }
-                Integer altNameType = (Integer) entry.get(0);
-                if (altNameType == null) {
-                    continue;
-                }
-                if (altNameType == type) {
-                    String altName = (String) entry.get(1);
-                    if (altName != null) {
-                        result.add(altName);
-                    }
-                }
-            }
-            return result.build();
+        if ((suffixStartIndexInHostName > 0)
+                && (hostName.lastIndexOf('.', suffixStartIndexInHostName - 1) != -1)) {
+            // Asterisk is matching across domain name labels -- not permitted.
+            return false;
         }
-        catch (CertificateParsingException e) {
-            return ImmutableList.of();
-        }
+
+        // hostName matches pattern
+        return true;
     }
 }

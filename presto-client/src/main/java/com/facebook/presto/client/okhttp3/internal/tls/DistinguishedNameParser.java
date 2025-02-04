@@ -15,6 +15,10 @@ package com.facebook.presto.client.okhttp3.internal.tls;
 
 import javax.security.auth.x500.X500Principal;
 
+/**
+ * A distinguished name (DN) parser. This parser only supports extracting a string value from a DN.
+ * It doesn't support values in the hex-string style.
+ */
 final class DistinguishedNameParser
 {
     private final String dn;
@@ -163,7 +167,7 @@ final class DistinguishedNameParser
                 break;
             }
             else if (chars[pos] >= 'A' && chars[pos] <= 'F') {
-                chars[pos] += (char) 32; // to low case
+                chars[pos] += 32; //to low case
             }
 
             pos++;
@@ -176,9 +180,14 @@ final class DistinguishedNameParser
             throw new IllegalStateException("Unexpected end of DN: " + dn);
         }
 
+        // get byte encoding from string representation
+        byte[] encoded = new byte[hexLen / 2];
+        for (int i = 0, p = beg + 1; i < encoded.length; p += 2, i++) {
+            encoded[i] = (byte) getByte(p);
+        }
         return new String(chars, beg, hexLen);
     }
-
+    // gets string attribute value: *( stringchar / pair)
     private String escapedAV()
     {
         beg = pos;
@@ -279,7 +288,6 @@ final class DistinguishedNameParser
                 count = 3;
                 res = res & 0x07;
             }
-
             int b;
             for (int i = 0; i < count; i++) {
                 pos++;
@@ -345,7 +353,6 @@ final class DistinguishedNameParser
         else {
             throw new IllegalStateException("Malformed DN: " + dn);
         }
-
         return (b1 << 4) + b2;
     }
 
@@ -374,7 +381,6 @@ final class DistinguishedNameParser
             if (pos == length) {
                 return null;
             }
-
             switch (chars[pos]) {
                 case '"':
                     attValue = quotedAV();
@@ -401,14 +407,11 @@ final class DistinguishedNameParser
             if (pos >= length) {
                 return null;
             }
-
             if (chars[pos] == ',' || chars[pos] == ';') {
-                //
-            }
-            else if (chars[pos] != '+') {
+                //Do nothing
+            } else if (chars[pos] != '+') {
                 throw new IllegalStateException("Malformed DN: " + dn);
             }
-
             pos++;
             attType = nextAT();
             if (attType == null) {
