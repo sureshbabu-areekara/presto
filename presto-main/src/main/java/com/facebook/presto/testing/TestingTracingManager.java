@@ -25,6 +25,9 @@ import java.util.concurrent.atomic.AtomicReference;
 public class TestingTracingManager
         extends TracingManager
 {
+    private static final String OTEL_TEST = "oteltest";
+    private static final String OTEL = "otel";
+
     private final Map<String, TelemetryFactory> openTelemetryFactories = new ConcurrentHashMap<>();
     private static AtomicReference<TestingTelemetryTracing> configuredTelemetryTracing = new AtomicReference<>();
 
@@ -34,11 +37,11 @@ public class TestingTracingManager
      */
     public void addOpenTelemetryFactory(TelemetryFactory telemetryFactory)
     {
-        if ("oteltest".equals(telemetryFactory.getName())) {
+        if (OTEL_TEST.equals(telemetryFactory.getName())) {
             configuredTelemetryTracing.set((TestingTelemetryTracing) telemetryFactory.create());
         }
 
-        if ("otel".equals(telemetryFactory.getName())) {
+        if (OTEL.equals(telemetryFactory.getName())) {
             TracingManager.setConfiguredTelemetryTracing((TelemetryTracing) telemetryFactory.create());
         }
     }
