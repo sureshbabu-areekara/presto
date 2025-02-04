@@ -13,6 +13,9 @@
  */
 package com.facebook.presto.spi.telemetry;
 
+/**
+ * The interface Base span.
+ */
 public interface BaseSpan
         extends AutoCloseable
 {
@@ -22,6 +25,9 @@ public interface BaseSpan
         return;
     }
 
+    /**
+     * End.
+     */
     default void end()
     {
         return;

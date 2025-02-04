@@ -22,13 +22,22 @@ import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * The type Telemetry tracing.
+ */
 public class TelemetryTracingImpl
         implements TelemetryTracing<BaseSpan, BaseSpan>
 {
+    /**
+     * The constant NAME.
+     */
     public static final String NAME = "otel";
 
     private static final TelemetryTracingImpl INSTANCE = new TelemetryTracingImpl();
 
+    /**
+     * The type Factory.
+     */
     public static class Factory
             implements TelemetryFactory
     {

@@ -13,9 +13,24 @@
  */
 package com.facebook.presto.spi.telemetry;
 
+/**
+ * The interface Telemetry factory.
+ *
+ * @param <T> the type parameter
+ */
 public interface TelemetryFactory<T>
 {
+    /**
+     * Gets name.
+     *
+     * @return the name
+     */
     String getName();
 
+    /**
+     * Create t.
+     *
+     * @return the t
+     */
     T create();
 }

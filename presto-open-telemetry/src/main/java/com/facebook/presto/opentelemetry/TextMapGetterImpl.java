@@ -17,6 +17,9 @@ import io.opentelemetry.context.propagation.TextMapGetter;
 
 import java.util.Collections;
 
+/**
+ * The type Text map getter.
+ */
 public class TextMapGetterImpl
         implements TextMapGetter<Object>
 {
