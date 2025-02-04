@@ -27,6 +27,7 @@ import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 
 //Dummy commit
+//
 public final class OpenTelemetryBuilder
 {
     private OpenTelemetryBuilder()
