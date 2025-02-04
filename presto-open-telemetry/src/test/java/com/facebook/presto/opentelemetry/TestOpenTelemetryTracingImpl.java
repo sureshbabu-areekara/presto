@@ -61,9 +61,7 @@ public class TestOpenTelemetryTracingImpl
     @Test
     public void testCreateWithTracingDisabled()
     {
-        properties.put("tracing-enabled", "false");
-
-        TelemetryConfig.getTelemetryConfig().setTelemetryProperties(properties);
+        TelemetryConfig.getTelemetryConfig().setTracingEnabled(false);
         OpenTelemetry openTelemetry = openTelemetryTracingImpl.createOpenTelemetry();
 
         assertNotNull(openTelemetry);
