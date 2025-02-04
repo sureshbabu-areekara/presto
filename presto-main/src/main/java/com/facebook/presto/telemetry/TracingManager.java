@@ -50,11 +50,6 @@ public class TracingManager
     private final Map<String, TelemetryFactory> openTelemetryFactories = new ConcurrentHashMap<>();
     private static AtomicReference<TelemetryTracing> configuredTelemetryTracing = new AtomicReference<>(new TelemetryTracingImpl());
 
-    public TracingManager()
-    {
-        //addOpenTelemetryFactory(new OpenTelemetryTracing.Factory());
-    }
-
     /**
      * adds and registers all the OpenTelemetryFactory implementations to support different configurations
      * @param telemetryFactory
@@ -66,11 +61,6 @@ public class TracingManager
         if (openTelemetryFactories.putIfAbsent(telemetryFactory.getName(), telemetryFactory) != null) {
             throw new IllegalArgumentException(format("openTelemetry factory '%s' is already registered", telemetryFactory.getName()));
         }
-    }
-
-    public void clearFactories()
-    {
-        openTelemetryFactories.clear();
     }
 
     /**
