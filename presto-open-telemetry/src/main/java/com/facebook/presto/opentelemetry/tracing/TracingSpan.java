@@ -16,21 +16,40 @@ package com.facebook.presto.opentelemetry.tracing;
 import com.facebook.presto.spi.telemetry.BaseSpan;
 import io.opentelemetry.api.trace.Span;
 
+/**
+ * The type Tracing span.
+ */
 public class TracingSpan
         implements BaseSpan
 {
     private final Span span;
 
+    /**
+     * Instantiates a new Tracing span.
+     *
+     * @param span the span
+     */
     public TracingSpan(Span span)
     {
         this.span = span;
     }
 
+    /**
+     * Gets span.
+     *
+     * @return the span
+     */
     public Span getSpan()
     {
         return span;
     }
 
+    /**
+     * Sets attribute.
+     *
+     * @param key   the key
+     * @param value the value
+     */
     public void setAttribute(String key, String value)
     {
         span.setAttribute(key, value);

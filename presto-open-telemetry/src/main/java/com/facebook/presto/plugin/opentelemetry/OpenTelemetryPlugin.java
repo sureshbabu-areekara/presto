@@ -19,6 +19,9 @@ import com.facebook.presto.spi.telemetry.TelemetryFactory;
 import com.facebook.presto.testing.TestingOpenTelemetryFactoryImpl;
 import com.google.common.collect.ImmutableList;
 
+/**
+ * The type Open telemetry plugin.
+ */
 public class OpenTelemetryPlugin
         implements Plugin
 {

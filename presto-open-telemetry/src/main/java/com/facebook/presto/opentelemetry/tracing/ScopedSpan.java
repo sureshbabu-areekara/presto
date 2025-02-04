@@ -20,12 +20,20 @@ import io.opentelemetry.context.Scope;
 
 import java.util.Objects;
 
+/**
+ * The type Scoped span.
+ */
 public final class ScopedSpan
         implements BaseSpan
 {
     private final Span span;
     private final Scope scope;
 
+    /**
+     * Instantiates a new Scoped span.
+     *
+     * @param span the span
+     */
     @SuppressWarnings("MustBeClosedChecker")
     public ScopedSpan(Span span)
     {
