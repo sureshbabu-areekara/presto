@@ -54,6 +54,7 @@ import static com.google.common.base.Strings.nullToEmpty;
 
 /**
  * Open Telemetry implementation of tracing.
+ *
  */
 public class OpenTelemetryTracingImpl
         implements TelemetryTracing<TracingSpan, ScopedSpan>
