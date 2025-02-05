@@ -349,7 +349,7 @@ public class OpenTelemetryTracingImpl
     @Override
     public TracingSpan getRootSpan()
     {
-        return !TelemetryConfig.getTracingEnabled() ? null : new TracingSpan(tracer.spanBuilder(TracingEnum.ROOT.getName()).setSpanKind(SpanKind.SERVER)
+        return !TelemetryConfig.getTracingEnabled() ? new TracingSpan(Span.getInvalid()) : new TracingSpan(tracer.spanBuilder(TracingEnum.ROOT.getName()).setSpanKind(SpanKind.SERVER)
                 .startSpan());
     }
 
@@ -361,7 +361,7 @@ public class OpenTelemetryTracingImpl
     @Override
     public TracingSpan getSpan(String spanName)
     {
-        return !TelemetryConfig.getTracingEnabled() ? null : new TracingSpan(tracer.spanBuilder(spanName)
+        return !TelemetryConfig.getTracingEnabled() ? new TracingSpan(Span.getInvalid()) : new TracingSpan(tracer.spanBuilder(spanName)
                 .startSpan());
     }
 
@@ -374,7 +374,7 @@ public class OpenTelemetryTracingImpl
     @Override
     public TracingSpan getSpan(String traceParent, String spanName)
     {
-        return !TelemetryConfig.getTracingEnabled() || traceParent == null ? null : new TracingSpan(tracer.spanBuilder(spanName)
+        return !TelemetryConfig.getTracingEnabled() || traceParent == null ? new TracingSpan(Span.getInvalid()) : new TracingSpan(tracer.spanBuilder(spanName)
                 .setParent(getContext(traceParent))
                 .startSpan());
     }
@@ -389,7 +389,7 @@ public class OpenTelemetryTracingImpl
     @Override
     public TracingSpan getSpan(TracingSpan parentSpan, String spanName, Map<String, String> attributes)
     {
-        return !TelemetryConfig.getTracingEnabled() ? null : new TracingSpan(setAttributes(tracer.spanBuilder(spanName), attributes)
+        return !TelemetryConfig.getTracingEnabled() ? new TracingSpan(Span.getInvalid()) : new TracingSpan(setAttributes(tracer.spanBuilder(spanName), attributes)
                 .setParent(getContext(parentSpan))
                 .startSpan());
     }
