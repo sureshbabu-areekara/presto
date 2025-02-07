@@ -104,12 +104,13 @@ public interface TelemetryTracing<T extends BaseSpan, U extends BaseSpan>
      */
     void setSuccess(T querySpan);
 
+    //GetSpans
+
     /**
      * Gets invalid span.
      *
      * @return the invalid span
      */
-//GetSpans
     T getInvalidSpan();
 
     /**
@@ -117,7 +118,6 @@ public interface TelemetryTracing<T extends BaseSpan, U extends BaseSpan>
      *
      * @return the root span
      */
-//GetSpans
     T getRootSpan();
 
     /**
@@ -155,6 +155,8 @@ public interface TelemetryTracing<T extends BaseSpan, U extends BaseSpan>
      */
     Optional<String> spanString(T span);
 
+    //scoped spans
+
     /**
      * Scoped span u.
      *
@@ -162,7 +164,6 @@ public interface TelemetryTracing<T extends BaseSpan, U extends BaseSpan>
      * @param skipSpan the skip span
      * @return the u
      */
-//scoped spans
     U scopedSpan(String name, Boolean... skipSpan);
 
     /**

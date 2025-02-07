@@ -177,7 +177,7 @@ public class TelemetryTracingImpl
     @Override
     public BaseSpan getSpan(BaseSpan parentSpan, String spanName, Map attributes)
     {
-        return null;
+        return getBaseSpan();
     }
 
     private BaseSpan getBaseSpan()
