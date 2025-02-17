@@ -42,8 +42,8 @@ final class DistinguishedNameParser
 
     private String nextAT()
     {
-        for (; position < length && chars[position] == ' '; position++) {
-            // skip preceding space chars, they can present after comma or semicolon (compatibility with RFC 1779)
+        while (position < length && chars[position] == ' ') {
+            position++;
         }
         if (position == length) {
             return null;
@@ -52,8 +52,8 @@ final class DistinguishedNameParser
         start = position;
 
         position++;
-        for (; position < length && chars[position] != '=' && chars[position] != ' '; position++) {
-            // we don't follow exact BNF syntax here. accept any char except space and '='
+        while (position < length && chars[position] != '=' && chars[position] != ' ') {
+            position++;
         }
         if (position >= length) {
             throw new IllegalStateException("Unexpected end of DN: " + dn);
@@ -73,8 +73,8 @@ final class DistinguishedNameParser
 
         position++;
 
-        for (; position < length && chars[position] == ' '; position++) {
-            // skip trailing space chars between attribute type and '='
+        while (position < length && chars[position] == ' ') {
+            position++;
         }
 
         if ((end - start > 4) && (chars[start + 3] == '.')
@@ -111,8 +111,8 @@ final class DistinguishedNameParser
             end++;
         }
 
-        for (; position < length && chars[position] == ' '; position++) {
-            // skip trailing space chars before comma or semicolon.
+        while (position < length && chars[position] == ' ') {
+            position++;
         }
 
         return new String(chars, start, end - start);
@@ -184,7 +184,8 @@ final class DistinguishedNameParser
                     position++;
                     chars[end++] = ' ';
 
-                    for (; position < length && chars[position] == ' '; position++) {
+                    while (position < length && chars[position] == ' ') {
+                        position++;
                         chars[end++] = ' ';
                     }
                     if (position == length || chars[position] == ',' || chars[position] == '+'
