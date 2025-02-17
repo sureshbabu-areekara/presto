@@ -67,6 +67,7 @@ import static com.facebook.presto.SystemSessionProperties.warnOnCommonNanPattern
 import static com.facebook.presto.spi.ConnectorId.createInformationSchemaConnectorId;
 import static com.facebook.presto.spi.ConnectorId.createSystemTablesConnectorId;
 import static com.facebook.presto.spi.StandardErrorCode.NOT_FOUND;
+import static com.facebook.presto.telemetry.TracingManager.getInvalidSpan;
 import static com.facebook.presto.util.Failures.checkCondition;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -563,8 +564,8 @@ public final class Session
     public static class SessionBuilder
     {
         private QueryId queryId;
-        private BaseSpan querySpan = TracingManager.getInvalidSpan(); //do not initialize with null
-        private BaseSpan rootSpan = TracingManager.getInvalidSpan();  //do not initialize with null
+        private BaseSpan querySpan = getInvalidSpan(); //do not initialize with null
+        private BaseSpan rootSpan = getInvalidSpan();  //do not initialize with null
         private TransactionId transactionId;
         private boolean clientTransactionSupport;
         private Identity identity;
