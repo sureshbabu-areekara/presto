@@ -40,7 +40,7 @@ final class DistinguishedNameParser
         this.length = this.dn.length();
     }
 
-    private String nextAT()
+    private String nextAttributeType()
     {
         while (position < length && chars[position] == ' ') {
             position++;
@@ -87,7 +87,7 @@ final class DistinguishedNameParser
         return new String(chars, start, end - start);
     }
 
-    private String quotedAV()
+    private String quotedAttributeValue()
     {
         position++;
         start = position;
@@ -118,7 +118,7 @@ final class DistinguishedNameParser
         return new String(chars, start, end - start);
     }
 
-    private String hexAV()
+    private String hexAttributeValue()
     {
         if (position + 4 >= length) {
             throw new IllegalStateException("Unexpected end of DN: " + dn);
@@ -160,7 +160,7 @@ final class DistinguishedNameParser
         return new String(chars, start, hexLen);
     }
 
-    private String escapedAV()
+    private String escapedAttributeValue()
     {
         start = position;
         end = position;
@@ -326,7 +326,7 @@ final class DistinguishedNameParser
         cur = 0;
         chars = dn.toCharArray();
 
-        String attType = nextAT();
+        String attType = nextAttributeType();
         if (attType == null) {
             return null;
         }
@@ -338,17 +338,17 @@ final class DistinguishedNameParser
             }
             switch (chars[position]) {
                 case '"':
-                    attValue = quotedAV();
+                    attValue = quotedAttributeValue();
                     break;
                 case '#':
-                    attValue = hexAV();
+                    attValue = hexAttributeValue();
                     break;
                 case '+':
                 case ',':
                 case ';':
                     break;
                 default:
-                    attValue = escapedAV();
+                    attValue = escapedAttributeValue();
             }
 
             if (attributeType.equalsIgnoreCase(attType)) {
@@ -364,7 +364,7 @@ final class DistinguishedNameParser
                 throw new IllegalStateException("Malformed DN: " + dn);
             }
             position++;
-            attType = nextAT();
+            attType = nextAttributeType();
             if (attType == null) {
                 throw new IllegalStateException("Malformed DN: " + dn);
             }

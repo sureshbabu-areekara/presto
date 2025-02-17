@@ -68,6 +68,7 @@ import static com.facebook.presto.spi.ConnectorId.createInformationSchemaConnect
 import static com.facebook.presto.spi.ConnectorId.createSystemTablesConnectorId;
 import static com.facebook.presto.spi.StandardErrorCode.NOT_FOUND;
 import static com.facebook.presto.telemetry.TracingManager.getInvalidSpan;
+import static com.facebook.presto.telemetry.TracingManager.spanString;
 import static com.facebook.presto.util.Failures.checkCondition;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -531,7 +532,7 @@ public final class Session
     {
         return toStringHelper(this)
                 .add("queryId", queryId)
-                .add("querySpan", TracingManager.spanString(querySpan).orElse(null))
+                .add("querySpan", spanString(querySpan).orElse(null))
                 .add("rootSpan", rootSpan.toString())
                 .add("transactionId", transactionId)
                 .add("user", getUser())
