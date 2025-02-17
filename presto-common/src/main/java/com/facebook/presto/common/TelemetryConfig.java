@@ -31,8 +31,8 @@ public class TelemetryConfig
     private Integer exporterTimeout;
     private Integer scheduleDelay;
     private Double samplingRatio;
-    private Boolean tracingEnabled;
-    private Boolean spanSampling;
+    private boolean tracingEnabled;
+    private boolean spanSampling;
 
     /**
      * The type Telemetry config constants.
