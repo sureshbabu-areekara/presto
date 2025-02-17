@@ -185,8 +185,8 @@ final class DistinguishedNameParser
                     chars[end++] = ' ';
 
                     while (position < length && chars[position] == ' ') {
-                        position++;
                         chars[end++] = ' ';
+                        position++;
                     }
                     if (position == length || chars[position] == ',' || chars[position] == '+'
                             || chars[position] == ';') {
