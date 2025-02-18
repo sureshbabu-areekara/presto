@@ -19,7 +19,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.annotation.concurrent.Immutable;
 
 /**
- * POJO to use with TelemetryResource.
+ * POJO to use with TelemetryResource for the dynamically enable/disable the trace endpoint.
  */
 @Immutable
 public class TracingConfig

@@ -87,7 +87,7 @@ public class OpenTelemetryTracingImpl
     }
 
     /**
-     * Create opentelemetry instance
+     * Create and set the opentelemetry instance.
      *
      * @return {@link OpenTelemetry}
      */
@@ -135,21 +135,11 @@ public class OpenTelemetryTracingImpl
         return openTelemetry;
     }
 
-    /**
-     * Sets open telemetry.
-     *
-     * @param configuredOpenTelemetry the configured open telemetry
-     */
     public static void setOpenTelemetry(OpenTelemetry configuredOpenTelemetry)
     {
         OpenTelemetryTracingImpl.configuredOpenTelemetry = configuredOpenTelemetry;
     }
 
-    /**
-     * Sets tracer.
-     *
-     * @param tracer the tracer
-     */
     public static void setTracer(Tracer tracer)
     {
         OpenTelemetryTracingImpl.tracer = tracer;
@@ -167,44 +157,21 @@ public class OpenTelemetryTracingImpl
         return Context.current().wrap(runnable);
     }
 
-    /**
-     * get current context .
-     *
-     * @return Context
-     */
     private static Context getCurrentContext()
     {
         return Context.current();
     }
 
-    /**
-     * get context from the span.
-     *
-     * @param tracingSpan runnable
-     * @return Context
-     */
     private static Context getCurrentContextWith(TracingSpan tracingSpan)
     {
         return Context.current().with(tracingSpan.getSpan());
     }
 
-    /**
-     * get the context from the span or current context.
-     *
-     * @param span span
-     * @return Context
-     */
     private static Context getContext(TracingSpan span)
     {
         return span != null ? getCurrentContextWith(span) : getCurrentContext();
     }
 
-    /**
-     * get the context from the traceParent string.
-     *
-     * @param traceParent traceParent
-     * @return Context
-     */
     private static Context getContext(String traceParent)
     {
         TextMapPropagator propagator = configuredOpenTelemetry.getPropagators().getTextMapPropagator();
@@ -223,7 +190,7 @@ public class OpenTelemetryTracingImpl
     }
 
     /**
-     * returns headers map from the input span.
+     * Returns headers map from the input span.
      *
      * @param span span
      * @return Map<String, String>
@@ -240,7 +207,7 @@ public class OpenTelemetryTracingImpl
     }
 
     /**
-     * ends span on error with recorded exceptions.
+     * Ends span by updating the status to error and record input exception.
      *
      * @param span querySpan
      * @param throwable throwable
@@ -257,7 +224,7 @@ public class OpenTelemetryTracingImpl
     }
 
     /**
-     * add event to the span.
+     * Add the input event to the input span.
      *
      * @param span span
      * @param eventName eventName
@@ -271,7 +238,7 @@ public class OpenTelemetryTracingImpl
     }
 
     /**
-     * add event to the span.
+     * Add the input event to the input span.
      *
      * @param span span
      * @param eventName eventName
@@ -286,7 +253,7 @@ public class OpenTelemetryTracingImpl
     }
 
     /**
-     * set attributes to the span.
+     * Sets the attributes map to the input span.
      *
      * @param span span
      * @param attributes attributes
@@ -300,7 +267,7 @@ public class OpenTelemetryTracingImpl
     }
 
     /**
-     * record exception to the span.
+     * Records exception to the input span with error code and message.
      *
      * @param span span
      * @param message message
@@ -320,7 +287,7 @@ public class OpenTelemetryTracingImpl
     }
 
     /**
-     * mark success to span.
+     * Sets the status of the input span to success.
      *
      * @param span span
      */
@@ -334,7 +301,7 @@ public class OpenTelemetryTracingImpl
 
     //Tracing spans
     /**
-     * To get an invalid span.
+     * Returns an invalid Span. An invalid Span is used when tracing is disabled.
      * @return TracingSpan
      */
     @Override
@@ -344,7 +311,7 @@ public class OpenTelemetryTracingImpl
     }
 
     /**
-     * To get root span.
+     * Creates and returns the root span.
      * @return TracingSpan
      */
     @Override
@@ -355,7 +322,7 @@ public class OpenTelemetryTracingImpl
     }
 
     /**
-     * To get span with name.
+     * Creates and returns the span with input name.
      * @param spanName name of span to be created
      * @return TracingSpan
      */
@@ -367,7 +334,7 @@ public class OpenTelemetryTracingImpl
     }
 
     /**
-     * To get a new span with name from the trace parent string.
+     * Creates and returns the span with input name and parent context from input.
      * @param traceParent trace parent string.
      * @param spanName name of the span to be created.
      * @return TracingSpan
@@ -381,7 +348,7 @@ public class OpenTelemetryTracingImpl
     }
 
     /**
-     * To get a new span with name from the parent span.
+     * Creates and returns the span with input name, attributes and parent span as the input span.
      * @param parentSpan parent span.
      * @param spanName name of the span to be created.
      * @param attributes input attributes to set in span.
@@ -395,12 +362,6 @@ public class OpenTelemetryTracingImpl
                 .startSpan());
     }
 
-    /**
-     * To set the input attributes in span builder.
-     * @param spanBuilder span builder.
-     * @param attributes input attributes to set in span builder.
-     * @return SpanBuilder
-     */
     private static SpanBuilder setAttributes(SpanBuilder spanBuilder, Map<String, String> attributes)
     {
         attributes.forEach(spanBuilder::setAttribute);
@@ -408,7 +369,7 @@ public class OpenTelemetryTracingImpl
     }
 
     /**
-     * To get the string value of the input span.
+     * Returns the span info as string.
      * @param span input span.
      * @return Optional<String>
      */
@@ -425,7 +386,7 @@ public class OpenTelemetryTracingImpl
 
     //Scoped Spans
     /**
-     * To get ScopedSpan with name.
+     * Creates and returns the ScopedSpan with input name.
      * @param spanName name of span to be created
      * @param skipSpan optional parameter to implement span sampling by skipping the current span export
      * @return ScopedSpan
@@ -441,7 +402,7 @@ public class OpenTelemetryTracingImpl
     }
 
     /**
-     * To get ScopedSpan from the parent span instance.
+     * Creates and returns the ScopedSpan with parent span as input span.
      * @param parentSpan parent span
      * @param skipSpan optional parameter to implement span sampling by skipping the current span export
      * @return ScopedSpan
@@ -457,7 +418,7 @@ public class OpenTelemetryTracingImpl
     }
 
     /**
-     * To get ScopedSpan from the parent span instance with name and also setting the input attributes.
+     * Creates and returns the ScopedSpan with input name, attributes and parent span as the input span.
      * @param parentSpan parent span
      * @param skipSpan optional parameter to implement span sampling by skipping the current span export
      * @return ScopedSpan
@@ -477,7 +438,7 @@ public class OpenTelemetryTracingImpl
     }
 
     /**
-     * To get ScopedSpan from the parent span instance with name and also setting the input attributes.
+     * Creates and returns the ScopedSpan with input name and the parent span as input span.
      * @param parentSpan parent span
      * @param skipSpan optional parameter to implement span sampling by skipping the current span export
      * @return ScopedSpan
@@ -496,7 +457,7 @@ public class OpenTelemetryTracingImpl
     }
 
     /**
-     * To get ScopedSpan with name and also setting the input attributes.
+     * Creates and returns the ScopedSpan with input name and attributes.
      * @param spanName span name
      * @param skipSpan optional parameter to implement span sampling by skipping the current span export
      * @return ScopedSpan
