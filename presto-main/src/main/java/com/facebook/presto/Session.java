@@ -39,7 +39,6 @@ import com.facebook.presto.spi.telemetry.BaseSpan;
 import com.facebook.presto.sql.analyzer.CTEInformationCollector;
 import com.facebook.presto.sql.planner.optimizations.OptimizerInformationCollector;
 import com.facebook.presto.sql.planner.optimizations.OptimizerResultCollector;
-import com.facebook.presto.telemetry.TracingManager;
 import com.facebook.presto.transaction.TransactionManager;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
