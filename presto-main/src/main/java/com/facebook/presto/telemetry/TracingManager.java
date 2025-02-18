@@ -88,7 +88,7 @@ public class TracingManager
             properties = new HashMap<>(properties);
             String openTelemetryFactoryName = properties.remove(TRACING_FACTORY_NAME);
 
-            checkArgument(!isNullOrEmpty(openTelemetryFactoryName), TRACING_FACTORY_NAME+" property must be present");
+            checkArgument(!isNullOrEmpty(openTelemetryFactoryName), TRACING_FACTORY_NAME + " property must be present");
 
             TelemetryFactory openTelemetryFactory = openTelemetryFactories.get(openTelemetryFactoryName);
             checkState(openTelemetryFactory != null, "Telemetry factory %s is not registered", openTelemetryFactoryName);
