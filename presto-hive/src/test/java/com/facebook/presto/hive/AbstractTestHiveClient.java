@@ -1172,12 +1172,6 @@ public abstract class AbstractTestHiveClient
             }
 
             @Override
-            public Optional<String> getTraceToken()
-            {
-                return session.getTraceToken();
-            }
-
-            @Override
             public Optional<String> getClientInfo()
             {
                 return session.getClientInfo();
@@ -1234,6 +1228,12 @@ public abstract class AbstractTestHiveClient
             public RuntimeStats getRuntimeStats()
             {
                 return session.getRuntimeStats();
+            }
+
+            @Override
+            public ConnectorSession forConnectorId(ConnectorId connectorId)
+            {
+                return this;
             }
         };
     }

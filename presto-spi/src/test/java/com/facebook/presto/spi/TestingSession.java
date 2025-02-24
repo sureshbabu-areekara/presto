@@ -84,12 +84,6 @@ public final class TestingSession
         }
 
         @Override
-        public Optional<String> getTraceToken()
-        {
-            return Optional.empty();
-        }
-
-        @Override
         public SqlFunctionProperties getSqlFunctionProperties()
         {
             return SqlFunctionProperties.builder()
@@ -129,6 +123,12 @@ public final class TestingSession
         public RuntimeStats getRuntimeStats()
         {
             return new RuntimeStats();
+        }
+
+        @Override
+        public ConnectorSession forConnectorId(ConnectorId connectorId)
+        {
+            return this;
         }
     };
 

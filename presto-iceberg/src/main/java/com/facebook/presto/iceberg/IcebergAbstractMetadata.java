@@ -31,6 +31,7 @@ import com.facebook.presto.iceberg.changelog.ChangelogUtil;
 import com.facebook.presto.iceberg.statistics.StatisticsFileCache;
 import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.ColumnMetadata;
+import com.facebook.presto.spi.ConnectorDeleteTableHandle;
 import com.facebook.presto.spi.ConnectorInsertTableHandle;
 import com.facebook.presto.spi.ConnectorNewTableLayout;
 import com.facebook.presto.spi.ConnectorOutputTableHandle;
@@ -201,6 +202,7 @@ import static org.apache.iceberg.SnapshotSummary.REMOVED_EQ_DELETES_PROP;
 import static org.apache.iceberg.SnapshotSummary.REMOVED_POS_DELETES_PROP;
 import static org.apache.iceberg.TableProperties.DELETE_ISOLATION_LEVEL;
 import static org.apache.iceberg.TableProperties.DELETE_ISOLATION_LEVEL_DEFAULT;
+import static org.apache.iceberg.TableProperties.SPLIT_SIZE;
 import static org.apache.iceberg.TableProperties.UPDATE_MODE;
 
 public abstract class IcebergAbstractMetadata
@@ -719,6 +721,7 @@ public abstract class IcebergAbstractMetadata
         properties.put(METADATA_PREVIOUS_VERSIONS_MAX, IcebergUtil.getMetadataPreviousVersionsMax(icebergTable));
         properties.put(METADATA_DELETE_AFTER_COMMIT, IcebergUtil.isMetadataDeleteAfterCommit(icebergTable));
         properties.put(METRICS_MAX_INFERRED_COLUMN, IcebergUtil.getMetricsMaxInferredColumn(icebergTable));
+        properties.put(SPLIT_SIZE, IcebergUtil.getSplitSize(icebergTable));
 
         SortOrder sortOrder = icebergTable.sortOrder();
         // TODO: Support sort column transforms (https://github.com/prestodb/presto/issues/24250)
@@ -976,7 +979,7 @@ public abstract class IcebergAbstractMetadata
     }
 
     @Override
-    public ConnectorTableHandle beginDelete(ConnectorSession session, ConnectorTableHandle tableHandle)
+    public ConnectorDeleteTableHandle beginDelete(ConnectorSession session, ConnectorTableHandle tableHandle)
     {
         IcebergTableHandle handle = (IcebergTableHandle) tableHandle;
         Table icebergTable = getIcebergTable(session, handle.getSchemaTableName());
@@ -989,11 +992,9 @@ public abstract class IcebergAbstractMetadata
         if (formatVersion < MIN_FORMAT_VERSION_FOR_DELETE) {
             throw new PrestoException(NOT_SUPPORTED, format("This connector only supports delete where one or more partitions are deleted entirely for table versions older than %d", MIN_FORMAT_VERSION_FOR_DELETE));
         }
-
         if (getDeleteMode(icebergTable) == RowLevelOperationMode.COPY_ON_WRITE) {
             throw new PrestoException(NOT_SUPPORTED, "This connector only supports delete where one or more partitions are deleted entirely. Configure delete_mode table property to allow row level deletions.");
         }
-
         validateTableMode(session, icebergTable);
         transaction = icebergTable.newTransaction();
 
@@ -1001,7 +1002,7 @@ public abstract class IcebergAbstractMetadata
     }
 
     @Override
-    public void finishDelete(ConnectorSession session, ConnectorTableHandle tableHandle, Collection<Slice> fragments)
+    public void finishDelete(ConnectorSession session, ConnectorDeleteTableHandle tableHandle, Collection<Slice> fragments)
     {
         IcebergTableHandle handle = (IcebergTableHandle) tableHandle;
         Table icebergTable = getIcebergTable(session, handle.getSchemaTableName());
@@ -1126,6 +1127,9 @@ public abstract class IcebergAbstractMetadata
             switch (entry.getKey()) {
                 case COMMIT_RETRIES:
                     updateProperties.set(TableProperties.COMMIT_NUM_RETRIES, String.valueOf(entry.getValue()));
+                    break;
+                case SPLIT_SIZE:
+                    updateProperties.set(TableProperties.SPLIT_SIZE, entry.getValue().toString());
                     break;
                 default:
                     throw new PrestoException(NOT_SUPPORTED, "Updating property " + entry.getKey() + " is not supported currently");

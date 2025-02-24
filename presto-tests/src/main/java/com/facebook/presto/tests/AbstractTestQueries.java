@@ -3066,13 +3066,14 @@ public abstract class AbstractTestQueries
     {
         Session session = new Session(
                 getSession().getQueryId(),
+                null,
+                null,
                 Optional.empty(),
                 getSession().isClientTransactionSupport(),
                 getSession().getIdentity(),
                 getSession().getSource(),
                 getSession().getCatalog(),
                 getSession().getSchema(),
-                getSession().getTraceToken(),
                 getSession().getTimeZoneKey(),
                 getSession().getLocale(),
                 getSession().getRemoteUserAddress(),
@@ -3093,7 +3094,6 @@ public abstract class AbstractTestQueries
                 getQueryRunner().getMetadata().getSessionPropertyManager(),
                 getSession().getPreparedStatements(),
                 ImmutableMap.of(),
-                getSession().getTracer(),
                 getSession().getWarningCollector(),
                 getSession().getRuntimeStats(),
                 getSession().getQueryType());
@@ -3234,6 +3234,36 @@ public abstract class AbstractTestQueries
 
         // test try with null
         assertQuery("SELECT TRY(1 / x) FROM (SELECT NULL as x)", "SELECT NULL");
+
+        // Test try with map method and value parameter is optional and argument is an array with null,
+        // the error should be suppressed and just return null.
+        assertQuery("SELECT\n" +
+                "    TRY(map_keys_by_top_n_values(c0, BIGINT '6455219767830808341'))\n" +
+                "FROM (\n" +
+                "    VALUES\n" +
+                "        MAP(\n" +
+                "            ARRAY[1, 2], ARRAY[\n" +
+                "                ARRAY[1, null],\n" +
+                "                ARRAY[1, null]\n" +
+                "            ]\n" +
+                "        )\n" +
+                ") t(c0)", "SELECT NULL");
+
+        assertQuery("SELECT\n" +
+                "    TRY(map_keys_by_top_n_values(c0, BIGINT '6455219767830808341'))\n" +
+                "FROM (\n" +
+                "    VALUES\n" +
+                "        MAP(\n" +
+                "            ARRAY[1, 2], ARRAY[\n" +
+                "                ARRAY[null, null],\n" +
+                "                ARRAY[1, 2]\n" +
+                "            ]\n" +
+                "        )\n" +
+                ") t(c0)", "SELECT NULL");
+
+        // Test try with array method with an input array containing null values.
+        // the error should be suppressed and just return null.
+        assertQuery("SELECT TRY(ARRAY_MAX(ARRAY [ARRAY[1, NULL], ARRAY[1, 2]]))", "SELECT NULL");
     }
 
     @Test

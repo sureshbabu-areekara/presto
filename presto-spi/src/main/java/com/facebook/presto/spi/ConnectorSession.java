@@ -42,8 +42,6 @@ public interface ConnectorSession
 
     Locale getLocale();
 
-    Optional<String> getTraceToken();
-
     Optional<String> getClientInfo();
 
     Set<String> getClientTags();
@@ -66,4 +64,10 @@ public interface ConnectorSession
     WarningCollector getWarningCollector();
 
     RuntimeStats getRuntimeStats();
+
+    /**
+     * returns a ConnectorSession for a specific ConnectorId
+     * @return
+     */
+    ConnectorSession forConnectorId(ConnectorId connectorId);
 }

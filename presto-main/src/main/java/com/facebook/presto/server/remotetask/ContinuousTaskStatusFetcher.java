@@ -13,6 +13,7 @@
  */
 package com.facebook.presto.server.remotetask;
 
+import com.facebook.airlift.concurrent.SetThreadName;
 import com.facebook.airlift.http.client.HttpClient;
 import com.facebook.airlift.http.client.Request;
 import com.facebook.airlift.http.client.ResponseHandler;
@@ -33,13 +34,20 @@ import com.facebook.presto.server.smile.BaseResponse;
 import com.facebook.presto.server.thrift.ThriftHttpResponseHandler;
 import com.facebook.presto.spi.HostAddress;
 import com.facebook.presto.spi.PrestoException;
+import com.facebook.presto.spi.telemetry.BaseSpan;
+import com.facebook.presto.telemetry.TracingManager;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.units.Duration;
-import io.netty.channel.EventLoop;
 
+import javax.annotation.concurrent.GuardedBy;
+
+import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 import static com.facebook.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
@@ -55,7 +63,6 @@ import static com.facebook.presto.server.thrift.ThriftCodecWrapper.unwrapThriftC
 import static com.facebook.presto.spi.StandardErrorCode.REMOTE_TASK_ERROR;
 import static com.facebook.presto.spi.StandardErrorCode.REMOTE_TASK_MISMATCH;
 import static com.facebook.presto.util.Failures.REMOTE_TASK_MISMATCH_ERROR;
-import static com.google.common.base.Verify.verify;
 import static io.airlift.units.Duration.nanosSince;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
@@ -71,17 +78,22 @@ class ContinuousTaskStatusFetcher
     private final Codec<TaskStatus> taskStatusCodec;
 
     private final Duration refreshMaxWait;
-    private final EventLoop taskEventLoop;
+    private final Executor executor;
     private final HttpClient httpClient;
     private final RequestErrorTracker errorTracker;
     private final RemoteTaskStats stats;
     private final boolean binaryTransportEnabled;
     private final boolean thriftTransportEnabled;
     private final Protocol thriftProtocol;
-    private long currentRequestStartNanos;
+
+    private final AtomicLong currentRequestStartNanos = new AtomicLong();
+
+    @GuardedBy("this")
     private boolean running;
 
+    @GuardedBy("this")
     private ListenableFuture<BaseResponse<TaskStatus>> future;
+    private final BaseSpan remoteTaskSpan;
 
     public ContinuousTaskStatusFetcher(
             Consumer<Throwable> onFail,
@@ -89,37 +101,39 @@ class ContinuousTaskStatusFetcher
             TaskStatus initialTaskStatus,
             Duration refreshMaxWait,
             Codec<TaskStatus> taskStatusCodec,
-            EventLoop taskEventLoop,
+            Executor executor,
             HttpClient httpClient,
             Duration maxErrorDuration,
+            ScheduledExecutorService errorScheduledExecutor,
             RemoteTaskStats stats,
             boolean binaryTransportEnabled,
             boolean thriftTransportEnabled,
-            Protocol thriftProtocol)
+            Protocol thriftProtocol,
+            BaseSpan remoteTaskSpan)
     {
         requireNonNull(initialTaskStatus, "initialTaskStatus is null");
 
         this.taskId = requireNonNull(taskId, "taskId is null");
         this.onFail = requireNonNull(onFail, "onFail is null");
-        this.taskStatus = new StateMachine<>("task-" + taskId, taskEventLoop, initialTaskStatus);
+        this.taskStatus = new StateMachine<>("task-" + taskId, executor, initialTaskStatus);
 
         this.refreshMaxWait = requireNonNull(refreshMaxWait, "refreshMaxWait is null");
         this.taskStatusCodec = requireNonNull(taskStatusCodec, "taskStatusCodec is null");
 
-        this.taskEventLoop = requireNonNull(taskEventLoop, "taskEventLoop is null");
+        this.executor = requireNonNull(executor, "executor is null");
         this.httpClient = requireNonNull(httpClient, "httpClient is null");
 
-        this.errorTracker = taskRequestErrorTracker(taskId, initialTaskStatus.getSelf(), maxErrorDuration, taskEventLoop, "getting task status");
+        this.errorTracker = taskRequestErrorTracker(taskId, initialTaskStatus.getSelf(), maxErrorDuration, errorScheduledExecutor, "getting task status");
         this.stats = requireNonNull(stats, "stats is null");
         this.binaryTransportEnabled = binaryTransportEnabled;
         this.thriftTransportEnabled = thriftTransportEnabled;
         this.thriftProtocol = requireNonNull(thriftProtocol, "thriftProtocol is null");
+
+        this.remoteTaskSpan = remoteTaskSpan;
     }
 
-    public void start()
+    public synchronized void start()
     {
-        verify(taskEventLoop.inEventLoop());
-
         if (running) {
             // already running
             return;
@@ -128,10 +142,8 @@ class ContinuousTaskStatusFetcher
         scheduleNextRequest();
     }
 
-    public void stop()
+    public synchronized void stop()
     {
-        verify(taskEventLoop.inEventLoop());
-
         running = false;
         if (future != null) {
             // do not terminate if the request is already running to avoid closing pooled connections
@@ -140,10 +152,8 @@ class ContinuousTaskStatusFetcher
         }
     }
 
-    private void scheduleNextRequest()
+    private synchronized void scheduleNextRequest()
     {
-        verify(taskEventLoop.inEventLoop());
-
         // stopped or done?
         TaskStatus taskStatus = getTaskStatus();
         if (!running || taskStatus.getState().isDone()) {
@@ -160,7 +170,7 @@ class ContinuousTaskStatusFetcher
         // if throttled due to error, asynchronously wait for timeout and try again
         ListenableFuture<?> errorRateLimit = errorTracker.acquireRequestPermit();
         if (!errorRateLimit.isDone()) {
-            errorRateLimit.addListener(this::scheduleNextRequest, taskEventLoop);
+            errorRateLimit.addListener(this::scheduleNextRequest, executor);
             return;
         }
 
@@ -179,6 +189,12 @@ class ContinuousTaskStatusFetcher
             responseHandler = createAdaptingJsonResponseHandler((JsonCodec<TaskStatus>) taskStatusCodec);
         }
 
+        Map<String, String> headersMap = TracingManager.getHeadersMap(remoteTaskSpan);
+
+        for (Map.Entry<String, String> entry : headersMap.entrySet()) {
+            requestBuilder.addHeader(entry.getKey(), entry.getValue());
+        }
+
         Request request = requestBuilder.setUri(uriBuilderFrom(taskStatus.getSelf()).appendPath("status").build())
                 .setHeader(PRESTO_CURRENT_STATE, taskStatus.getState().toString())
                 .setHeader(PRESTO_MAX_WAIT, refreshMaxWait.toString())
@@ -186,7 +202,7 @@ class ContinuousTaskStatusFetcher
 
         errorTracker.startRequest();
         future = httpClient.executeAsync(request, responseHandler);
-        currentRequestStartNanos = System.nanoTime();
+        currentRequestStartNanos.set(System.nanoTime());
         FutureCallback callback;
         if (thriftTransportEnabled) {
             callback = new ThriftHttpResponseHandler(this, request.getUri(), stats.getHttpResponseStats(), REMOTE_TASK_ERROR);
@@ -198,7 +214,7 @@ class ContinuousTaskStatusFetcher
         Futures.addCallback(
                 future,
                 callback,
-                taskEventLoop);
+                executor);
     }
 
     TaskStatus getTaskStatus()
@@ -209,62 +225,59 @@ class ContinuousTaskStatusFetcher
     @Override
     public void success(TaskStatus value)
     {
-        verify(taskEventLoop.inEventLoop());
-
-        updateStats(currentRequestStartNanos);
-        try {
-            updateTaskStatus(value);
-            errorTracker.requestSucceeded();
-        }
-        finally {
-            scheduleNextRequest();
+        try (SetThreadName ignored = new SetThreadName("ContinuousTaskStatusFetcher-%s", taskId)) {
+            updateStats(currentRequestStartNanos.get());
+            try {
+                updateTaskStatus(value);
+                errorTracker.requestSucceeded();
+            }
+            finally {
+                scheduleNextRequest();
+            }
         }
     }
 
     @Override
     public void failed(Throwable cause)
     {
-        verify(taskEventLoop.inEventLoop());
-
-        updateStats(currentRequestStartNanos);
-        try {
-            // if task not already done, record error
-            TaskStatus taskStatus = getTaskStatus();
-            if (!taskStatus.getState().isDone()) {
-                errorTracker.requestFailed(cause);
+        try (SetThreadName ignored = new SetThreadName("ContinuousTaskStatusFetcher-%s", taskId)) {
+            updateStats(currentRequestStartNanos.get());
+            try {
+                // if task not already done, record error
+                TaskStatus taskStatus = getTaskStatus();
+                if (!taskStatus.getState().isDone()) {
+                    errorTracker.requestFailed(cause);
+                }
             }
-        }
-        catch (Error e) {
-            onFail.accept(e);
-            throw e;
-        }
-        catch (RuntimeException e) {
-            onFail.accept(e);
-        }
-        finally {
-            scheduleNextRequest();
+            catch (Error e) {
+                onFail.accept(e);
+                throw e;
+            }
+            catch (RuntimeException e) {
+                onFail.accept(e);
+            }
+            finally {
+                scheduleNextRequest();
+            }
         }
     }
 
     @Override
     public void fatal(Throwable cause)
     {
-        verify(taskEventLoop.inEventLoop());
-
-        updateStats(currentRequestStartNanos);
-        onFail.accept(cause);
+        try (SetThreadName ignored = new SetThreadName("ContinuousTaskStatusFetcher-%s", taskId)) {
+            updateStats(currentRequestStartNanos.get());
+            onFail.accept(cause);
+        }
     }
 
     void updateTaskStatus(TaskStatus newValue)
     {
-        verify(taskEventLoop.inEventLoop());
-
         // change to new value if old value is not changed and new value has a newer version
         AtomicBoolean taskMismatch = new AtomicBoolean();
         taskStatus.setIf(newValue, oldValue -> {
             // did the task instance id change
-            boolean isEmpty = (oldValue.getTaskInstanceIdLeastSignificantBits() == 0 && oldValue.getTaskInstanceIdMostSignificantBits() == 0)
-                    || (newValue.getTaskInstanceIdLeastSignificantBits() == 0 && newValue.getTaskInstanceIdMostSignificantBits() == 0);
+            boolean isEmpty = oldValue.getTaskInstanceIdLeastSignificantBits() == 0 && oldValue.getTaskInstanceIdMostSignificantBits() == 0;
             if (!isEmpty &&
                     !(oldValue.getTaskInstanceIdLeastSignificantBits() == newValue.getTaskInstanceIdLeastSignificantBits() &&
                             oldValue.getTaskInstanceIdMostSignificantBits() == newValue.getTaskInstanceIdMostSignificantBits())) {
@@ -291,6 +304,11 @@ class ContinuousTaskStatusFetcher
         }
     }
 
+    public synchronized boolean isRunning()
+    {
+        return running;
+    }
+
     /**
      * Listener is always notified asynchronously using a dedicated notification thread pool so, care should
      * be taken to avoid leaking {@code this} when adding a listener in a constructor. Additionally, it is
@@ -303,8 +321,6 @@ class ContinuousTaskStatusFetcher
 
     private void updateStats(long currentRequestStartNanos)
     {
-        verify(taskEventLoop.inEventLoop());
-
         stats.statusRoundTripMillis(nanosSince(currentRequestStartNanos).toMillis());
     }
 }

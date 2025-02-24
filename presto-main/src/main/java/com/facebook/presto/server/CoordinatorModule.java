@@ -89,6 +89,7 @@ import com.facebook.presto.sql.analyzer.FeaturesConfig;
 import com.facebook.presto.sql.analyzer.QueryExplainer;
 import com.facebook.presto.sql.planner.PlanFragmenter;
 import com.facebook.presto.sql.planner.PlanOptimizers;
+import com.facebook.presto.telemetry.TelemetryResource;
 import com.facebook.presto.transaction.ForTransactionManager;
 import com.facebook.presto.transaction.InMemoryTransactionManager;
 import com.facebook.presto.transaction.TransactionManager;
@@ -144,10 +145,10 @@ public class CoordinatorModule
     {
         httpServerBinder(binder).bindResource("/ui", "webapp").withWelcomeFile("index.html")
                 .withExtraHeader(HttpHeaders.X_CONTENT_TYPE_OPTIONS, "nosniff")
-                .withExtraHeader(HttpHeaders.CONTENT_SECURITY_POLICY, "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-ancestors 'self'");
+                .withExtraHeader(HttpHeaders.CONTENT_SECURITY_POLICY, "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-ancestors 'self'; img-src http: https: data:");
         httpServerBinder(binder).bindResource("/tableau", "webapp/tableau")
                 .withExtraHeader(HttpHeaders.X_CONTENT_TYPE_OPTIONS, "nosniff")
-                .withExtraHeader(HttpHeaders.CONTENT_SECURITY_POLICY, "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-ancestors 'self'");
+                .withExtraHeader(HttpHeaders.CONTENT_SECURITY_POLICY, "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-ancestors 'self'; img-src http: https: data:");
 
         // discovery server
         install(installModuleIf(EmbeddedDiscoveryConfig.class, EmbeddedDiscoveryConfig::isEnabled, new EmbeddedDiscoveryModule()));
@@ -161,6 +162,7 @@ public class CoordinatorModule
         jsonCodecBinder(binder).bindJsonCodec(QueryResults.class);
         jsonCodecBinder(binder).bindJsonCodec(SelectedRole.class);
         jaxrsBinder(binder).bind(QueuedStatementResource.class);
+        jaxrsBinder(binder).bind(TelemetryResource.class);
         jaxrsBinder(binder).bind(ExecutingStatementResource.class);
         binder.bind(StatementHttpExecutionMBean.class).in(Scopes.SINGLETON);
         newExporter(binder).export(StatementHttpExecutionMBean.class).withGeneratedName();
