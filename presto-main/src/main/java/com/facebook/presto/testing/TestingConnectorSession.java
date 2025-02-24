@@ -223,7 +223,6 @@ public class TestingConnectorSession
                 sqlFunctionProperties.getSessionUser(),
                 identity,
                 source,
-                traceToken,
                 timeZoneKey,
                 locale,
                 startTime,

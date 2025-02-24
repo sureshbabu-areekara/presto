@@ -311,7 +311,7 @@ public final class HttpRemoteTask
         try (SetThreadName ignored = new SetThreadName("HttpRemoteTask-%s", taskId)) {
             this.taskId = taskId;
             this.stageSpan = stageSpan;
-            this.span = TracingManager.getSpan(stageSpan, TracingEnum.REMOTE_TASK.getName(), ImmutableMap.of("QUERY_ID", taskId.getQueryId().toString(), "STAGE_ID", taskId.getStageId().toString(), "TASK_ID", taskId.toString()));    
+            this.span = TracingManager.getSpan(stageSpan, TracingEnum.REMOTE_TASK.getName(), ImmutableMap.of("QUERY_ID", taskId.getQueryId().toString(), "STAGE_ID", taskId.getStageId().toString(), "TASK_ID", taskId.toString()));
             this.taskLocation = location;
             this.remoteTaskLocation = remoteLocation;
             this.session = session;
