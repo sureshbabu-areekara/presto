@@ -533,7 +533,7 @@ public class QueuedStatementResource
             synchronized (this) {
                 if (querySubmissionFuture == null) {
                     //start tracing with root span for POST /v1/statement endpoint
-                    BaseSpan rootSpan = TracingManager.getRootSpan();
+                    BaseSpan rootSpan = TracingManager.getRootSpan(sessionContext.getTraceToken().orElse(""));
                     BaseSpan querySpan = TracingManager.getSpan(rootSpan, TracingEnum.QUERY.getName(), ImmutableMap.of("QUERY_ID", queryId.toString()));
 
                     //propagate root and query spans through session

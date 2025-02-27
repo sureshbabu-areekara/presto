@@ -705,7 +705,7 @@ public class TestMemoryRevokingScheduler
                 ImmutableList.of(new TaskSource(TABLE_SCAN_NODE_ID, ImmutableSet.of(SPLIT), false)),
                 createInitialEmptyOutputBuffers(PARTITIONED).withBuffer(OUT, 0).withNoMoreBufferIds(),
                 Optional.of(new TableWriteInfo(Optional.empty(), Optional.empty(), Optional.empty())),
-                TracingManager.getRootSpan());
+                TracingManager.getRootSpan(""));
 
         // use implicitly created task context from updateTask. It should be the only task in this QueryContext's tasks
         TaskContext taskContext = sqlTask.getQueryContext().getTaskContextByTaskId(sqlTask.getTaskId());

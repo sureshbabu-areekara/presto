@@ -353,7 +353,7 @@ public class TestSqlTaskManager
                 ImmutableList.of(new TaskSource(TABLE_SCAN_NODE_ID, splits, true)),
                 outputBuffers,
                 Optional.of(new TableWriteInfo(Optional.empty(), Optional.empty(), Optional.empty())),
-                TracingManager.getRootSpan());
+                TracingManager.getRootSpan(""));
     }
 
     private TaskInfo createTask(SqlTaskManager sqlTaskManager, TaskId taskId, OutputBuffers outputBuffers)
@@ -375,7 +375,7 @@ public class TestSqlTaskManager
                 ImmutableList.of(),
                 outputBuffers,
                 Optional.of(new TableWriteInfo(Optional.empty(), Optional.empty(), Optional.empty())),
-                TracingManager.getRootSpan());
+                TracingManager.getRootSpan(""));
     }
 
     public static class MockExchangeClientSupplier

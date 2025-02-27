@@ -355,6 +355,11 @@ public class PluginManager
             historyBasedPlanStatisticsManager.addHistoryBasedPlanStatisticsProviderFactory(historyBasedPlanStatisticsProvider);
         }
 
+        for (TracerProvider tracerProvider : plugin.getTracerProviders()) {
+            log.info("Registering tracer provider %s", tracerProvider.getName());
+            tracingManager.addTraceProvider(tracerProvider);
+        }
+
         for (AnalyzerProvider analyzerProvider : plugin.getAnalyzerProviders()) {
             log.info("Registering analyzer provider %s", analyzerProvider.getType());
             analyzerProviderManager.addAnalyzerProvider(analyzerProvider);
@@ -373,11 +378,6 @@ public class PluginManager
         for (ClientRequestFilterFactory clientRequestFilterFactory : plugin.getClientRequestFilterFactories()) {
             log.info("Registering client request filter factory");
             clientRequestFilterManager.registerClientRequestFilterFactory(clientRequestFilterFactory);
-        }
-
-        for (TracerProvider telemetryFactories : plugin.getTracerProviders()) {
-            log.info("Registering event listener %s", telemetryFactories.getName());
-            tracingManager.addTraceProvider(telemetryFactories);
         }
     }
 

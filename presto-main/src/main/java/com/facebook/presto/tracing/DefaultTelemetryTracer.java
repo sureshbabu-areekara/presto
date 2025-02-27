@@ -115,7 +115,7 @@ public class DefaultTelemetryTracer
     }
 
     @Override
-    public BaseSpan getRootSpan()
+    public BaseSpan getRootSpan(String traceId)
     {
         return getBaseSpan();
     }

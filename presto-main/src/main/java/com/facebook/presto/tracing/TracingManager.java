@@ -151,9 +151,9 @@ public class TracingManager
         return configuredTelemetryTracer.get().getInvalidSpan();
     }
 
-    public static BaseSpan getRootSpan()
+    public static BaseSpan getRootSpan(String traceId)
     {
-        return configuredTelemetryTracer.get().getRootSpan();
+        return configuredTelemetryTracer.get().getRootSpan(traceId);
     }
 
     public static BaseSpan getSpan(String spanName)

@@ -118,7 +118,7 @@ public interface Tracer<T extends BaseSpan, U extends BaseSpan>
      *
      * @return the root span
      */
-    T getRootSpan();
+    T getRootSpan(String traceId);
 
     /**
      * Creates and returns the span with input name.

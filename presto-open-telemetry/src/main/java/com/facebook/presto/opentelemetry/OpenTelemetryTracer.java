@@ -314,9 +314,9 @@ public class OpenTelemetryTracer
      * @return TracingSpan
      */
     @Override
-    public TracingSpan getRootSpan()
+    public TracingSpan getRootSpan(String traceId)
     {
-        return !TelemetryConfig.getTracingEnabled() ? new TracingSpan(Span.getInvalid()) : new TracingSpan(tracer.spanBuilder(TracingEnum.ROOT.getName()).setSpanKind(SpanKind.SERVER)
+        return !TelemetryConfig.getTracingEnabled() ? new TracingSpan(Span.getInvalid()) : new TracingSpan(tracer.spanBuilder(TracingEnum.ROOT.getName()).setSpanKind(SpanKind.SERVER).setAttribute("trace_id", traceId)
                 .startSpan());
     }
 
