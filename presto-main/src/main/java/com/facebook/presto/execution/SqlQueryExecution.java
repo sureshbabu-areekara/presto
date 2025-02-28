@@ -221,8 +221,6 @@ public class SqlQueryExecution
                 }
             }
 
-            stateMachine.beginSemanticAnalyzing();
-
             stateMachine.setUpdateType(queryAnalysis.getUpdateType());
             stateMachine.setExpandedQuery(queryAnalysis.getExpandedQuery());
 
