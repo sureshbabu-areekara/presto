@@ -27,21 +27,18 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
-public class TestOpenTelemetryTracer
+public class TestOpenTelemetryBuilder
 {
-    private OpenTelemetryTracer openTelemetryTracer;
-    Map<String, String> properties = new HashMap<>();
-
     @BeforeMethod
     public void setUp() throws Exception
     {
-        openTelemetryTracer = new OpenTelemetryTracer();
         resetTelemetryConfigSingleton();
     }
 
     @Test
     public void testCreateWithTracingEnabled()
     {
+        Map<String, String> properties = new HashMap<>();
         properties.put("tracing-enabled", "true");
         properties.put("tracing-backend-url", "http://localhost:4317");
         properties.put("max-exporter-batch-size", "256");
@@ -52,7 +49,7 @@ public class TestOpenTelemetryTracer
         properties.put("span-sampling", "true");
 
         TelemetryConfig.getTelemetryConfig().setTelemetryProperties(properties);
-        OpenTelemetry openTelemetry = openTelemetryTracer.createOpenTelemetry();
+        OpenTelemetry openTelemetry = OpenTelemetryBuilder.build();
 
         assertNotNull(openTelemetry);
         assertTrue(openTelemetry instanceof OpenTelemetrySdk, "sdk instance");
@@ -62,7 +59,7 @@ public class TestOpenTelemetryTracer
     public void testCreateWithTracingDisabled()
     {
         TelemetryConfig.getTelemetryConfig().setTracingEnabled(false);
-        OpenTelemetry openTelemetry = openTelemetryTracer.createOpenTelemetry();
+        OpenTelemetry openTelemetry = OpenTelemetryBuilder.build();
 
         assertNotNull(openTelemetry);
         assertEquals(openTelemetry, OpenTelemetry.noop(), "no-op instance");
